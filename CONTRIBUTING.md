@@ -1,0 +1,154 @@
+# Contributing
+
+Development workflow and coding standards for ft_transcendence.
+
+## Setup
+
+See [README.md](README.md) for installation. **Dev Container recommended** to avoid environment issues.
+
+---
+
+## Workflow
+
+### 1. Branch
+
+```bash
+git checkout main && git pull
+git checkout -b type/scope/description
+```
+
+**Types:** `feat`, `fix`, `chore`, `refactor`, `docs`, `test`
+
+**Examples:** `feat/game/paddle-physics`, `fix/auth/session-expiry`
+
+### 2. Implement
+
+Follow vertical slice pattern:
+
+```
+# API
+apps/api/src/modules/myfeature/
+├── myfeature.controller.ts   # Routes + validation (NO DB calls)
+├── myfeature.service.ts      # Business logic
+├── myfeature.repository.ts   # Drizzle queries
+└── myfeature.dto.ts          # Types
+
+# Web
+apps/web/src/routes/myfeature/+page.svelte
+apps/web/src/lib/components/myfeature/
+```
+
+### 3. Commit
+
+```bash
+git commit -m "type(scope): description"
+```
+
+**Examples:**
+
+- `feat(game): add ball collision detection`
+- `fix(frontend): resolve hydration error`
+
+Commit messages are validated automatically. Non-compliant commits will be rejected.
+
+### 4. Push & PR
+
+```bash
+git push -u origin type/scope/description
+```
+
+- Target: `main`
+- Requires: 1 approval, passing CI
+- Strategy: Squash and merge
+
+---
+
+## Coding Standards
+
+### Backend
+
+| Layer      | Rules                                                |
+| ---------- | ---------------------------------------------------- |
+| Controller | HTTP + TypeBox validation only. **Never call DB.**   |
+| Service    | Business logic. Framework-agnostic where possible.   |
+| Repository | **Only** place for `db.select/insert/update/delete`. |
+| Domain     | Pure TS (game module). No framework imports.         |
+
+```typescript
+// Controller example
+export const userController = new Elysia({ prefix: "/users" })
+  .get("/me", ({ user }) => userService.getProfile(user.id))
+  .patch("/me", ({ user, body }) => userService.updateProfile(user.id, body), {
+    body: t.Object({
+      username: t.Optional(t.String({ minLength: 3, maxLength: 20 })),
+    }),
+  });
+```
+
+### Frontend
+
+- **Always use Eden Treaty** — never raw `fetch()`
+- Server data → SvelteKit `load` functions
+- Client state → Svelte stores
+- Real-time → WebSocket writes to stores
+
+### TypeScript
+
+- No `any` — use `unknown` + type guards
+- No `@ts-ignore` — fix the error
+- Prefer `interface` over `type` for objects
+- Handle `null`/`undefined` explicitly
+
+---
+
+## Database Changes
+
+1. Edit `apps/api/src/db/schema.ts`
+2. Run `cd apps/api && bun run migrate`
+3. Commit schema + migration files
+
+**Never** modify DB directly via GUI.
+
+---
+
+## Pre-commit Hooks
+
+Pre-commit checks run automatically:
+
+| Check        | Fixes                                 |
+| ------------ | ------------------------------------- |
+| Biome        | `bun run biome check --apply .`       |
+| Prettier     | `bunx prettier --write "**/*.svelte"` |
+| TypeScript   | `bun run tsc --noEmit`                |
+| svelte-check | `cd apps/web && bun run check`        |
+| Commitlint   | Re-commit with valid message          |
+
+---
+
+## PR Checklist
+
+- [ ] Branch up to date with `main`
+- [ ] Follows vertical slice pattern
+- [ ] No `any` or `@ts-ignore`
+- [ ] Eden Treaty for API calls
+- [ ] Database changes include migrations
+- [ ] Works in Docker
+- [ ] Self-reviewed diff
+
+---
+
+## Troubleshooting
+
+```bash
+# Reset Docker
+docker compose down -v && docker compose up --build
+
+# View logs
+docker compose logs -f api
+
+# Reset dependencies
+rm -rf node_modules apps/*/node_modules && bun install
+
+# Connect to DB
+docker compose exec db psql -U postgres -d ft_transcendence
+```

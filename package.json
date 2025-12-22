@@ -1,0 +1,8 @@
+{
+  "name": "ft_transcendence",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

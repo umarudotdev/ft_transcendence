@@ -1,126 +1,132 @@
-# Ultracite Code Standards
+# AGENTS.md
 
-This project uses **Ultracite**, a zero-config Biome preset that enforces strict code quality standards through automated formatting and linting.
+This file provides guidance to AI assistants when working with code in this repository.
 
-## Quick Reference
+## Project Overview
 
-- **Format code**: `bun x ultracite fix`
-- **Check for issues**: `bun x ultracite check`
-- **Diagnose setup**: `bun x ultracite doctor`
+ft_transcendence is a real-time multiplayer Pong platform (42 curriculum capstone) featuring server-authoritative gameplay at 60 ticks/s, AI opponent, live chat, and 42 OAuth with optional TOTP 2FA.
 
-Biome (the underlying engine) provides extremely fast Rust-based linting and formatting. Most issues are automatically fixable.
+**Tech Stack:** Bun runtime, ElysiaJS (backend), SvelteKit (frontend), PostgreSQL + Drizzle ORM, Tailwind + Shadcn-Svelte
 
----
+## Build Commands
 
-## Core Principles
+```bash
+# Development
+bun install                          # Install all workspace dependencies
+docker compose up --build            # Start full stack (recommended)
 
-Write code that is **accessible, performant, type-safe, and maintainable**. Focus on clarity and explicit intent over brevity.
+# Code Quality
+bun x ultracite fix                  # Auto-format code (Biome)
+bun x ultracite check                # Check for linting issues
 
-### Type Safety & Explicitness
+# Backend (apps/api)
+cd apps/api && bun run migrate       # Apply Drizzle migrations
+cd apps/api && bun run generate      # Generate migration from schema changes
+cd apps/api && bun run tsc --noEmit  # TypeScript type check
 
-- Use explicit types for function parameters and return values when they enhance clarity
-- Prefer `unknown` over `any` when the type is genuinely unknown
-- Use const assertions (`as const`) for immutable values and literal types
-- Leverage TypeScript's type narrowing instead of type assertions
-- Use meaningful variable names instead of magic numbers - extract constants with descriptive names
+# Frontend (apps/web)
+cd apps/web && bun run check         # svelte-check validation
 
-### Modern JavaScript/TypeScript
+# Documentation
+bun run docs:dev                     # Start VitePress dev server
+bun run docs:build                   # Build docs
+```
 
-- Use arrow functions for callbacks and short functions
-- Prefer `for...of` loops over `.forEach()` and indexed `for` loops
-- Use optional chaining (`?.`) and nullish coalescing (`??`) for safer property access
-- Prefer template literals over string concatenation
-- Use destructuring for object and array assignments
-- Use `const` by default, `let` only when reassignment is needed, never `var`
+## Monorepo Structure
 
-### Async & Promises
+```
+ft_transcendence/
+├── apps/
+│   ├── api/                 # ElysiaJS backend
+│   │   └── src/
+│   │       ├── db/          # Drizzle config, schema, migrations
+│   │       └── modules/     # Vertical slices (auth, chat, game, users)
+│   └── web/                 # SvelteKit frontend
+│       └── src/
+│           ├── lib/         # Eden Treaty client, stores, components
+│           └── routes/      # SvelteKit pages
+├── packages/                # Shared types/configs
+└── docs/                    # VitePress documentation
+```
 
-- Always `await` promises in async functions - don't forget to use the return value
-- Use `async/await` syntax instead of promise chains for better readability
-- Handle errors appropriately in async code with try-catch blocks
-- Don't use async functions as Promise executors
+## Architecture Patterns
 
-### React & JSX
+### Vertical Slice Pattern (Backend)
 
-- Use function components over class components
-- Call hooks at the top level only, never conditionally
-- Specify all dependencies in hook dependency arrays correctly
-- Use the `key` prop for elements in iterables (prefer unique IDs over array indices)
-- Nest children between opening and closing tags instead of passing as props
-- Don't define components inside other components
-- Use semantic HTML and ARIA attributes for accessibility:
-  - Provide meaningful alt text for images
-  - Use proper heading hierarchy
-  - Add labels for form inputs
-  - Include keyboard event handlers alongside mouse events
-  - Use semantic elements (`<button>`, `<nav>`, etc.) instead of divs with roles
+Each feature module is self-contained:
 
-### Error Handling & Debugging
+```
+modules/[feature]/
+├── [feature].controller.ts   # HTTP routes + TypeBox validation (NO DB calls)
+├── [feature].service.ts      # Business logic (framework-agnostic)
+├── [feature].repository.ts   # Drizzle queries ONLY
+└── [feature].model.ts        # TypeBox schemas (single source of truth for types)
+```
 
-- Remove `console.log`, `debugger`, and `alert` statements from production code
-- Throw `Error` objects with descriptive messages, not strings or other values
-- Use `try-catch` blocks meaningfully - don't catch errors just to rethrow them
-- Prefer early returns over nested conditionals for error cases
+**Key Rules:**
 
-### Code Organization
+- Controllers: Destructure context properties, never pass entire `Context` to services
+- Services: No Elysia imports, no direct database access
+- Repositories: Database queries only, no business logic
+- Models: Define TypeBox schemas and derive types with `typeof schema.static`
 
-- Keep functions focused and under reasonable cognitive complexity limits
-- Extract complex conditions into well-named boolean variables
-- Use early returns to reduce nesting
-- Prefer simple conditionals over nested ternary operators
-- Group related code together and separate concerns
+### Frontend Patterns
 
-### Security
+- **API calls:** Always use Eden Treaty, never raw `fetch()`
+- **Server data:** SvelteKit `load` functions
+- **Client state:** Svelte stores (`writable`, `derived`)
+- **Real-time:** WebSocket writes to stores
+- **Svelte attributes:** Use `class` and `for` (not `className`/`htmlFor`)
 
-- Add `rel="noopener"` when using `target="_blank"` on links
-- Avoid `dangerouslySetInnerHTML` unless absolutely necessary
-- Don't use `eval()` or assign directly to `document.cookie`
-- Validate and sanitize user input
+### Database Changes
 
-### Performance
+1. Edit `apps/api/src/db/schema.ts`
+2. Run `cd apps/api && bun run generate`
+3. Run `cd apps/api && bun run migrate`
+4. Commit schema + migration files together
 
-- Avoid spread syntax in accumulators within loops
-- Use top-level regex literals instead of creating them in loops
-- Prefer specific imports over namespace imports
-- Avoid barrel files (index files that re-export everything)
-- Use proper image components (e.g., Next.js `<Image>`) over `<img>` tags
+Never modify the database directly via GUI or raw SQL.
 
-### Framework-Specific Guidance
+## Code Standards
 
-**Next.js:**
+This project uses **Ultracite** (zero-config Biome preset). Key rules:
 
-- Use Next.js `<Image>` component for images
-- Use `next/head` or App Router metadata API for head elements
-- Use Server Components for async data fetching instead of async Client Components
+- No `any` types (use `unknown` + type guards)
+- No `@ts-ignore` (fix the error)
+- `const` by default, `let` when needed, never `var`
+- Arrow functions for callbacks
+- `for...of` over `.forEach()` and indexed loops
+- `async/await` over promise chains
+- Template literals over string concatenation
+- Remove `console.log`, `debugger`, `alert` from production code
 
-**React 19+:**
+## Commit Convention
 
-- Use ref as a prop instead of `React.forwardRef`
+Commits follow [Conventional Commits](https://conventionalcommits.org). Commitlint enforces this.
 
-**Solid/Svelte/Vue/Qwik:**
+```
+<type>(<scope>): <description>
+```
 
-- Use `class` and `for` attributes (not `className` or `htmlFor`)
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `chore`, `ci`
 
----
+Breaking changes: Add `!` before colon (e.g., `feat(api)!: remove deprecated endpoint`)
 
-## Testing
+## Branch Naming
 
-- Write assertions inside `it()` or `test()` blocks
-- Avoid done callbacks in async tests - use async/await instead
-- Don't use `.only` or `.skip` in committed code
-- Keep test suites reasonably flat - avoid excessive `describe` nesting
+Follow [Conventional Branch](https://conventional-branch.github.io/):
 
-## When Biome Can't Help
+```
+<type>/<description>
+```
 
-Biome's linter will catch most issues automatically. Focus your attention on:
+Examples: `feat/paddle-physics`, `fix/session-expiry`, `hotfix/security-patch`
 
-1. **Business logic correctness** - Biome can't validate your algorithms
-2. **Meaningful naming** - Use descriptive names for functions, variables, and types
-3. **Architecture decisions** - Component structure, data flow, and API design
-4. **Edge cases** - Handle boundary conditions and error states
-5. **User experience** - Accessibility, performance, and usability considerations
-6. **Documentation** - Add comments for complex logic, but prefer self-documenting code
+## Troubleshooting
 
----
-
-Most formatting and common issues are automatically fixed by Biome. Run `bun x ultracite fix` before committing to ensure compliance.
+```bash
+docker compose down -v && docker compose up --build  # Reset Docker + DB
+docker compose logs -f api                           # View API logs
+rm -rf node_modules apps/*/node_modules && bun install  # Reset deps
+docker compose exec db psql -U postgres -d ft_transcendence  # Connect to DB
+```

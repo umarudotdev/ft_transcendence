@@ -12,6 +12,8 @@
     "prepare": "lefthook install"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.3.0",
+    "@commitlint/config-conventional": "^20.3.0",
     "lefthook": "^2.0.13",
     "oxfmt": "^0.21.0",
     "oxlint": "^1.36.0",

@@ -5,12 +5,17 @@
     "apps/*",
     "packages/*"
   ],
-  "devDependencies": {
-    "vitepress": "^2.0.0-alpha.15"
-  },
   "scripts": {
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "prepare": "lefthook install"
+  },
+  "devDependencies": {
+    "lefthook": "^2.0.13",
+    "oxfmt": "^0.21.0",
+    "oxlint": "^1.36.0",
+    "ultracite": "7.0.6",
+    "vitepress": "^2.0.0-alpha.15"
   }
 }

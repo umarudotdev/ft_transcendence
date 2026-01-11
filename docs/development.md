@@ -133,7 +133,7 @@ export const tournamentsRepository = {
 
   async updateStatus(
     id: number,
-    status: "pending" | "in_progress" | "completed",
+    status: "pending" | "in_progress" | "completed"
   ) {
     const [updated] = await db
       .update(tournaments)
@@ -183,7 +183,7 @@ export const tournamentsService = {
 
   async createTournament(
     userId: number,
-    data: { name: string; maxPlayers?: number },
+    data: { name: string; maxPlayers?: number }
   ) {
     // Business validation
     if (data.maxPlayers && (data.maxPlayers < 2 || data.maxPlayers > 16)) {
@@ -231,7 +231,7 @@ export const tournamentsService = {
     }
 
     const alreadyJoined = tournament.participants.some(
-      (p) => p.userId === userId,
+      (p) => p.userId === userId
     );
     if (alreadyJoined) {
       throw new Error("Already joined this tournament");
@@ -285,7 +285,7 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       params: t.Object({
         id: t.Numeric(), // Converts string param to number
       }),
-    },
+    }
   )
 
   // Create a new tournament
@@ -298,7 +298,7 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       try {
         const tournament = await tournamentsService.createTournament(
           userId,
-          body,
+          body
         );
         return { tournament };
       } catch (e) {
@@ -310,7 +310,7 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
         name: t.String({ minLength: 3, maxLength: 50 }),
         maxPlayers: t.Optional(t.Integer({ minimum: 2, maximum: 16 })),
       }),
-    },
+    }
   )
 
   // Start a tournament
@@ -322,7 +322,7 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       try {
         const tournament = await tournamentsService.startTournament(
           userId,
-          params.id,
+          params.id
         );
         return { tournament };
       } catch (e) {
@@ -340,7 +340,7 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       params: t.Object({
         id: t.Numeric(),
       }),
-    },
+    }
   )
 
   // Join a tournament
@@ -352,7 +352,7 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       try {
         const tournament = await tournamentsService.joinTournament(
           userId,
-          params.id,
+          params.id
         );
         return { tournament };
       } catch (e) {
@@ -363,7 +363,7 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       params: t.Object({
         id: t.Numeric(),
       }),
-    },
+    }
   )
 
   // Delete a tournament
@@ -383,7 +383,7 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       params: t.Object({
         id: t.Numeric(),
       }),
-    },
+    }
   );
 ```
 
@@ -437,7 +437,7 @@ const app = new Elysia()
       .use(usersController)
       .use(gameController)
       .use(chatController)
-      .use(tournamentsController),
+      .use(tournamentsController)
   )
   .listen(4000);
 
@@ -730,7 +730,7 @@ export const tournaments = createTournamentsStore();
 
 // Derived store for filtering
 export const pendingTournaments = derived(tournaments, ($tournaments) =>
-  $tournaments.filter((t) => t.status === "pending"),
+  $tournaments.filter((t) => t.status === "pending")
 );
 ```
 
@@ -854,7 +854,7 @@ export const authGuard = new Elysia({ name: "auth-guard" }).derive(
     const session = await db.query.sessions.findFirst({
       where: and(
         eq(sessions.id, sessionId),
-        gt(sessions.expiresAt, new Date()),
+        gt(sessions.expiresAt, new Date())
       ),
       with: { user: true },
     });
@@ -867,7 +867,7 @@ export const authGuard = new Elysia({ name: "auth-guard" }).derive(
       user: session.user,
       session,
     };
-  },
+  }
 );
 ```
 

@@ -11,6 +11,7 @@ export default defineConfig({
       { text: "PRD", link: "/prd" },
       { text: "Architecture", link: "/architecture" },
       { text: "Development", link: "/development" },
+      { text: "Tutorials", link: "/tutorials/01-project-setup" },
     ],
 
     sidebar: [
@@ -49,6 +50,24 @@ export default defineConfig({
             text: "004: Database Sessions",
             link: "/decisions/0004-use-database-sessions-with-arctic-oslo",
           },
+        ],
+      },
+      {
+        text: "Tutorials",
+        items: [
+          { text: "01: Project Setup", link: "/tutorials/01-project-setup" },
+          { text: "02: Authentication", link: "/tutorials/02-authentication" },
+          { text: "03: User Profile", link: "/tutorials/03-user-profile" },
+        ],
+      },
+      {
+        text: "Implementation Prompts",
+        collapsed: true,
+        items: [
+          { text: "Meta: Tutorial Generator", link: "/prompts/00-meta-tutorial" },
+          { text: "01: Project Setup", link: "/prompts/01-setup" },
+          { text: "02: Authentication", link: "/prompts/02-authentication" },
+          { text: "03: User Profile", link: "/prompts/03-user-profile" },
         ],
       },
       {

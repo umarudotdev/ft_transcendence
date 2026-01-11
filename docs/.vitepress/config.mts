@@ -62,6 +62,10 @@ export default defineConfig({
             text: "007: GitHub Flow",
             link: "/decisions/0007-use-github-flow-workflow",
           },
+          {
+            text: "008: neverthrow Error Handling",
+            link: "/decisions/0008-use-neverthrow-for-service-errors",
+          },
         ],
       },
       {
@@ -70,13 +74,17 @@ export default defineConfig({
           { text: "01: Project Setup", link: "/tutorials/01-project-setup" },
           { text: "02: Authentication", link: "/tutorials/02-authentication" },
           { text: "03: User Profile", link: "/tutorials/03-user-profile" },
+          { text: "04: Error Handling", link: "/tutorials/04-error-handling" },
         ],
       },
       {
         text: "Implementation Prompts",
         collapsed: true,
         items: [
-          { text: "Meta: Tutorial Generator", link: "/prompts/00-meta-tutorial" },
+          {
+            text: "Meta: Tutorial Generator",
+            link: "/prompts/00-meta-tutorial",
+          },
           { text: "01: Project Setup", link: "/prompts/01-setup" },
           { text: "02: Authentication", link: "/prompts/02-authentication" },
           { text: "03: User Profile", link: "/prompts/03-user-profile" },

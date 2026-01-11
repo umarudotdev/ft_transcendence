@@ -270,7 +270,7 @@ const app = new Elysia()
       origin: ["http://localhost:5173", "http://localhost:3000"],
       // Allow cookies to be sent cross-origin
       credentials: true,
-    })
+    }),
   )
   // Health check endpoint - useful for Docker and load balancers
   .get("/health", () => ({
@@ -278,8 +278,9 @@ const app = new Elysia()
     timestamp: new Date().toISOString(),
   }))
   // Group all API routes under /api prefix
-  .group("/api", (app) =>
-    app.get("/", () => ({ message: "ft_transcendence API" }))
+  .group(
+    "/api",
+    (app) => app.get("/", () => ({ message: "ft_transcendence API" })),
   )
   // Start the server
   .listen(4000);

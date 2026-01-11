@@ -130,11 +130,13 @@ git branch -d feat/match-history
 ### Pull Request Guidelines
 
 **Title:** Use conventional commit format
+
 ```
 feat(game): add match history tracking
 ```
 
 **Body Template:**
+
 ```markdown
 ## Summary
 - Added match result storage after game completion
@@ -146,6 +148,7 @@ feat(game): add match history tracking
 ```
 
 **Review Checklist:**
+
 - [ ] Code follows project conventions
 - [ ] Tests pass
 - [ ] No security vulnerabilities
@@ -156,15 +159,19 @@ feat(game): add match history tracking
 We require **linear history** — no merge commits allowed on master.
 
 **Option 1: Squash merge** (preferred for feature branches)
+
 ```bash
 gh pr merge --squash
 ```
+
 Combines all branch commits into a single commit with the PR title as message.
 
 **Option 2: Rebase merge** (for clean multi-commit PRs)
+
 ```bash
 gh pr merge --rebase
 ```
+
 Replays each commit on top of master, preserving individual commits.
 
 ### Keeping Branches Up to Date
@@ -215,4 +222,5 @@ Configure master branch protection:
 - [x] Do not allow bypassing the above settings
 
 **GitHub Settings → Branches → Branch protection rules:**
+
 - Enable "Require linear history" to enforce squash or rebase merges only

@@ -105,13 +105,13 @@ Content-Type: application/problem+json
 
 ### Standard Fields
 
-| Field      | Type   | Description                                    |
-| ---------- | ------ | ---------------------------------------------- |
-| `type`     | URI    | Identifies the problem category                |
-| `status`   | number | HTTP status code (mirrored from response)      |
-| `title`    | string | Short, human-readable summary                  |
-| `detail`   | string | Explanation specific to this occurrence        |
-| `instance` | URI    | Identifies this specific problem occurrence    |
+| Field      | Type   | Description                                 |
+| ---------- | ------ | ------------------------------------------- |
+| `type`     | URI    | Identifies the problem category             |
+| `status`   | number | HTTP status code (mirrored from response)   |
+| `title`    | string | Short, human-readable summary               |
+| `detail`   | string | Explanation specific to this occurrence     |
+| `instance` | URI    | Identifies this specific problem occurrence |
 
 ### Extension Fields
 
@@ -125,15 +125,15 @@ For rate limiting:
 
 ### Error Type URIs
 
-| Type URI                              | Status | Usage                        |
-| ------------------------------------- | ------ | ---------------------------- |
-| `about:blank`                         | varies | Generic errors (use title)   |
-| `https://api.ft.local/errors/validation`     | 422    | Request validation failed    |
-| `https://api.ft.local/errors/unauthorized`   | 401    | Authentication required      |
-| `https://api.ft.local/errors/forbidden`      | 403    | Insufficient permissions     |
-| `https://api.ft.local/errors/not-found`      | 404    | Resource not found           |
-| `https://api.ft.local/errors/conflict`       | 409    | Resource conflict            |
-| `https://api.ft.local/errors/rate-limited`   | 429    | Too many requests            |
+| Type URI                                   | Status | Usage                      |
+| ------------------------------------------ | ------ | -------------------------- |
+| `about:blank`                              | varies | Generic errors (use title) |
+| `https://api.ft.local/errors/validation`   | 422    | Request validation failed  |
+| `https://api.ft.local/errors/unauthorized` | 401    | Authentication required    |
+| `https://api.ft.local/errors/forbidden`    | 403    | Insufficient permissions   |
+| `https://api.ft.local/errors/not-found`    | 404    | Resource not found         |
+| `https://api.ft.local/errors/conflict`     | 409    | Resource conflict          |
+| `https://api.ft.local/errors/rate-limited` | 429    | Too many requests          |
 
 ### Implementation Notes
 

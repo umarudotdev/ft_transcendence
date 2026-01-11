@@ -179,7 +179,7 @@ export const users = pgTable(
     intraIdIdx: index("users_intra_id_idx").on(table.intraId),
     // Index for email lookups (login)
     emailIdx: index("users_email_idx").on(table.email),
-  })
+  }),
 );
 
 // =============================================================================
@@ -207,7 +207,7 @@ export const sessions = pgTable(
     userIdIdx: index("sessions_user_id_idx").on(table.userId),
     // Index for cleanup job
     expiresAtIdx: index("sessions_expires_at_idx").on(table.expiresAt),
-  })
+  }),
 );
 
 // =============================================================================
@@ -475,7 +475,7 @@ export const authRepository = {
   async updateTotpSecret(
     userId: number,
     secret: string | null,
-    enabled: boolean
+    enabled: boolean,
   ) {
     const [updated] = await db
       .update(users)
@@ -501,8 +501,9 @@ export const authRepository = {
     const newCount = user.failedLoginAttempts + 1;
 
     // Lock account after 10 failed attempts for 15 minutes
-    const lockUntil =
-      newCount >= 10 ? new Date(Date.now() + 15 * 60 * 1000) : null;
+    const lockUntil = newCount >= 10
+      ? new Date(Date.now() + 15 * 60 * 1000)
+      : null;
 
     const [updated] = await db
       .update(users)
@@ -782,7 +783,7 @@ export async function hashPassword(password: string): Promise<string> {
  */
 export async function verifyPassword(
   password: string,
-  hash: string
+  hash: string,
 ): Promise<boolean> {
   try {
     return await verify(hash, password);
@@ -940,7 +941,7 @@ export const authService = {
         const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_DURATION_MS);
         const token = await authRepository.createEmailVerificationToken(
           user.id,
-          expiresAt
+          expiresAt,
         );
 
         // TODO: Send verification email with token.id
@@ -948,7 +949,7 @@ export const authService = {
 
         return ok({ user: toSafeUser(user) });
       })(),
-      () => ({ type: "EMAIL_EXISTS" as const }) // Fallback error
+      () => ({ type: "EMAIL_EXISTS" as const }), // Fallback error
     ).andThen((result) => result);
   },
 
@@ -958,7 +959,7 @@ export const authService = {
 
   login(
     email: string,
-    password: string
+    password: string,
   ): ResultAsync<
     { sessionId: string; user: SafeUser; requires2fa: boolean },
     LoginError
@@ -1023,7 +1024,7 @@ export const authService = {
           requires2fa: false,
         });
       })(),
-      () => ({ type: "INVALID_CREDENTIALS" as const })
+      () => ({ type: "INVALID_CREDENTIALS" as const }),
     ).andThen((result) => result);
   },
 
@@ -1048,7 +1049,7 @@ export const authService = {
 
         return ok(toSafeUser(session.user));
       })(),
-      () => ({ type: "NOT_FOUND" as const })
+      () => ({ type: "NOT_FOUND" as const }),
     ).andThen((result) => result);
   },
 
@@ -1059,14 +1060,14 @@ export const authService = {
   logout(sessionId: string): ResultAsync<void, never> {
     return ResultAsync.fromPromise(
       authRepository.deleteSession(sessionId),
-      () => undefined as never // logout never fails
+      () => undefined as never, // logout never fails
     ).map(() => undefined);
   },
 
   logoutAllDevices(userId: number): ResultAsync<void, never> {
     return ResultAsync.fromPromise(
       authRepository.deleteAllUserSessions(userId),
-      () => undefined as never
+      () => undefined as never,
     ).map(() => undefined);
   },
 
@@ -1096,7 +1097,7 @@ export const authService = {
 
         return ok(undefined);
       })(),
-      () => ({ type: "INVALID_TOKEN" as const })
+      () => ({ type: "INVALID_TOKEN" as const }),
     ).andThen((result) => result);
   },
 
@@ -1114,7 +1115,7 @@ export const authService = {
           const expiresAt = new Date(Date.now() + PASSWORD_RESET_DURATION_MS);
           const token = await authRepository.createPasswordResetToken(
             user.id,
-            expiresAt
+            expiresAt,
           );
 
           // TODO: Send password reset email with token.id
@@ -1124,13 +1125,13 @@ export const authService = {
         // Always return success (even if user doesn't exist)
         return ok(undefined);
       })(),
-      () => undefined as never
+      () => undefined as never,
     ).andThen((result) => result);
   },
 
   resetPassword(
     tokenId: string,
-    newPassword: string
+    newPassword: string,
   ): ResultAsync<void, TokenError | PasswordError> {
     return ResultAsync.fromPromise(
       (async () => {
@@ -1166,7 +1167,7 @@ export const authService = {
 
         return ok(undefined);
       })(),
-      () => ({ type: "INVALID_TOKEN" as const })
+      () => ({ type: "INVALID_TOKEN" as const }),
     ).andThen((result) => result);
   },
 
@@ -1177,7 +1178,7 @@ export const authService = {
   changePassword(
     userId: number,
     currentPassword: string,
-    newPassword: string
+    newPassword: string,
   ): ResultAsync<void, PasswordError> {
     return ResultAsync.fromPromise(
       (async () => {
@@ -1205,7 +1206,7 @@ export const authService = {
         // Check if new password is same as current
         const sameAsCurrent = await verifyPassword(
           newPassword,
-          user.passwordHash
+          user.passwordHash,
         );
         if (sameAsCurrent) {
           return err({ type: "SAME_AS_CURRENT" as const });
@@ -1220,7 +1221,7 @@ export const authService = {
 
         return ok(undefined);
       })(),
-      () => ({ type: "INCORRECT_PASSWORD" as const })
+      () => ({ type: "INCORRECT_PASSWORD" as const }),
     ).andThen((result) => result);
   },
 };
@@ -1363,7 +1364,7 @@ export const authGuard = new Elysia({ name: "auth-guard" }).derive(
 
     // Add user to context
     return { user: result.value };
-  }
+  },
 );
 ```
 
@@ -1419,9 +1420,8 @@ export const authController = new Elysia({ prefix: "/auth" })
             password: t.String({ minLength: 8 }),
             displayName: t.String({ minLength: 3, maxLength: 30 }),
           }),
-        }
-      )
-    )
+        },
+      )),
   )
   // ---------------------------------------------------------------------------
   // Login (rate limited: 5/15min)
@@ -1479,9 +1479,8 @@ export const authController = new Elysia({ prefix: "/auth" })
             email: t.String({ format: "email" }),
             password: t.String({ minLength: 1 }),
           }),
-        }
-      )
-    )
+        },
+      )),
   )
   // ---------------------------------------------------------------------------
   // Email Verification
@@ -1507,7 +1506,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       body: t.Object({
         token: t.String(),
       }),
-    }
+    },
   )
   // ---------------------------------------------------------------------------
   // Forgot Password (rate limited: 3/hour)
@@ -1528,9 +1527,8 @@ export const authController = new Elysia({ prefix: "/auth" })
           body: t.Object({
             email: t.String({ format: "email" }),
           }),
-        }
-      )
-    )
+        },
+      )),
   )
   // ---------------------------------------------------------------------------
   // Reset Password
@@ -1562,7 +1560,7 @@ export const authController = new Elysia({ prefix: "/auth" })
         token: t.String(),
         password: t.String({ minLength: 8 }),
       }),
-    }
+    },
   )
   // ---------------------------------------------------------------------------
   // Get Current User (protected)
@@ -1599,7 +1597,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       const result = await authService.changePassword(
         user.id,
         body.currentPassword,
-        body.newPassword
+        body.newPassword,
       );
 
       if (result.isErr()) {
@@ -1626,7 +1624,7 @@ export const authController = new Elysia({ prefix: "/auth" })
         currentPassword: t.String(),
         newPassword: t.String({ minLength: 8 }),
       }),
-    }
+    },
   );
 ```
 
@@ -1642,7 +1640,7 @@ const app = new Elysia()
     cors({
       origin: ["http://localhost:5173"],
       credentials: true,
-    })
+    }),
   )
   .get("/health", () => ({
     status: "ok",
@@ -1713,7 +1711,7 @@ import { FortyTwo } from "arctic";
 export const fortyTwo = new FortyTwo(
   process.env.INTRA_CLIENT_ID!,
   process.env.INTRA_CLIENT_SECRET!,
-  process.env.INTRA_REDIRECT_URI!
+  process.env.INTRA_REDIRECT_URI!,
 );
 
 // Scopes define what information we can access
@@ -1751,7 +1749,7 @@ export const authService = {
   handleOAuthCallback(
     code: string,
     storedState: string,
-    receivedState: string
+    receivedState: string,
   ): ResultAsync<
     { sessionId: string; user: SafeUser; isNewUser: boolean },
     OAuthError
@@ -1809,7 +1807,7 @@ export const authService = {
             // Link 42 account to existing user
             user = await authRepository.linkIntraAccount(
               existingByEmail.id,
-              intraId
+              intraId,
             );
           } else {
             // Create new user
@@ -1837,7 +1835,7 @@ export const authService = {
           isNewUser,
         });
       })(),
-      () => ({ type: "TOKEN_EXCHANGE_FAILED" as const })
+      () => ({ type: "TOKEN_EXCHANGE_FAILED" as const }),
     ).andThen((result) => result);
   },
 
@@ -1845,7 +1843,7 @@ export const authService = {
     userId: number,
     code: string,
     storedState: string,
-    receivedState: string
+    receivedState: string,
   ): ResultAsync<void, OAuthError> {
     return ResultAsync.fromPromise(
       (async () => {
@@ -1893,7 +1891,7 @@ export const authService = {
 
         return ok(undefined);
       })(),
-      () => ({ type: "TOKEN_EXCHANGE_FAILED" as const })
+      () => ({ type: "TOKEN_EXCHANGE_FAILED" as const }),
     ).andThen((result) => result);
   },
 };
@@ -2085,7 +2083,7 @@ const TOTP_ISSUER = "ft_transcendence";
 // Encryption for storing secrets at rest
 const ENCRYPTION_KEY = Buffer.from(
   process.env.TOTP_ENCRYPTION_KEY ?? randomBytes(32).toString("hex"),
-  "hex"
+  "hex",
 );
 const ENCRYPTION_ALGORITHM = "aes-256-gcm";
 

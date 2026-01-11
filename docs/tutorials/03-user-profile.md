@@ -158,7 +158,7 @@ export const users = pgTable(
   },
   (table) => ({
     emailIdx: index("users_email_idx").on(table.email),
-  })
+  }),
 );
 
 // =============================================================================
@@ -213,7 +213,7 @@ export const matches = pgTable(
     gameTypeIdx: index("matches_game_type_idx").on(table.gameType),
     // Index for chronological sorting
     createdAtIdx: index("matches_created_at_idx").on(table.createdAt),
-  })
+  }),
 );
 
 // =============================================================================
@@ -255,12 +255,12 @@ export const friendships = pgTable(
     // Each user pair should only have one friendship record
     uniqueFriendship: uniqueIndex("unique_friendship").on(
       table.userId,
-      table.friendId
+      table.friendId,
     ),
     // Index for finding a user's friends
     userIdx: index("friendships_user_idx").on(table.userId),
     friendIdx: index("friendships_friend_idx").on(table.friendId),
-  })
+  }),
 );
 
 // =============================================================================
@@ -397,7 +397,7 @@ export const usersRepository = {
 
   async updateProfile(
     id: number,
-    data: { displayName?: string; avatarUrl?: string }
+    data: { displayName?: string; avatarUrl?: string },
   ) {
     const [updated] = await db
       .update(users)
@@ -427,7 +427,7 @@ export const usersRepository = {
       gameType?: string;
       result?: "wins" | "losses" | "all";
       includeAi?: boolean;
-    } = {}
+    } = {},
   ) {
     const {
       limit = 10,
@@ -456,8 +456,8 @@ export const usersRepository = {
       conditions.push(
         and(
           sql`${matches.winnerId} IS NOT NULL`,
-          sql`${matches.winnerId} != ${userId}`
-        )
+          sql`${matches.winnerId} != ${userId}`,
+        ),
       );
     }
 
@@ -497,7 +497,7 @@ export const usersRepository = {
     // Build where clause
     const userMatchCondition = or(
       eq(matches.player1Id, userId),
-      eq(matches.player2Id, userId)
+      eq(matches.player2Id, userId),
     );
 
     const conditions = gameType
@@ -537,10 +537,9 @@ export const usersRepository = {
       losses: Number(stats.losses),
       draws: Number(stats.draws),
       aiGames: Number(stats.aiGames),
-      winRate:
-        stats.totalGames > 0
-          ? Math.round((Number(stats.wins) / Number(stats.totalGames)) * 100)
-          : 0,
+      winRate: stats.totalGames > 0
+        ? Math.round((Number(stats.wins) / Number(stats.totalGames)) * 100)
+        : 0,
       totalDuration: Number(stats.totalDuration),
       avgDuration: Math.round(Number(stats.avgDuration)),
     };
@@ -555,7 +554,7 @@ export const usersRepository = {
     const friendshipList = await db.query.friendships.findMany({
       where: and(
         or(eq(friendships.userId, userId), eq(friendships.friendId, userId)),
-        eq(friendships.status, "accepted")
+        eq(friendships.status, "accepted"),
       ),
       with: {
         user: {
@@ -576,7 +575,7 @@ export const usersRepository = {
     return db.query.friendships.findMany({
       where: and(
         eq(friendships.friendId, userId),
-        eq(friendships.status, "pending")
+        eq(friendships.status, "pending"),
       ),
       with: {
         user: {
@@ -590,7 +589,7 @@ export const usersRepository = {
     return db.query.friendships.findMany({
       where: and(
         eq(friendships.userId, userId),
-        eq(friendships.status, "pending")
+        eq(friendships.status, "pending"),
       ),
       with: {
         friend: {
@@ -604,7 +603,7 @@ export const usersRepository = {
     return db.query.friendships.findFirst({
       where: or(
         and(eq(friendships.userId, userId), eq(friendships.friendId, otherId)),
-        and(eq(friendships.userId, otherId), eq(friendships.friendId, userId))
+        and(eq(friendships.userId, otherId), eq(friendships.friendId, userId)),
       ),
     });
   },
@@ -624,7 +623,7 @@ export const usersRepository = {
 
   async updateFriendshipStatus(
     id: number,
-    status: "pending" | "accepted" | "blocked"
+    status: "pending" | "accepted" | "blocked",
   ) {
     const [updated] = await db
       .update(friendships)
@@ -707,7 +706,7 @@ export const usersService = {
   getPublicProfile(targetId: number): ResultAsync<PublicProfile, ProfileError> {
     return ResultAsync.fromPromise(
       usersRepository.findByIdPublic(targetId),
-      () => ({ type: "NOT_FOUND" as const })
+      () => ({ type: "NOT_FOUND" as const }),
     ).andThen((user) => {
       if (!user) {
         return err({ type: "NOT_FOUND" as const });
@@ -718,7 +717,7 @@ export const usersService = {
 
   updateProfile(
     userId: number,
-    data: { displayName?: string }
+    data: { displayName?: string },
   ): ResultAsync<PublicProfile, ProfileError> {
     return ResultAsync.fromPromise(
       (async () => {
@@ -738,7 +737,7 @@ export const usersService = {
 
         return usersRepository.findById(userId);
       })(),
-      () => ({ type: "NOT_FOUND" as const })
+      () => ({ type: "NOT_FOUND" as const }),
     ).andThen((user) => {
       if (!user) {
         return err({ type: "NOT_FOUND" as const });
@@ -753,7 +752,7 @@ export const usersService = {
 
   uploadAvatar(
     userId: number,
-    file: File
+    file: File,
   ): ResultAsync<{ avatarUrl: string }, AvatarError> {
     return ResultAsync.fromPromise(
       (async () => {
@@ -799,7 +798,7 @@ export const usersService = {
           return e as AvatarError;
         }
         return { type: "PROCESSING_FAILED" as const };
-      }
+      },
     );
   },
 
@@ -814,7 +813,7 @@ export const usersService = {
       offset?: number;
       gameType?: string;
       result?: "wins" | "losses" | "all";
-    }
+    },
   ) {
     // Cap limit to prevent abuse
     const limit = Math.min(options.limit ?? 10, 50);
@@ -826,7 +825,7 @@ export const usersService = {
         limit,
         offset,
       }),
-      () => ({ type: "NOT_FOUND" as const })
+      () => ({ type: "NOT_FOUND" as const }),
     );
   },
 
@@ -836,11 +835,11 @@ export const usersService = {
 
   getStats(
     userId: number,
-    gameType?: string
+    gameType?: string,
   ): ResultAsync<UserStats, ProfileError> {
     return ResultAsync.fromPromise(
       usersRepository.getStats(userId, gameType),
-      () => ({ type: "NOT_FOUND" as const })
+      () => ({ type: "NOT_FOUND" as const }),
     );
   },
 
@@ -850,7 +849,7 @@ export const usersService = {
 
   sendFriendRequest(
     userId: number,
-    targetId: number
+    targetId: number,
   ): ResultAsync<void, FriendError> {
     return ResultAsync.fromPromise(
       (async () => {
@@ -868,7 +867,7 @@ export const usersService = {
         // Check for existing relationship
         const existing = await usersRepository.getFriendshipBetween(
           userId,
-          targetId
+          targetId,
         );
         if (existing) {
           return err({ type: "ALREADY_EXISTS" as const });
@@ -878,13 +877,13 @@ export const usersService = {
         await usersRepository.createFriendRequest(userId, targetId);
         return ok(undefined);
       })(),
-      () => ({ type: "NOT_FOUND" as const })
+      () => ({ type: "NOT_FOUND" as const }),
     ).andThen((result) => result);
   },
 
   acceptFriendRequest(
     userId: number,
-    requestId: number
+    requestId: number,
   ): ResultAsync<void, FriendError> {
     return ResultAsync.fromPromise(
       (async () => {
@@ -910,13 +909,13 @@ export const usersService = {
         await usersRepository.updateFriendshipStatus(requestId, "accepted");
         return ok(undefined);
       })(),
-      () => ({ type: "NOT_FOUND" as const })
+      () => ({ type: "NOT_FOUND" as const }),
     ).andThen((result) => result);
   },
 
   rejectFriendRequest(
     userId: number,
-    requestId: number
+    requestId: number,
   ): ResultAsync<void, FriendError> {
     return ResultAsync.fromPromise(
       (async () => {
@@ -935,19 +934,19 @@ export const usersService = {
         await usersRepository.deleteFriendship(requestId);
         return ok(undefined);
       })(),
-      () => ({ type: "NOT_FOUND" as const })
+      () => ({ type: "NOT_FOUND" as const }),
     ).andThen((result) => result);
   },
 
   removeFriend(
     userId: number,
-    friendId: number
+    friendId: number,
   ): ResultAsync<void, FriendError> {
     return ResultAsync.fromPromise(
       (async () => {
         const friendship = await usersRepository.getFriendshipBetween(
           userId,
-          friendId
+          friendId,
         );
 
         if (!friendship || friendship.status !== "accepted") {
@@ -957,7 +956,7 @@ export const usersService = {
         await usersRepository.deleteFriendship(friendship.id);
         return ok(undefined);
       })(),
-      () => ({ type: "NOT_FOUND" as const })
+      () => ({ type: "NOT_FOUND" as const }),
     ).andThen((result) => result);
   },
 
@@ -970,7 +969,7 @@ export const usersService = {
 
         const existing = await usersRepository.getFriendshipBetween(
           userId,
-          targetId
+          targetId,
         );
 
         if (existing) {
@@ -987,7 +986,7 @@ export const usersService = {
 
         return ok(undefined);
       })(),
-      () => ({ type: "NOT_FOUND" as const })
+      () => ({ type: "NOT_FOUND" as const }),
     ).andThen((result) => result);
   },
 
@@ -1000,7 +999,7 @@ export const usersService = {
   getPendingRequests(userId: number) {
     return ResultAsync.fromPromise(
       usersRepository.getPendingRequests(userId),
-      () => ({ type: "NOT_FOUND" as const })
+      () => ({ type: "NOT_FOUND" as const }),
     );
   },
 };
@@ -1081,10 +1080,10 @@ export const usersController = new Elysia({ prefix: "/users" })
             minLength: 3,
             maxLength: 20,
             pattern: "^[a-zA-Z0-9 ]+$",
-          })
+          }),
         ),
       }),
-    }
+    },
   )
   // Upload avatar
   .post(
@@ -1115,7 +1114,7 @@ export const usersController = new Elysia({ prefix: "/users" })
           maxSize: 2 * 1024 * 1024, // 2MB
         }),
       }),
-    }
+    },
   )
   // Get own stats
   .get(
@@ -1133,7 +1132,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       query: t.Object({
         gameType: t.Optional(t.String()),
       }),
-    }
+    },
   )
   // Get own match history
   .get(
@@ -1158,10 +1157,10 @@ export const usersController = new Elysia({ prefix: "/users" })
         offset: t.Optional(t.Numeric({ minimum: 0 })),
         gameType: t.Optional(t.String()),
         result: t.Optional(
-          t.Union([t.Literal("wins"), t.Literal("losses"), t.Literal("all")])
+          t.Union([t.Literal("wins"), t.Literal("losses"), t.Literal("all")]),
         ),
       }),
-    }
+    },
   )
   // ---------------------------------------------------------------------------
   // Friend Management
@@ -1193,7 +1192,7 @@ export const usersController = new Elysia({ prefix: "/users" })
     async ({ params, user, error }) => {
       const result = await usersService.sendFriendRequest(
         user.id,
-        params.targetId
+        params.targetId,
       );
 
       if (result.isErr()) {
@@ -1216,7 +1215,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       params: t.Object({
         targetId: t.Numeric(),
       }),
-    }
+    },
   )
   // Accept friend request
   .post(
@@ -1224,7 +1223,7 @@ export const usersController = new Elysia({ prefix: "/users" })
     async ({ params, user, error }) => {
       const result = await usersService.acceptFriendRequest(
         user.id,
-        params.requestId
+        params.requestId,
       );
 
       if (result.isErr()) {
@@ -1237,7 +1236,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       params: t.Object({
         requestId: t.Numeric(),
       }),
-    }
+    },
   )
   // Reject friend request
   .delete(
@@ -1245,7 +1244,7 @@ export const usersController = new Elysia({ prefix: "/users" })
     async ({ params, user, error }) => {
       const result = await usersService.rejectFriendRequest(
         user.id,
-        params.requestId
+        params.requestId,
       );
 
       if (result.isErr()) {
@@ -1258,7 +1257,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       params: t.Object({
         requestId: t.Numeric(),
       }),
-    }
+    },
   )
   // Remove friend
   .delete(
@@ -1276,7 +1275,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       params: t.Object({
         friendId: t.Numeric(),
       }),
-    }
+    },
   )
   // Block user
   .post(
@@ -1294,7 +1293,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       params: t.Object({
         targetId: t.Numeric(),
       }),
-    }
+    },
   )
   // ---------------------------------------------------------------------------
   // Public Routes (viewing other users)
@@ -1316,7 +1315,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       params: t.Object({
         id: t.Numeric(),
       }),
-    }
+    },
   )
   // Get user's stats
   .get(
@@ -1337,7 +1336,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       query: t.Object({
         gameType: t.Optional(t.String()),
       }),
-    }
+    },
   )
   // Get user's match history
   .get(
@@ -1364,7 +1363,7 @@ export const usersController = new Elysia({ prefix: "/users" })
         offset: t.Optional(t.Numeric({ minimum: 0 })),
         gameType: t.Optional(t.String()),
       }),
-    }
+    },
   );
 ```
 

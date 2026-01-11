@@ -97,18 +97,18 @@ The decision will be confirmed by:
 
 **Types:**
 
-| Type       | Description                                      |
-| ---------- | ------------------------------------------------ |
-| `feat`     | New feature                                      |
-| `fix`      | Bug fix                                          |
-| `docs`     | Documentation only                               |
-| `style`    | Formatting, no code change                       |
-| `refactor` | Code change that neither fixes nor adds feature  |
-| `perf`     | Performance improvement                          |
-| `test`     | Adding or correcting tests                       |
-| `build`    | Build system or external dependencies            |
-| `ci`       | CI configuration                                 |
-| `chore`    | Other changes that don't modify src or test      |
+| Type       | Description                                     |
+| ---------- | ----------------------------------------------- |
+| `feat`     | New feature                                     |
+| `fix`      | Bug fix                                         |
+| `docs`     | Documentation only                              |
+| `style`    | Formatting, no code change                      |
+| `refactor` | Code change that neither fixes nor adds feature |
+| `perf`     | Performance improvement                         |
+| `test`     | Adding or correcting tests                      |
+| `build`    | Build system or external dependencies           |
+| `ci`       | CI configuration                                |
+| `chore`    | Other changes that don't modify src or test     |
 
 **Scope** (optional): Module or area affected (e.g., `api`, `web`, `auth`, `game`, `chat`)
 

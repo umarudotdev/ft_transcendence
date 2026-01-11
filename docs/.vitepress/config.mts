@@ -50,6 +50,18 @@ export default defineConfig({
             text: "004: Database Sessions",
             link: "/decisions/0004-use-database-sessions-with-arctic-oslo",
           },
+          {
+            text: "005: RFC 9457 Problem Details",
+            link: "/decisions/0005-use-rfc9457-problem-details-for-errors",
+          },
+          {
+            text: "006: Conventional Commits",
+            link: "/decisions/0006-use-conventional-commits-and-branches",
+          },
+          {
+            text: "007: GitHub Flow",
+            link: "/decisions/0007-use-github-flow-workflow",
+          },
         ],
       },
       {

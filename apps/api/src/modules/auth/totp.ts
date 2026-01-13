@@ -1,0 +1,112 @@
+import { encodeBase32 } from "@oslojs/encoding";
+import { createTOTPKeyURI, verifyTOTP } from "@oslojs/otp";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+
+// App name shown in authenticator
+const TOTP_ISSUER = "ft_transcendence";
+
+// TOTP settings (standard values)
+const TOTP_PERIOD_SECONDS = 30;
+const TOTP_DIGITS = 6;
+
+// Get encryption key from environment or generate a temporary one (for development)
+function getEncryptionKey(): Buffer {
+  const keyHex = process.env.TOTP_ENCRYPTION_KEY;
+  if (keyHex) {
+    const key = Buffer.from(keyHex, "hex");
+    if (key.length !== 32) {
+      throw new Error("TOTP_ENCRYPTION_KEY must be 32 bytes (64 hex chars)");
+    }
+    return key;
+  }
+  // For development - generate a temporary key (not secure for production)
+  console.warn(
+    "WARNING: Using temporary TOTP encryption key. Set TOTP_ENCRYPTION_KEY in production."
+  );
+  return randomBytes(32);
+}
+
+const ENCRYPTION_KEY = getEncryptionKey();
+const ENCRYPTION_ALGORITHM = "aes-256-gcm";
+
+/**
+ * Generate a new TOTP secret.
+ * Returns the raw secret (for storage) and the QR code URL.
+ */
+export function generateTotpSecret(userEmail: string): {
+  secret: Uint8Array;
+  keyUri: string;
+} {
+  // 20 bytes is standard for TOTP (160 bits)
+  const secret = randomBytes(20);
+
+  // Generate the otpauth:// URI for QR codes
+  const keyUri = createTOTPKeyURI(
+    TOTP_ISSUER,
+    userEmail,
+    secret,
+    TOTP_PERIOD_SECONDS,
+    TOTP_DIGITS
+  );
+
+  return { secret, keyUri };
+}
+
+/**
+ * Verify a TOTP code against a secret.
+ * Uses standard 30 second period and 6 digits.
+ */
+export function verifyTotpCode(secret: Uint8Array, code: string): boolean {
+  return verifyTOTP(secret, TOTP_PERIOD_SECONDS, TOTP_DIGITS, code);
+}
+
+/**
+ * Encrypt a TOTP secret for database storage.
+ */
+export function encryptSecret(secret: Uint8Array): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv(ENCRYPTION_ALGORITHM, ENCRYPTION_KEY, iv);
+
+  const encrypted = Buffer.concat([
+    cipher.update(Buffer.from(secret)),
+    cipher.final(),
+  ]);
+
+  const authTag = cipher.getAuthTag();
+
+  // Format: iv:authTag:encrypted (all base64)
+  return [
+    iv.toString("base64"),
+    authTag.toString("base64"),
+    encrypted.toString("base64"),
+  ].join(":");
+}
+
+/**
+ * Decrypt a TOTP secret from database storage.
+ */
+export function decryptSecret(encryptedSecret: string): Uint8Array {
+  const [ivB64, authTagB64, encryptedB64] = encryptedSecret.split(":");
+
+  const iv = Buffer.from(ivB64, "base64");
+  const authTag = Buffer.from(authTagB64, "base64");
+  const encrypted = Buffer.from(encryptedB64, "base64");
+
+  const decipher = createDecipheriv(ENCRYPTION_ALGORITHM, ENCRYPTION_KEY, iv);
+  decipher.setAuthTag(authTag);
+
+  const decrypted = Buffer.concat([
+    decipher.update(encrypted),
+    decipher.final(),
+  ]);
+
+  return new Uint8Array(decrypted);
+}
+
+/**
+ * Generate a base32-encoded secret for display to user.
+ * This is what they'd manually enter if they can't scan the QR.
+ */
+export function secretToBase32(secret: Uint8Array): string {
+  return encodeBase32(secret);
+}

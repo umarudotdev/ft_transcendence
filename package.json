@@ -10,6 +10,7 @@
     "dev:api": "bun run --filter '@ft/api' dev",
     "dev:web": "bun run --filter 'web' dev",
     "build": "bun run --filter './apps/*' build",
+    "build:api": "bun run --filter '@ft/api' build",
     "build:web": "bun run --filter 'web' build",
     "test": "bun run --filter './apps/*' test",
     "test:api": "bun run --filter '@ft/api' test",

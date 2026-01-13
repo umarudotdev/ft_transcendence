@@ -18,6 +18,7 @@
       "name": "@ft/api",
       "version": "1.0.50",
       "dependencies": {
+        "@elysiajs/cors": "^1.4.1",
         "elysia": "latest",
       },
       "devDependencies": {
@@ -125,6 +126,8 @@
     "@docsearch/js": ["@docsearch/js@4.4.0", "", { "dependencies": { "@docsearch/react": "4.4.0", "htm": "3.1.1" } }, "sha512-vCiKzjYD54bugUIMZA6YzuLDilkD3TNH/kfbvqsnzxiLTMu8F13psD+hdMSEOn7j+dFJOaf49fZ+gwr+rXctMw=="],
 
     "@docsearch/react": ["@docsearch/react@4.4.0", "", { "dependencies": { "@ai-sdk/react": "^2.0.30", "@algolia/autocomplete-core": "1.19.2", "@docsearch/core": "4.4.0", "@docsearch/css": "4.4.0", "ai": "^5.0.30", "algoliasearch": "^5.28.0", "marked": "^16.3.0", "zod": "^4.1.8" }, "peerDependencies": { "@types/react": ">= 16.8.0 < 20.0.0", "react": ">= 16.8.0 < 20.0.0", "react-dom": ">= 16.8.0 < 20.0.0", "search-insights": ">= 1 < 3" }, "optionalPeers": ["@types/react", "react", "react-dom", "search-insights"] }, "sha512-z12zeg1mV7WD4Ag4pKSuGukETJLaucVFwszDXL/qLaEgRqxEaVacO9SR1qqnCXvZztlvz2rt7cMqryi/7sKfjA=="],
+
+    "@elysiajs/cors": ["@elysiajs/cors@1.4.1", "", { "peerDependencies": { "elysia": ">= 1.4.0" } }, "sha512-lQfad+F3r4mNwsxRKbXyJB8Jg43oAOXjRwn7sKUL6bcOW3KjUqUimTS+woNpO97efpzjtDE0tEjGk9DTw8lqTQ=="],
 
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.27.2", "", { "os": "aix", "cpu": "ppc64" }, "sha512-GZMB+a0mOMZs4MpDbj8RJp4cw+w1WV5NYD6xzgvzUJ5Ek2jerwfO2eADyI6ExDSUED+1X8aMbegahsJi+8mgpw=="],
 

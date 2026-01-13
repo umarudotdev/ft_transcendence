@@ -1,3 +1,4 @@
+import cors from "@elysiajs/cors";
 import { Elysia } from "elysia";
 
 import { statusController } from "./modules/status/status.controller";
@@ -5,6 +6,7 @@ import { statusController } from "./modules/status/status.controller";
 const app = new Elysia({
   prefix: "/api",
 })
+  .use(cors())
   .use(statusController)
   .listen(3000);
 

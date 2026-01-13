@@ -3,11 +3,12 @@ import { Elysia } from "elysia";
 
 import { statusController } from "./modules/status/status.controller";
 
-const app = new Elysia({
-  prefix: "/api",
-})
+const app = new Elysia()
   .use(cors())
-  .use(statusController)
+  .get("/health", () => ({
+    status: "ok",
+  }))
+  .group("/api", (app) => app.use(statusController))
   .listen(3000);
 
 console.log(

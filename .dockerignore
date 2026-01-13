@@ -1,0 +1,48 @@
+# Dependencies
+node_modules
+apps/*/node_modules
+packages/*/node_modules
+
+# Build outputs
+.svelte-kit
+build
+dist
+.next
+.nuxt
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*
+compose*.yaml
+.dockerignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Docs
+docs
+*.md
+!README.md
+
+# Tests
+coverage
+.nyc_output
+*.test.ts
+*.spec.ts
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Misc
+.DS_Store
+*.log
+tmp

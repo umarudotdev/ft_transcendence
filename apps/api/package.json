@@ -4,13 +4,19 @@
   "module": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
+    "dev": "bun run --watch src/index.ts",
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.4.1",
-    "elysia": "latest"
+    "@sinclair/typebox": "^0.34.0",
+    "drizzle-orm": "^0.45.0",
+    "elysia": "^1.4.19",
+    "postgres": "^3.4.7"
   },
   "devDependencies": {
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "drizzle-kit": "^0.31.8"
   }
 }

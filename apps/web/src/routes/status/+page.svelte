@@ -27,7 +27,7 @@
     error = null;
 
     try {
-      const response = await api.status.get();
+      const response = await api.api.status.get();
 
       if (response.error) {
         error = "Failed to connect to API";

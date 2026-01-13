@@ -8,7 +8,7 @@ help: ## Show this help message
 	@echo ""
 	@awk '\
 		/^###/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } \
-		/^[a-zA-Z_-]+:.*##/ { split($$0, a, ":.*##"); printf "  \033[36m%-15s\033[0m %s\n", a[1], a[2] } \
+		/^[a-zA-Z_.-]+:.*##/ { split($$0, a, ":.*##"); printf "  \033[36m%-15s\033[0m %s\n", a[1], a[2] } \
 	' $(MAKEFILE_LIST)
 
 ### Development
@@ -22,15 +22,29 @@ dev: ## Start development servers (requires Docker for db)
 	docker compose up db -d
 	@echo "Waiting for database..."
 	@sleep 2
-	$(MAKE) -j2 dev-api dev-web
+	$(MAKE) -j2 dev.api dev.web
 
-.PHONY: dev-api
-dev-api: ## Start API development server
-	cd apps/api && bun run dev
+.PHONY: dev.api
+dev.api: ## Start API development server
+	bun run dev:api
 
-.PHONY: dev-web
-dev-web: ## Start web development server
-	cd apps/web && bun run dev
+.PHONY: dev.web
+dev.web: ## Start web development server
+	bun run dev:web
+
+### Build
+
+.PHONY: build.app
+build.app: ## Build all apps
+	bun run build
+
+.PHONY: build.api
+build.api: ## Build API
+	bun run --filter '@ft/api' build
+
+.PHONY: build.web
+build.web: ## Build web
+	bun run build:web
 
 ### Docker
 
@@ -38,8 +52,8 @@ dev-web: ## Start web development server
 up: ## Start all services with Docker Compose
 	docker compose up --build
 
-.PHONY: up-d
-up-d: ## Start all services in detached mode
+.PHONY: up.d
+up.d: ## Start all services in detached mode
 	docker compose up --build -d
 
 .PHONY: down
@@ -54,34 +68,34 @@ build: ## Build all Docker images
 logs: ## Follow logs from all services
 	docker compose logs -f
 
-.PHONY: logs-api
-logs-api: ## Follow API service logs
+.PHONY: logs.api
+logs.api: ## Follow API service logs
 	docker compose logs -f api
 
-.PHONY: logs-web
-logs-web: ## Follow web service logs
+.PHONY: logs.web
+logs.web: ## Follow web service logs
 	docker compose logs -f web
 
-.PHONY: logs-db
-logs-db: ## Follow database logs
+.PHONY: logs.db
+logs.db: ## Follow database logs
 	docker compose logs -f db
 
 ### Database
 
 .PHONY: migrate
 migrate: ## Apply database migrations
-	cd apps/api && DATABASE_URL=postgres://postgres:postgres@localhost:5432/ft_transcendence bun run migrate
+	DATABASE_URL=postgres://postgres:postgres@localhost:5432/ft_transcendence bun run db:migrate
 
 .PHONY: generate
 generate: ## Generate migration from schema changes
-	cd apps/api && DATABASE_URL=postgres://postgres:postgres@localhost:5432/ft_transcendence bun run generate
+	DATABASE_URL=postgres://postgres:postgres@localhost:5432/ft_transcendence bun run db:generate
 
-.PHONY: db-shell
-db-shell: ## Open PostgreSQL shell
+.PHONY: db.shell
+db.shell: ## Open PostgreSQL shell
 	docker compose exec db psql -U postgres -d ft_transcendence
 
-.PHONY: db-reset
-db-reset: ## Reset database (drop and recreate)
+.PHONY: db.reset
+db.reset: ## Reset database (drop and recreate)
 	docker compose down -v
 	docker compose up db -d
 	@echo "Waiting for database..."
@@ -92,34 +106,49 @@ db-reset: ## Reset database (drop and recreate)
 
 .PHONY: lint
 lint: ## Check code for linting issues
-	bun x ultracite check
+	bun run lint
 
 .PHONY: format
 format: ## Auto-format code
-	bun x ultracite fix
+	bun run lint:fix
+
+.PHONY: typecheck
+typecheck: ## Run all type checks
+	bun run typecheck
+
+.PHONY: typecheck.api
+typecheck.api: ## TypeScript check for API
+	bun run typecheck:api
+
+.PHONY: typecheck.web
+typecheck.web: ## Svelte check for web
+	bun run typecheck:web
 
 .PHONY: check
-check: ## Run all checks (lint + typecheck)
-	bun x ultracite check
-	cd apps/api && bun x tsc --noEmit
-	cd apps/web && bun run check
+check: lint typecheck ## Run all checks (lint + typecheck)
 
-.PHONY: check-api
-check-api: ## TypeScript check for API
-	cd apps/api && bun x tsc --noEmit
+### Testing
 
-.PHONY: check-web
-check-web: ## Svelte check for web
-	cd apps/web && bun run check
+.PHONY: test
+test: ## Run all tests
+	bun run test
+
+.PHONY: test.api
+test.api: ## Run API tests
+	bun run test:api
+
+.PHONY: test.web
+test.web: ## Run web tests
+	bun run test:web
 
 ### Shell Access
 
-.PHONY: api-shell
-api-shell: ## Open shell in API container
+.PHONY: shell.api
+shell.api: ## Open shell in API container
 	docker compose exec api sh
 
-.PHONY: web-shell
-web-shell: ## Open shell in web container
+.PHONY: shell.web
+shell.web: ## Open shell in web container
 	docker compose exec web sh
 
 ### Cleanup

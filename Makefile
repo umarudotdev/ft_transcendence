@@ -102,6 +102,10 @@ db.reset: ## Reset database (drop and recreate)
 	@sleep 3
 	$(MAKE) migrate
 
+.PHONY: db.studio
+db.studio: ## Open Drizzle Studio (database GUI)
+	cd apps/api && DATABASE_URL=postgres://postgres:postgres@localhost:5432/ft_transcendence bun run drizzle-kit studio
+
 ### Code Quality
 
 .PHONY: lint

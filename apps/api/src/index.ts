@@ -1,8 +1,10 @@
 import cors from "@elysiajs/cors";
+import { staticPlugin } from "@elysiajs/static";
 import { Elysia } from "elysia";
 
 import { authController } from "./modules/auth/auth.controller";
 import { statusController } from "./modules/status/status.controller";
+import { usersController } from "./modules/users/users.controller";
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
@@ -31,7 +33,15 @@ const app = new Elysia()
     status: "ok",
     timestamp: new Date().toISOString(),
   }))
-  .group("/api", (app) => app.use(statusController).use(authController))
+  .use(
+    staticPlugin({
+      assets: "uploads",
+      prefix: "/uploads",
+    })
+  )
+  .group("/api", (app) =>
+    app.use(statusController).use(authController).use(usersController)
+  )
   .listen(3000);
 
 console.log(

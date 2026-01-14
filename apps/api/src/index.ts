@@ -1,7 +1,9 @@
 import cors from "@elysiajs/cors";
+import { openapi } from "@elysiajs/openapi";
 import { staticPlugin } from "@elysiajs/static";
 import { Elysia } from "elysia";
 
+import { errorHandler } from "./common/plugins/error-handler";
 import { env } from "./env";
 import { authController } from "./modules/auth/auth.controller";
 import { statusController } from "./modules/status/status.controller";
@@ -14,6 +16,7 @@ const ALLOWED_ORIGINS = [
 ];
 
 const app = new Elysia()
+  .use(errorHandler)
   .use(
     cors({
       origin: ALLOWED_ORIGINS,
@@ -29,10 +32,23 @@ const app = new Elysia()
       maxAge: 86400, // 24 hours preflight cache
     })
   )
-  .get("/health", () => ({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-  }))
+  .use(
+    openapi({
+      documentation: {
+        info: {
+          title: "ft_transcendence API",
+          version: "1.0.0",
+          description:
+            "Real-time multiplayer Pong platform API with game, chat, and authentication features",
+        },
+        tags: [
+          { name: "auth", description: "Authentication endpoints" },
+          { name: "users", description: "User management endpoints" },
+          { name: "status", description: "Status and health endpoints" },
+        ],
+      },
+    })
+  )
   .use(
     staticPlugin({
       assets: "uploads",

@@ -1,5 +1,12 @@
 import { Elysia } from "elysia";
 
+import type { RateLimitProblem } from "../errors/problem-details";
+
+import { HttpStatus } from "../errors/error-types";
+import { rateLimited } from "../errors/problem-details-helper";
+
+const PROBLEM_JSON_CONTENT_TYPE = "application/problem+json";
+
 interface RateLimitConfig {
   max: number; // Maximum requests
   window: number; // Time window in milliseconds
@@ -11,9 +18,12 @@ interface RateLimitRecord {
 }
 
 class RateLimitError extends Error {
-  constructor(public retryAfter: number) {
+  public readonly problem: RateLimitProblem;
+
+  constructor(retryAfter: number, instance?: string) {
     super(`Too many requests. Retry after ${retryAfter} seconds.`);
     this.name = "RateLimitError";
+    this.problem = rateLimited(retryAfter, { instance });
   }
 }
 
@@ -29,13 +39,14 @@ const requestCounts = new Map<string, RateLimitRecord>();
 export function rateLimit(config: RateLimitConfig) {
   return new Elysia({ name: "rate-limit" })
     .error({ RATE_LIMIT: RateLimitError })
-    .onError(({ code, error, set }) => {
+    .onError(({ code, error, set, request }) => {
       if (code === "RATE_LIMIT") {
-        set.status = 429;
-        set.headers["Retry-After"] = String(error.retryAfter);
+        set.status = HttpStatus.TOO_MANY_REQUESTS;
+        set.headers["Content-Type"] = PROBLEM_JSON_CONTENT_TYPE;
+        set.headers["Retry-After"] = String(error.problem.retryAfter);
         return {
-          message: "Too many requests",
-          retryAfter: error.retryAfter,
+          ...error.problem,
+          instance: error.problem.instance ?? new URL(request.url).pathname,
         };
       }
     })
@@ -64,7 +75,7 @@ export function rateLimit(config: RateLimitConfig) {
       ctx.set.headers["X-RateLimit-Reset"] = String(resetSeconds);
 
       if (record.count > config.max) {
-        throw new RateLimitError(resetSeconds);
+        throw new RateLimitError(resetSeconds, url.pathname);
       }
 
       return {};

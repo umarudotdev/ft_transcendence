@@ -9,6 +9,7 @@ import type {
 } from "@api/modules/auth/auth.model";
 
 import { api } from "$lib/api";
+import { ApiError, createApiError } from "$lib/errors";
 import {
   createMutation,
   createQuery,
@@ -52,18 +53,15 @@ export type Verify2faSetupInput = TotpCodeBody;
  * Query to get the current authenticated user.
  */
 export function createMeQuery() {
-  return createQuery<User | null, Error>(() => ({
+  return createQuery<User | null, ApiError>(() => ({
     queryKey: authKeys.me(),
     queryFn: async () => {
       const response = await api.api.auth.me.get({
-        fetch: {
-          credentials: "include",
-        },
+        fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Failed to fetch user");
+        throw createApiError(response.error.value);
       }
 
       return response.data.user as User;
@@ -78,25 +76,14 @@ export function createMeQuery() {
 export function createRegisterMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, RegisterInput>(() => ({
+  return createMutation<unknown, ApiError, RegisterInput>(() => ({
     mutationFn: async (input: RegisterInput) => {
       const response = await api.api.auth.register.post(input, {
-        fetch: {
-          credentials: "include",
-        },
+        fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as {
-          message?: string;
-          requirements?: string[];
-        };
-        throw new Error(
-          errorValue.message ??
-            (errorValue.requirements
-              ? `Password requirements: ${errorValue.requirements.join(", ")}`
-              : "Registration failed")
-        );
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -113,17 +100,14 @@ export function createRegisterMutation() {
 export function createLoginMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<LoginResponse, Error, LoginInput>(() => ({
+  return createMutation<LoginResponse, ApiError, LoginInput>(() => ({
     mutationFn: async (input: LoginInput) => {
       const response = await api.api.auth.login.post(input, {
-        fetch: {
-          credentials: "include",
-        },
+        fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Login failed");
+        throw createApiError(response.error.value);
       }
 
       return response.data as LoginResponse;
@@ -142,17 +126,14 @@ export function createLoginMutation() {
 export function createVerify2faLoginMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, Verify2faInput>(() => ({
+  return createMutation<unknown, ApiError, Verify2faInput>(() => ({
     mutationFn: async (input: Verify2faInput) => {
       const response = await api.api.auth["2fa"].login.post(input, {
-        fetch: {
-          credentials: "include",
-        },
+        fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Invalid 2FA code");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -169,17 +150,14 @@ export function createVerify2faLoginMutation() {
 export function createLogoutMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, void>(() => ({
+  return createMutation<unknown, ApiError, void>(() => ({
     mutationFn: async () => {
       const response = await api.api.auth.logout.post(undefined, {
-        fetch: {
-          credentials: "include",
-        },
+        fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Logout failed");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -197,17 +175,14 @@ export function createLogoutMutation() {
 export function createLogoutAllMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, void>(() => ({
+  return createMutation<unknown, ApiError, void>(() => ({
     mutationFn: async () => {
       const response = await api.api.auth["logout-all"].post(undefined, {
-        fetch: {
-          credentials: "include",
-        },
+        fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Logout failed");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -225,20 +200,15 @@ export function createLogoutAllMutation() {
 export function createVerifyEmailMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, string>(() => ({
+  return createMutation<unknown, ApiError, string>(() => ({
     mutationFn: async (token: string) => {
       const response = await api.api.auth["verify-email"].post(
         { token },
-        {
-          fetch: {
-            credentials: "include",
-          },
-        }
+        { fetch: { credentials: "include" } }
       );
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Verification failed");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -253,20 +223,17 @@ export function createVerifyEmailMutation() {
  * Mutation to resend verification email.
  */
 export function createResendVerificationMutation() {
-  return createMutation<unknown, Error, void>(() => ({
+  return createMutation<unknown, ApiError, void>(() => ({
     mutationFn: async () => {
       const response = await api.api.auth["resend-verification"].post(
         undefined,
         {
-          fetch: {
-            credentials: "include",
-          },
+          fetch: { credentials: "include" },
         }
       );
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Failed to resend verification");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -278,17 +245,14 @@ export function createResendVerificationMutation() {
  * Mutation to request password reset.
  */
 export function createForgotPasswordMutation() {
-  return createMutation<unknown, Error, ForgotPasswordInput>(() => ({
+  return createMutation<unknown, ApiError, ForgotPasswordInput>(() => ({
     mutationFn: async (input: ForgotPasswordInput) => {
       const response = await api.api.auth["forgot-password"].post(input, {
-        fetch: {
-          credentials: "include",
-        },
+        fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Failed to send reset email");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -300,17 +264,14 @@ export function createForgotPasswordMutation() {
  * Mutation to reset password with token.
  */
 export function createResetPasswordMutation() {
-  return createMutation<unknown, Error, ResetPasswordInput>(() => ({
+  return createMutation<unknown, ApiError, ResetPasswordInput>(() => ({
     mutationFn: async (input: ResetPasswordInput) => {
       const response = await api.api.auth["reset-password"].post(input, {
-        fetch: {
-          credentials: "include",
-        },
+        fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Password reset failed");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -324,17 +285,14 @@ export function createResetPasswordMutation() {
 export function createChangePasswordMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, ChangePasswordInput>(() => ({
+  return createMutation<unknown, ApiError, ChangePasswordInput>(() => ({
     mutationFn: async (input: ChangePasswordInput) => {
       const response = await api.api.auth["change-password"].post(input, {
-        fetch: {
-          credentials: "include",
-        },
+        fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Password change failed");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -350,17 +308,14 @@ export function createChangePasswordMutation() {
  * Mutation to enable 2FA (step 1 - get QR code).
  */
 export function createEnable2faMutation() {
-  return createMutation<Enable2faResponse, Error, void>(() => ({
+  return createMutation<Enable2faResponse, ApiError, void>(() => ({
     mutationFn: async () => {
       const response = await api.api.auth["2fa"].enable.post(undefined, {
-        fetch: {
-          credentials: "include",
-        },
+        fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Failed to enable 2FA");
+        throw createApiError(response.error.value);
       }
 
       return response.data as Enable2faResponse;
@@ -374,17 +329,14 @@ export function createEnable2faMutation() {
 export function createVerify2faMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, Verify2faSetupInput>(() => ({
+  return createMutation<unknown, ApiError, Verify2faSetupInput>(() => ({
     mutationFn: async (input: Verify2faSetupInput) => {
       const response = await api.api.auth["2fa"].verify.post(input, {
-        fetch: {
-          credentials: "include",
-        },
+        fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Invalid code");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -401,17 +353,14 @@ export function createVerify2faMutation() {
 export function createDisable2faMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, Verify2faSetupInput>(() => ({
+  return createMutation<unknown, ApiError, Verify2faSetupInput>(() => ({
     mutationFn: async (input: Verify2faSetupInput) => {
       const response = await api.api.auth["2fa"].disable.post(input, {
-        fetch: {
-          credentials: "include",
-        },
+        fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Failed to disable 2FA");
+        throw createApiError(response.error.value);
       }
 
       return response.data;

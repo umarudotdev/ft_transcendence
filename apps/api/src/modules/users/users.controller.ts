@@ -2,8 +2,14 @@ import { Elysia } from "elysia";
 import { mkdir, unlink } from "node:fs/promises";
 import { join } from "node:path";
 
+import { badRequest, internalError, notFound } from "../../common/errors";
 import { authGuard } from "../../common/guards/auth.macro";
-import { UsersModel } from "./users.model";
+import {
+  UsersModel,
+  mapAvatarUploadError,
+  mapFriendshipError,
+  mapProfileUpdateError,
+} from "./users.model";
 import { UsersService } from "./users.service";
 
 const UPLOADS_DIR = join(process.cwd(), "uploads", "avatars");
@@ -15,37 +21,26 @@ export const usersController = new Elysia({ prefix: "/users" })
   .get("/me", async ({ user }) => {
     const result = await UsersService.getProfile(user.id);
 
-    if (result.isErr()) {
-      return { user: null };
-    }
-
-    return { user: result.value };
+    return result.match(
+      (profile) => ({ user: profile }),
+      () => ({ user: null })
+    );
   })
   .patch(
     "/me",
-    async ({ body, user, set }) => {
+    async ({ body, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const result = await UsersService.updateProfile(user.id, body);
 
-      if (result.isErr()) {
-        const err = result.error;
-
-        if (err.type === "USER_NOT_FOUND") {
-          set.status = 404;
-          return { message: "User not found" };
+      return result.match(
+        (profile) => ({ user: profile }),
+        (error) => {
+          const problem = mapProfileUpdateError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
         }
-
-        if (err.type === "INVALID_DISPLAY_NAME") {
-          set.status = 400;
-          return { message: err.message };
-        }
-
-        if (err.type === "DISPLAY_NAME_TAKEN") {
-          set.status = 409;
-          return { message: "Display name already taken" };
-        }
-      }
-
-      return { user: result.isOk() ? result.value : null };
+      );
     },
     {
       body: UsersModel.updateProfile,
@@ -53,32 +48,17 @@ export const usersController = new Elysia({ prefix: "/users" })
   )
   .post(
     "/me/avatar",
-    async ({ body, user, set }) => {
+    async ({ body, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const { file } = body;
 
       const validationResult = await UsersService.validateAvatarFile(file);
 
       if (validationResult.isErr()) {
-        const err = validationResult.error;
-
-        if (err.type === "INVALID_FILE_TYPE") {
-          set.status = 400;
-          return {
-            message: "Invalid file type",
-            allowed: err.allowed,
-          };
-        }
-
-        if (err.type === "FILE_TOO_LARGE") {
-          set.status = 400;
-          return {
-            message: "File too large",
-            maxSize: err.maxSize,
-          };
-        }
-
-        set.status = 500;
-        return { message: "Upload failed" };
+        const problem = mapAvatarUploadError(validationResult.error, instance);
+        set.status = problem.status;
+        set.headers["Content-Type"] = "application/problem+json";
+        return problem;
       }
 
       const extension = "webp";
@@ -111,15 +91,20 @@ export const usersController = new Elysia({ prefix: "/users" })
         avatarUrl
       );
 
-      if (updateResult.isErr()) {
-        set.status = 500;
-        return { message: "Failed to update avatar" };
-      }
-
-      return {
-        message: "Avatar uploaded successfully",
-        avatarUrl,
-      };
+      return updateResult.match(
+        () => ({
+          message: "Avatar uploaded successfully",
+          avatarUrl,
+        }),
+        () => {
+          const problem = internalError("Failed to update avatar", {
+            instance,
+          });
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
+        }
+      );
     },
     {
       body: UsersModel.uploadAvatar,
@@ -130,11 +115,10 @@ export const usersController = new Elysia({ prefix: "/users" })
     async ({ user, query }) => {
       const result = await UsersService.getStats(user.id, query.gameType);
 
-      if (result.isErr()) {
-        return { stats: null };
-      }
-
-      return { stats: result.value };
+      return result.match(
+        (stats) => ({ stats }),
+        () => ({ stats: null })
+      );
     },
     {
       query: UsersModel.statsQuery,
@@ -150,11 +134,10 @@ export const usersController = new Elysia({ prefix: "/users" })
         result: query.result,
       });
 
-      if (result.isErr()) {
-        return { matches: [], total: 0, hasMore: false };
-      }
-
-      return result.value;
+      return result.match(
+        (data) => data,
+        () => ({ matches: [], total: 0, hasMore: false })
+      );
     },
     {
       query: UsersModel.matchesQuery,
@@ -163,29 +146,26 @@ export const usersController = new Elysia({ prefix: "/users" })
   .get("/me/friends", async ({ user }) => {
     const result = await UsersService.getFriends(user.id);
 
-    if (result.isErr()) {
-      return { friends: [] };
-    }
-
-    return { friends: result.value };
+    return result.match(
+      (friends) => ({ friends }),
+      () => ({ friends: [] })
+    );
   })
   .get("/me/friends/pending", async ({ user }) => {
     const result = await UsersService.getPendingRequests(user.id);
 
-    if (result.isErr()) {
-      return { requests: [] };
-    }
-
-    return { requests: result.value };
+    return result.match(
+      (requests) => ({ requests }),
+      () => ({ requests: [] })
+    );
   })
   .get("/me/friends/sent", async ({ user }) => {
     const result = await UsersService.getSentRequests(user.id);
 
-    if (result.isErr()) {
-      return { requests: [] };
-    }
-
-    return { requests: result.value };
+    return result.match(
+      (requests) => ({ requests }),
+      () => ({ requests: [] })
+    );
   })
   .get(
     "/search",
@@ -196,11 +176,10 @@ export const usersController = new Elysia({ prefix: "/users" })
         query.limit
       );
 
-      if (result.isErr()) {
-        return { users: [] };
-      }
-
-      return { users: result.value };
+      return result.match(
+        (users) => ({ users }),
+        () => ({ users: [] })
+      );
     },
     {
       query: UsersModel.searchQuery,
@@ -208,14 +187,17 @@ export const usersController = new Elysia({ prefix: "/users" })
   )
   .get(
     "/:id",
-    async ({ params, user, set }) => {
+    async ({ params, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const userId = params.id;
 
       const result = await UsersService.getPublicProfile(userId);
 
       if (result.isErr() || !result.value) {
-        set.status = 404;
-        return { message: "User not found" };
+        const problem = notFound("User not found", { instance });
+        set.status = problem.status;
+        set.headers["Content-Type"] = "application/problem+json";
+        return problem;
       }
 
       const friendshipResult = await UsersService.getFriendshipStatus(
@@ -236,22 +218,24 @@ export const usersController = new Elysia({ prefix: "/users" })
   )
   .get(
     "/:id/stats",
-    async ({ params, query, set }) => {
+    async ({ params, query, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const userId = params.id;
 
       const userResult = await UsersService.getPublicProfile(userId);
       if (userResult.isErr() || !userResult.value) {
-        set.status = 404;
-        return { message: "User not found" };
+        const problem = notFound("User not found", { instance });
+        set.status = problem.status;
+        set.headers["Content-Type"] = "application/problem+json";
+        return problem;
       }
 
       const result = await UsersService.getStats(userId, query.gameType);
 
-      if (result.isErr()) {
-        return { stats: null };
-      }
-
-      return { stats: result.value };
+      return result.match(
+        (stats) => ({ stats }),
+        () => ({ stats: null })
+      );
     },
     {
       params: UsersModel.userIdParam,
@@ -260,13 +244,16 @@ export const usersController = new Elysia({ prefix: "/users" })
   )
   .get(
     "/:id/matches",
-    async ({ params, user, query, set }) => {
+    async ({ params, user, query, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const userId = params.id;
 
       const userResult = await UsersService.getPublicProfile(userId);
       if (userResult.isErr() || !userResult.value) {
-        set.status = 404;
-        return { message: "User not found" };
+        const problem = notFound("User not found", { instance });
+        set.status = problem.status;
+        set.headers["Content-Type"] = "application/problem+json";
+        return problem;
       }
 
       const result = await UsersService.getMatchHistory(userId, user.id, {
@@ -276,11 +263,10 @@ export const usersController = new Elysia({ prefix: "/users" })
         result: query.result,
       });
 
-      if (result.isErr()) {
-        return { matches: [], total: 0, hasMore: false };
-      }
-
-      return result.value;
+      return result.match(
+        (data) => data,
+        () => ({ matches: [], total: 0, hasMore: false })
+      );
     },
     {
       params: UsersModel.userIdParam,
@@ -289,44 +275,24 @@ export const usersController = new Elysia({ prefix: "/users" })
   )
   .post(
     "/:id/friend",
-    async ({ params, user, set }) => {
+    async ({ params, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const targetId = params.id;
 
       const result = await UsersService.sendFriendRequest(user.id, targetId);
 
-      if (result.isErr()) {
-        const err = result.error;
-
-        if (err.type === "USER_NOT_FOUND") {
-          set.status = 404;
-          return { message: "User not found" };
+      return result.match(
+        ({ requestId }) => ({
+          message: "Friend request sent",
+          requestId,
+        }),
+        (error) => {
+          const problem = mapFriendshipError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
         }
-
-        if (err.type === "CANNOT_FRIEND_SELF") {
-          set.status = 400;
-          return { message: "Cannot send friend request to yourself" };
-        }
-
-        if (err.type === "ALREADY_FRIENDS") {
-          set.status = 409;
-          return { message: "Already friends with this user" };
-        }
-
-        if (err.type === "REQUEST_PENDING") {
-          set.status = 409;
-          return { message: "Friend request already pending" };
-        }
-
-        if (err.type === "USER_BLOCKED") {
-          set.status = 403;
-          return { message: "Cannot send friend request" };
-        }
-      }
-
-      return {
-        message: "Friend request sent",
-        requestId: result.isOk() ? result.value.requestId : null,
-      };
+      );
     },
     {
       params: UsersModel.userIdParam,
@@ -334,21 +300,21 @@ export const usersController = new Elysia({ prefix: "/users" })
   )
   .delete(
     "/:id/friend",
-    async ({ params, user, set }) => {
+    async ({ params, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const targetId = params.id;
 
       const result = await UsersService.removeFriend(user.id, targetId);
 
-      if (result.isErr()) {
-        const err = result.error;
-
-        if (err.type === "NOT_FRIENDS") {
-          set.status = 404;
-          return { message: "Not friends with this user" };
+      return result.match(
+        () => ({ message: "Friend removed" }),
+        (error) => {
+          const problem = mapFriendshipError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
         }
-      }
-
-      return { message: "Friend removed" };
+      );
     },
     {
       params: UsersModel.userIdParam,
@@ -356,26 +322,28 @@ export const usersController = new Elysia({ prefix: "/users" })
   )
   .post(
     "/:id/block",
-    async ({ params, user, set }) => {
+    async ({ params, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const targetId = params.id;
 
       const result = await UsersService.blockUser(user.id, targetId);
 
-      if (result.isErr()) {
-        const err = result.error;
-
-        if (err.type === "USER_NOT_FOUND") {
-          set.status = 404;
-          return { message: "User not found" };
+      return result.match(
+        () => ({ message: "User blocked" }),
+        (error) => {
+          // Map CANNOT_FRIEND_SELF to "Cannot block yourself" for this context
+          if (error.type === "CANNOT_FRIEND_SELF") {
+            const problem = badRequest("Cannot block yourself", { instance });
+            set.status = problem.status;
+            set.headers["Content-Type"] = "application/problem+json";
+            return problem;
+          }
+          const problem = mapFriendshipError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
         }
-
-        if (err.type === "CANNOT_FRIEND_SELF") {
-          set.status = 400;
-          return { message: "Cannot block yourself" };
-        }
-      }
-
-      return { message: "User blocked" };
+      );
     },
     {
       params: UsersModel.userIdParam,
@@ -383,17 +351,21 @@ export const usersController = new Elysia({ prefix: "/users" })
   )
   .delete(
     "/:id/block",
-    async ({ params, user, set }) => {
+    async ({ params, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const targetId = params.id;
 
       const result = await UsersService.unblockUser(user.id, targetId);
 
-      if (result.isErr()) {
-        set.status = 404;
-        return { message: "User not blocked" };
-      }
-
-      return { message: "User unblocked" };
+      return result.match(
+        () => ({ message: "User unblocked" }),
+        () => {
+          const problem = notFound("User not blocked", { instance });
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
+        }
+      );
     },
     {
       params: UsersModel.userIdParam,
@@ -401,18 +373,22 @@ export const usersController = new Elysia({ prefix: "/users" })
   )
   .post(
     "/friends/requests/:requestId/accept",
-    async ({ params, user, set }) => {
+    async ({ params, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const result = await UsersService.acceptFriendRequest(
         user.id,
         params.requestId
       );
 
-      if (result.isErr()) {
-        set.status = 404;
-        return { message: "Friend request not found" };
-      }
-
-      return { message: "Friend request accepted" };
+      return result.match(
+        () => ({ message: "Friend request accepted" }),
+        () => {
+          const problem = notFound("Friend request not found", { instance });
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
+        }
+      );
     },
     {
       params: UsersModel.requestIdParam,
@@ -420,18 +396,22 @@ export const usersController = new Elysia({ prefix: "/users" })
   )
   .post(
     "/friends/requests/:requestId/reject",
-    async ({ params, user, set }) => {
+    async ({ params, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const result = await UsersService.rejectFriendRequest(
         user.id,
         params.requestId
       );
 
-      if (result.isErr()) {
-        set.status = 404;
-        return { message: "Friend request not found" };
-      }
-
-      return { message: "Friend request rejected" };
+      return result.match(
+        () => ({ message: "Friend request rejected" }),
+        () => {
+          const problem = notFound("Friend request not found", { instance });
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
+        }
+      );
     },
     {
       params: UsersModel.requestIdParam,

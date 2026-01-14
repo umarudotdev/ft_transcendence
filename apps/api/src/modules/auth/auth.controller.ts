@@ -1,9 +1,21 @@
 import { Elysia } from "elysia";
 
+import {
+  HttpStatus,
+  badRequest,
+  serviceUnavailable,
+} from "../../common/errors";
 import { authGuard } from "../../common/guards/auth.macro";
 import { rateLimit } from "../../common/plugins/rate-limit";
 import { env } from "../../env";
-import { AuthModel } from "./auth.model";
+import {
+  AuthModel,
+  mapLoginError,
+  mapPasswordError,
+  mapRegisterError,
+  mapTokenError,
+  mapTotpError,
+} from "./auth.model";
 import { AuthService } from "./auth.service";
 
 const isProduction = env.NODE_ENV === "production";
@@ -28,30 +40,23 @@ export const authController = new Elysia({ prefix: "/auth" })
   .group("", (app) =>
     app.use(rateLimit({ max: 3, window: 60 * 60 * 1000 })).post(
       "/register",
-      async ({ body, set }) => {
+      async ({ body, request, set }) => {
+        const instance = new URL(request.url).pathname;
         const result = await AuthService.register(body);
 
-        if (result.isErr()) {
-          const err = result.error;
-          if (err.type === "EMAIL_EXISTS") {
-            set.status = 409;
-            return { message: "Email already registered" };
+        return result.match(
+          ({ user, verificationToken }) => ({
+            message: "Registration successful. Please verify your email.",
+            user,
+            verificationToken: !isProduction ? verificationToken : undefined,
+          }),
+          (error) => {
+            const problem = mapRegisterError(error, instance);
+            set.status = problem.status;
+            set.headers["Content-Type"] = "application/problem+json";
+            return problem;
           }
-
-          set.status = 400;
-          return {
-            message: "Password too weak",
-            requirements: err.requirements,
-          };
-        }
-
-        const { user, verificationToken } = result.value;
-        return {
-          message: "Registration successful. Please verify your email.",
-          user,
-
-          verificationToken: !isProduction ? verificationToken : undefined,
-        };
+        );
       },
       {
         body: AuthModel.register,
@@ -61,52 +66,48 @@ export const authController = new Elysia({ prefix: "/auth" })
   .group("", (app) =>
     app.use(rateLimit({ max: 5, window: 15 * 60 * 1000 })).post(
       "/login",
-      async ({ body, cookie, set }) => {
+      async ({ body, cookie, request, set }) => {
+        const instance = new URL(request.url).pathname;
         const result = await AuthService.login(body.email, body.password);
 
-        if (result.isErr()) {
-          const err = result.error;
-          if (err.type === "INVALID_CREDENTIALS") {
-            set.status = 401;
-            return { message: "Invalid email or password" };
-          }
-          if (err.type === "EMAIL_NOT_VERIFIED") {
-            set.status = 403;
-            return { message: "Please verify your email before logging in" };
-          }
-          if (err.type === "ACCOUNT_LOCKED") {
-            set.status = 423;
+        return result.match(
+          ({ sessionId, user }) => {
+            cookie.session.set({
+              value: sessionId,
+              ...SESSION_COOKIE_OPTIONS,
+            });
             return {
-              message: "Account locked due to too many failed attempts",
-              unlockAt: err.unlockAt.toISOString(),
+              message: "Login successful",
+              user,
             };
+          },
+          (error) => {
+            // Handle 2FA flow separately - it's not an error
+            if (error.type === "REQUIRES_2FA") {
+              cookie.pending_2fa.set({
+                value: String(error.userId),
+                httpOnly: true,
+                secure: isProduction,
+                sameSite: "lax",
+                path: "/",
+                maxAge: 5 * 60,
+              });
+              return {
+                message: "2FA required",
+                requires2fa: true,
+              };
+            }
+
+            const problem = mapLoginError(error, instance);
+            if (problem) {
+              set.status = problem.status;
+              set.headers["Content-Type"] = "application/problem+json";
+              return problem;
+            }
+            // Should never reach here due to exhaustive switch
+            return { message: "Unknown error" };
           }
-
-          cookie.pending_2fa.set({
-            value: String(err.userId),
-            httpOnly: true,
-            secure: isProduction,
-            sameSite: "lax",
-            path: "/",
-            maxAge: 5 * 60,
-          });
-          return {
-            message: "2FA required",
-            requires2fa: true,
-          };
-        }
-
-        const { sessionId, user } = result.value;
-
-        cookie.session.set({
-          value: sessionId,
-          ...SESSION_COOKIE_OPTIONS,
-        });
-
-        return {
-          message: "Login successful",
-          user,
-        };
+        );
       },
       {
         body: AuthModel.login,
@@ -116,41 +117,46 @@ export const authController = new Elysia({ prefix: "/auth" })
   .group("", (app) =>
     app.use(rateLimit({ max: 5, window: 15 * 60 * 1000 })).post(
       "/2fa/login",
-      async ({ body, cookie, set }) => {
+      async ({ body, cookie, request, set }) => {
+        const instance = new URL(request.url).pathname;
         const pendingUserId = cookie.pending_2fa?.value;
 
         if (!pendingUserId) {
-          set.status = 400;
-          return { message: "No pending 2FA session" };
+          set.status = HttpStatus.BAD_REQUEST;
+          set.headers["Content-Type"] = "application/problem+json";
+          return badRequest("No pending 2FA session", { instance });
         }
 
         const userId = Number.parseInt(String(pendingUserId), 10);
         if (Number.isNaN(userId)) {
           cookie.pending_2fa.remove();
-          set.status = 400;
-          return { message: "Invalid 2FA session" };
+          set.status = HttpStatus.BAD_REQUEST;
+          set.headers["Content-Type"] = "application/problem+json";
+          return badRequest("Invalid 2FA session", { instance });
         }
 
         const result = await AuthService.loginWith2fa(userId, body.code);
 
         cookie.pending_2fa.remove();
 
-        if (result.isErr()) {
-          set.status = 400;
-          return { message: "Invalid 2FA code" };
-        }
-
-        const { sessionId, user } = result.value;
-
-        cookie.session.set({
-          value: sessionId,
-          ...SESSION_COOKIE_OPTIONS,
-        });
-
-        return {
-          message: "Login successful",
-          user,
-        };
+        return result.match(
+          ({ sessionId, user }) => {
+            cookie.session.set({
+              value: sessionId,
+              ...SESSION_COOKIE_OPTIONS,
+            });
+            return {
+              message: "Login successful",
+              user,
+            };
+          },
+          (error) => {
+            const problem = mapTotpError(error, instance);
+            set.status = problem.status;
+            set.headers["Content-Type"] = "application/problem+json";
+            return problem;
+          }
+        );
       },
       {
         body: AuthModel.totpCode,
@@ -159,21 +165,19 @@ export const authController = new Elysia({ prefix: "/auth" })
   )
   .post(
     "/verify-email",
-    async ({ body, set }) => {
+    async ({ body, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const result = await AuthService.verifyEmail(body.token);
 
-      if (result.isErr()) {
-        const err = result.error;
-        set.status = 400;
-        if (err.type === "INVALID_TOKEN") {
-          return { message: "Invalid verification token" };
+      return result.match(
+        () => ({ message: "Email verified successfully" }),
+        (error) => {
+          const problem = mapTokenError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
         }
-        if (err.type === "EXPIRED_TOKEN") {
-          return { message: "Verification token has expired" };
-        }
-      }
-
-      return { message: "Email verified successfully" };
+      );
     },
     {
       body: AuthModel.verifyEmail,
@@ -203,42 +207,49 @@ export const authController = new Elysia({ prefix: "/auth" })
   .group("", (app) =>
     app.use(rateLimit({ max: 5, window: 60 * 60 * 1000 })).post(
       "/reset-password",
-      async ({ body, set }) => {
+      async ({ body, request, set }) => {
+        const instance = new URL(request.url).pathname;
         const result = await AuthService.resetPassword(
           body.token,
           body.password
         );
 
-        if (result.isErr()) {
-          const err = result.error;
-          set.status = 400;
-          if (err.type === "INVALID_TOKEN") {
-            return { message: "Invalid or expired reset token" };
+        return result.match(
+          () => ({ message: "Password reset successfully" }),
+          (error) => {
+            // Handle token errors and password errors
+            if (
+              error.type === "INVALID_TOKEN" ||
+              error.type === "EXPIRED_TOKEN"
+            ) {
+              const problem = mapTokenError(error, instance);
+              set.status = problem.status;
+              set.headers["Content-Type"] = "application/problem+json";
+              return problem;
+            }
+            const problem = mapPasswordError(
+              error as { type: "WEAK_PASSWORD"; requirements: string[] },
+              instance
+            );
+            set.status = problem.status;
+            set.headers["Content-Type"] = "application/problem+json";
+            return problem;
           }
-          if (err.type === "EXPIRED_TOKEN") {
-            return { message: "Reset token has expired" };
-          }
-          if (err.type === "WEAK_PASSWORD") {
-            return {
-              message: "Password too weak",
-              requirements: err.requirements,
-            };
-          }
-        }
-
-        return { message: "Password reset successfully" };
+        );
       },
       {
         body: AuthModel.resetPassword,
       }
     )
   )
-  .get("/42", ({ cookie, set }) => {
+  .get("/42", ({ cookie, request, set }) => {
+    const instance = new URL(request.url).pathname;
     const result = AuthService.generateOAuthUrl();
 
     if (!result) {
-      set.status = 503;
-      return { message: "OAuth is not configured" };
+      set.status = HttpStatus.SERVICE_UNAVAILABLE;
+      set.headers["Content-Type"] = "application/problem+json";
+      return serviceUnavailable("OAuth is not configured", { instance });
     }
 
     const { url, state } = result;
@@ -271,26 +282,24 @@ export const authController = new Elysia({ prefix: "/auth" })
         state
       );
 
-      if (result.isErr()) {
-        const err = result.error;
+      return result.match(
+        ({ sessionId, isNewUser }) => {
+          cookie.session.set({
+            value: sessionId,
+            ...SESSION_COOKIE_OPTIONS,
+          });
 
-        set.redirect = `${env.FRONTEND_URL}/auth/login?error=${err.type.toLowerCase()}`;
-        return { message: "Redirecting with error" };
-      }
-
-      const { sessionId, isNewUser } = result.value;
-
-      cookie.session.set({
-        value: sessionId,
-        ...SESSION_COOKIE_OPTIONS,
-      });
-
-      const redirectUrl = isNewUser
-        ? `${env.FRONTEND_URL}/welcome`
-        : `${env.FRONTEND_URL}/`;
-
-      set.redirect = redirectUrl;
-      return { message: "Redirecting to app" };
+          const redirectUrl = isNewUser
+            ? `${env.FRONTEND_URL}/welcome`
+            : `${env.FRONTEND_URL}/`;
+          set.redirect = redirectUrl;
+          return { message: "Redirecting to app" };
+        },
+        (error) => {
+          set.redirect = `${env.FRONTEND_URL}/auth/login?error=${error.type.toLowerCase()}`;
+          return { message: "Redirecting with error" };
+        }
+      );
     },
     {
       query: AuthModel.oauthCallback,
@@ -326,46 +335,41 @@ export const authController = new Elysia({ prefix: "/auth" })
   })
   .post(
     "/change-password",
-    async ({ body, user, cookie, set }) => {
+    async ({ body, user, cookie, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const result = await AuthService.changePassword(
         user.id,
         body.currentPassword,
         body.newPassword
       );
 
-      if (result.isErr()) {
-        const err = result.error;
-        if (err.type === "INCORRECT_PASSWORD") {
-          set.status = 401;
-          return { message: "Current password is incorrect" };
-        }
-        if (err.type === "WEAK_PASSWORD") {
-          set.status = 400;
+      return result.match(
+        () => {
+          cookie.session.remove();
           return {
-            message: "New password too weak",
-            requirements: err.requirements,
+            message: "Password changed successfully. Please log in again.",
           };
+        },
+        (error) => {
+          const problem = mapPasswordError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
         }
-        if (err.type === "SAME_AS_CURRENT") {
-          set.status = 400;
-          return { message: "New password must be different from current" };
-        }
-      }
-
-      cookie.session.remove();
-
-      return { message: "Password changed successfully. Please log in again." };
+      );
     },
     {
       body: AuthModel.changePassword,
     }
   )
-  .get("/42/link", ({ cookie, set }) => {
+  .get("/42/link", ({ cookie, request, set }) => {
+    const instance = new URL(request.url).pathname;
     const result = AuthService.generateOAuthUrl();
 
     if (!result) {
-      set.status = 503;
-      return { message: "OAuth is not configured" };
+      set.status = HttpStatus.SERVICE_UNAVAILABLE;
+      set.headers["Content-Type"] = "application/problem+json";
+      return serviceUnavailable("OAuth is not configured", { instance });
     }
 
     const { url, state } = result;
@@ -402,58 +406,54 @@ export const authController = new Elysia({ prefix: "/auth" })
         state
       );
 
-      if (result.isErr()) {
-        const err = result.error;
-        set.redirect = `${env.FRONTEND_URL}/settings/security?error=${err.type.toLowerCase()}`;
-        return { message: "Redirecting with error" };
-      }
-
-      set.redirect = `${env.FRONTEND_URL}/settings/security?success=42_linked`;
-      return { message: "Redirecting to settings" };
+      return result.match(
+        () => {
+          set.redirect = `${env.FRONTEND_URL}/settings/security?success=42_linked`;
+          return { message: "Redirecting to settings" };
+        },
+        (error) => {
+          set.redirect = `${env.FRONTEND_URL}/settings/security?error=${error.type.toLowerCase()}`;
+          return { message: "Redirecting with error" };
+        }
+      );
     },
     {
       query: AuthModel.oauthCallback,
     }
   )
-  .post("/2fa/enable", async ({ user, set }) => {
+  .post("/2fa/enable", async ({ user, request, set }) => {
+    const instance = new URL(request.url).pathname;
     const result = await AuthService.enableTotp(user.id);
 
-    if (result.isErr()) {
-      const err = result.error;
-      if (err.type === "ALREADY_ENABLED") {
-        set.status = 409;
-        return { message: "2FA is already enabled" };
+    return result.match(
+      ({ qrCodeUrl, secret }) => ({
+        message: "Scan the QR code with your authenticator app",
+        qrCodeUrl,
+        secret,
+      }),
+      (error) => {
+        const problem = mapTotpError(error, instance);
+        set.status = problem.status;
+        set.headers["Content-Type"] = "application/problem+json";
+        return problem;
       }
-      set.status = 400;
-      return { message: "Failed to enable 2FA" };
-    }
-
-    return {
-      message: "Scan the QR code with your authenticator app",
-      qrCodeUrl: result.value.qrCodeUrl,
-      secret: result.value.secret,
-    };
+    );
   })
   .post(
     "/2fa/verify",
-    async ({ body, user, set }) => {
+    async ({ body, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const result = await AuthService.confirmTotp(user.id, body.code);
 
-      if (result.isErr()) {
-        const err = result.error;
-        if (err.type === "INVALID_CODE") {
-          set.status = 400;
-          return { message: "Invalid verification code" };
+      return result.match(
+        () => ({ message: "2FA enabled successfully" }),
+        (error) => {
+          const problem = mapTotpError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
         }
-        if (err.type === "ALREADY_ENABLED") {
-          set.status = 409;
-          return { message: "2FA is already enabled" };
-        }
-        set.status = 400;
-        return { message: "Failed to confirm 2FA" };
-      }
-
-      return { message: "2FA enabled successfully" };
+      );
     },
     {
       body: AuthModel.totpCode,
@@ -461,22 +461,19 @@ export const authController = new Elysia({ prefix: "/auth" })
   )
   .post(
     "/2fa/disable",
-    async ({ body, user, set }) => {
+    async ({ body, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
       const result = await AuthService.disableTotp(user.id, body.code);
 
-      if (result.isErr()) {
-        const err = result.error;
-        if (err.type === "INVALID_CODE") {
-          set.status = 400;
-          return { message: "Invalid verification code" };
+      return result.match(
+        () => ({ message: "2FA disabled successfully" }),
+        (error) => {
+          const problem = mapTotpError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
         }
-        if (err.type === "NOT_ENABLED") {
-          set.status = 400;
-          return { message: "2FA is not enabled" };
-        }
-      }
-
-      return { message: "2FA disabled successfully" };
+      );
     },
     {
       body: AuthModel.totpCode,

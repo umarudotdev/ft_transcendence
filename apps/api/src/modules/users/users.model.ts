@@ -1,5 +1,13 @@
 import { t } from "elysia";
 
+import {
+  badRequest,
+  conflict,
+  internalError,
+  notFound,
+  validationError,
+} from "../../common/errors";
+
 export const UsersModel = {
   updateProfile: t.Object({
     displayName: t.Optional(t.String({ minLength: 3, maxLength: 20 })),
@@ -170,3 +178,85 @@ export type ProfileUpdateError =
   (typeof UsersModel.profileUpdateError)["static"];
 export type AvatarUploadError = (typeof UsersModel.avatarUploadError)["static"];
 export type FriendshipError = (typeof UsersModel.friendshipError)["static"];
+
+/**
+ * Maps profile update errors to RFC 9457 Problem Details.
+ */
+export function mapProfileUpdateError(
+  error: ProfileUpdateError,
+  instance: string
+) {
+  switch (error.type) {
+    case "USER_NOT_FOUND":
+      return notFound("User not found", { instance });
+    case "INVALID_DISPLAY_NAME":
+      return validationError(
+        error.message,
+        [{ field: "displayName", message: error.message }],
+        {
+          instance,
+        }
+      );
+    case "DISPLAY_NAME_TAKEN":
+      return conflict("Display name already taken", { instance });
+  }
+}
+
+/**
+ * Maps avatar upload errors to RFC 9457 Problem Details.
+ */
+export function mapAvatarUploadError(
+  error: AvatarUploadError,
+  instance: string
+) {
+  switch (error.type) {
+    case "USER_NOT_FOUND":
+      return notFound("User not found", { instance });
+    case "INVALID_FILE_TYPE":
+      return validationError(
+        `Invalid file type. Allowed: ${error.allowed.join(", ")}`,
+        [
+          {
+            field: "file",
+            message: `Allowed types: ${error.allowed.join(", ")}`,
+          },
+        ],
+        { instance }
+      );
+    case "FILE_TOO_LARGE":
+      return validationError(
+        `File too large. Maximum size: ${error.maxSize} bytes`,
+        [
+          {
+            field: "file",
+            message: `Maximum size: ${Math.round(error.maxSize / 1024 / 1024)}MB`,
+          },
+        ],
+        { instance }
+      );
+    case "UPLOAD_FAILED":
+      return internalError("Failed to upload avatar", { instance });
+  }
+}
+
+/**
+ * Maps friendship errors to RFC 9457 Problem Details.
+ */
+export function mapFriendshipError(error: FriendshipError, instance: string) {
+  switch (error.type) {
+    case "USER_NOT_FOUND":
+      return notFound("User not found", { instance });
+    case "CANNOT_FRIEND_SELF":
+      return badRequest("Cannot send friend request to yourself", { instance });
+    case "ALREADY_FRIENDS":
+      return conflict("Already friends with this user", { instance });
+    case "REQUEST_PENDING":
+      return conflict("Friend request already pending", { instance });
+    case "USER_BLOCKED":
+      return badRequest("Cannot interact with blocked user", { instance });
+    case "NOT_FRIENDS":
+      return badRequest("Not friends with this user", { instance });
+    case "REQUEST_NOT_FOUND":
+      return notFound("Friend request not found", { instance });
+  }
+}

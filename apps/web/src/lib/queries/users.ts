@@ -9,6 +9,7 @@ import type {
 } from "@api/modules/users/users.model";
 
 import { api } from "$lib/api";
+import { ApiError, createApiError } from "$lib/errors";
 import {
   createMutation,
   createQuery,
@@ -51,7 +52,7 @@ export type FriendshipStatus =
   | "blocked_by";
 
 export function createMyStatsQuery(gameType?: string) {
-  return createQuery<UserStats | null, Error>(() => ({
+  return createQuery<UserStats | null, ApiError>(() => ({
     queryKey: usersKeys.stats(0, gameType),
     queryFn: async () => {
       const response = await api.api.users.me.stats.get({
@@ -60,7 +61,7 @@ export function createMyStatsQuery(gameType?: string) {
       });
 
       if (response.error) {
-        throw new Error("Failed to fetch stats");
+        throw createApiError(response.error.value);
       }
 
       return response.data.stats as UserStats | null;
@@ -76,7 +77,7 @@ export function createMyMatchesQuery(params?: {
 }) {
   return createQuery<
     { matches: MatchHistoryItem[]; total: number; hasMore: boolean },
-    Error
+    ApiError
   >(() => ({
     queryKey: usersKeys.matches(0, params),
     queryFn: async () => {
@@ -86,7 +87,7 @@ export function createMyMatchesQuery(params?: {
       });
 
       if (response.error) {
-        throw new Error("Failed to fetch matches");
+        throw createApiError(response.error.value);
       }
 
       const data = response.data as {
@@ -108,7 +109,7 @@ export function createMyMatchesQuery(params?: {
 }
 
 export function createFriendsQuery() {
-  return createQuery<Friend[], Error>(() => ({
+  return createQuery<Friend[], ApiError>(() => ({
     queryKey: usersKeys.friends(),
     queryFn: async () => {
       const response = await api.api.users.me.friends.get({
@@ -116,7 +117,7 @@ export function createFriendsQuery() {
       });
 
       if (response.error) {
-        throw new Error("Failed to fetch friends");
+        throw createApiError(response.error.value);
       }
 
       const data = response.data as { friends: Friend[] };
@@ -129,7 +130,7 @@ export function createFriendsQuery() {
 }
 
 export function createPendingRequestsQuery() {
-  return createQuery<FriendRequest[], Error>(() => ({
+  return createQuery<FriendRequest[], ApiError>(() => ({
     queryKey: usersKeys.pendingRequests(),
     queryFn: async () => {
       const response = await api.api.users.me.friends.pending.get({
@@ -137,7 +138,7 @@ export function createPendingRequestsQuery() {
       });
 
       if (response.error) {
-        throw new Error("Failed to fetch pending requests");
+        throw createApiError(response.error.value);
       }
 
       const data = response.data as { requests: FriendRequest[] };
@@ -150,7 +151,7 @@ export function createPendingRequestsQuery() {
 }
 
 export function createSentRequestsQuery() {
-  return createQuery<SentRequest[], Error>(() => ({
+  return createQuery<SentRequest[], ApiError>(() => ({
     queryKey: usersKeys.sentRequests(),
     queryFn: async () => {
       const response = await api.api.users.me.friends.sent.get({
@@ -158,7 +159,7 @@ export function createSentRequestsQuery() {
       });
 
       if (response.error) {
-        throw new Error("Failed to fetch sent requests");
+        throw createApiError(response.error.value);
       }
 
       const data = response.data as { requests: SentRequest[] };
@@ -173,7 +174,7 @@ export function createSentRequestsQuery() {
 export function createUserProfileQuery(userId: number) {
   return createQuery<
     { user: PublicUser; friendshipStatus: FriendshipStatus } | null,
-    Error
+    ApiError
   >(() => ({
     queryKey: usersKeys.profile(userId),
     queryFn: async () => {
@@ -203,7 +204,7 @@ export function createUserProfileQuery(userId: number) {
 }
 
 export function createUserStatsQuery(userId: number, gameType?: string) {
-  return createQuery<UserStats | null, Error>(() => ({
+  return createQuery<UserStats | null, ApiError>(() => ({
     queryKey: usersKeys.stats(userId, gameType),
     queryFn: async () => {
       const response = await api.api.users({ id: userId }).stats.get({
@@ -215,7 +216,8 @@ export function createUserStatsQuery(userId: number, gameType?: string) {
         return null;
       }
 
-      return response.data.stats as UserStats | null;
+      const data = response.data as { stats: UserStats | null };
+      return data.stats;
     },
     enabled: userId > 0,
   }));
@@ -232,7 +234,7 @@ export function createUserMatchesQuery(
 ) {
   return createQuery<
     { matches: MatchHistoryItem[]; total: number; hasMore: boolean },
-    Error
+    ApiError
   >(() => ({
     queryKey: usersKeys.matches(userId, params),
     queryFn: async () => {
@@ -242,7 +244,7 @@ export function createUserMatchesQuery(
       });
 
       if (response.error) {
-        throw new Error("Failed to fetch matches");
+        throw createApiError(response.error.value);
       }
 
       const data = response.data as {
@@ -267,7 +269,7 @@ export function createUserMatchesQuery(
 export function createSearchUsersQuery(query: string) {
   return createQuery<
     Array<{ id: number; displayName: string; avatarUrl: string | null }>,
-    Error
+    ApiError
   >(() => ({
     queryKey: usersKeys.search(query),
     queryFn: async () => {
@@ -293,15 +295,14 @@ export function createSearchUsersQuery(query: string) {
 export function createUpdateProfileMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, { displayName?: string }>(() => ({
+  return createMutation<unknown, ApiError, { displayName?: string }>(() => ({
     mutationFn: async (data) => {
       const response = await api.api.users.me.patch(data, {
         fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Failed to update profile");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -315,7 +316,7 @@ export function createUpdateProfileMutation() {
 export function createUploadAvatarMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<{ avatarUrl: string }, Error, File>(() => ({
+  return createMutation<{ avatarUrl: string }, ApiError, File>(() => ({
     mutationFn: async (file) => {
       const formData = new FormData();
       formData.append("file", file);
@@ -328,7 +329,7 @@ export function createUploadAvatarMutation() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message ?? "Failed to upload avatar");
+        throw createApiError(data);
       }
 
       return response.json();
@@ -342,7 +343,7 @@ export function createUploadAvatarMutation() {
 export function createSendFriendRequestMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, number>(() => ({
+  return createMutation<unknown, ApiError, number>(() => ({
     mutationFn: async (userId) => {
       const response = await api.api
         .users({ id: userId })
@@ -351,8 +352,7 @@ export function createSendFriendRequestMutation() {
         });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Failed to send friend request");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -367,7 +367,7 @@ export function createSendFriendRequestMutation() {
 export function createAcceptFriendRequestMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, number>(() => ({
+  return createMutation<unknown, ApiError, number>(() => ({
     mutationFn: async (requestId) => {
       const response = await api.api.users.friends
         .requests({
@@ -378,8 +378,7 @@ export function createAcceptFriendRequestMutation() {
         });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Failed to accept request");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -395,7 +394,7 @@ export function createAcceptFriendRequestMutation() {
 export function createRejectFriendRequestMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, number>(() => ({
+  return createMutation<unknown, ApiError, number>(() => ({
     mutationFn: async (requestId) => {
       const response = await api.api.users.friends
         .requests({
@@ -406,8 +405,7 @@ export function createRejectFriendRequestMutation() {
         });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Failed to reject request");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -421,15 +419,14 @@ export function createRejectFriendRequestMutation() {
 export function createRemoveFriendMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, number>(() => ({
+  return createMutation<unknown, ApiError, number>(() => ({
     mutationFn: async (userId) => {
       const response = await api.api.users({ id: userId }).friend.delete({
         fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Failed to remove friend");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -444,7 +441,7 @@ export function createRemoveFriendMutation() {
 export function createBlockUserMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, number>(() => ({
+  return createMutation<unknown, ApiError, number>(() => ({
     mutationFn: async (userId) => {
       const response = await api.api
         .users({ id: userId })
@@ -453,8 +450,7 @@ export function createBlockUserMutation() {
         });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Failed to block user");
+        throw createApiError(response.error.value);
       }
 
       return response.data;
@@ -469,15 +465,14 @@ export function createBlockUserMutation() {
 export function createUnblockUserMutation() {
   const queryClient = useQueryClient();
 
-  return createMutation<unknown, Error, number>(() => ({
+  return createMutation<unknown, ApiError, number>(() => ({
     mutationFn: async (userId) => {
       const response = await api.api.users({ id: userId }).block.delete({
         fetch: { credentials: "include" },
       });
 
       if (response.error) {
-        const errorValue = response.error.value as { message?: string };
-        throw new Error(errorValue.message ?? "Failed to unblock user");
+        throw createApiError(response.error.value);
       }
 
       return response.data;

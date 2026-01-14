@@ -1,5 +1,15 @@
 import { t } from "elysia";
 
+import {
+  badRequest,
+  conflict,
+  forbidden,
+  locked,
+  serviceUnavailable,
+  unauthorized,
+  validationError,
+} from "../../common/errors";
+
 export const AuthModel = {
   register: t.Object({
     email: t.String({ format: "email" }),
@@ -117,3 +127,103 @@ export type TokenError = (typeof AuthModel.tokenError)["static"];
 export type OAuthError = (typeof AuthModel.oauthError)["static"];
 export type SessionError = (typeof AuthModel.sessionError)["static"];
 export type TotpError = (typeof AuthModel.totpError)["static"];
+
+/**
+ * Maps registration errors to RFC 9457 Problem Details.
+ */
+export function mapRegisterError(error: RegisterError, instance: string) {
+  switch (error.type) {
+    case "EMAIL_EXISTS":
+      return conflict("Email already registered", { instance });
+    case "WEAK_PASSWORD":
+      return validationError(
+        "Password does not meet requirements",
+        error.requirements.map((r) => ({ field: "password", message: r })),
+        { instance }
+      );
+  }
+}
+
+/**
+ * Maps login errors to RFC 9457 Problem Details.
+ * Note: REQUIRES_2FA is a special case that should be handled separately.
+ */
+export function mapLoginError(error: LoginError, instance: string) {
+  switch (error.type) {
+    case "INVALID_CREDENTIALS":
+      return unauthorized("Invalid email or password", { instance });
+    case "EMAIL_NOT_VERIFIED":
+      return forbidden("Please verify your email before logging in", {
+        instance,
+      });
+    case "ACCOUNT_LOCKED":
+      return locked(error.unlockAt, { instance });
+    case "REQUIRES_2FA":
+      // This is not an error - it's a redirect flow
+      return null;
+  }
+}
+
+/**
+ * Maps password change errors to RFC 9457 Problem Details.
+ */
+export function mapPasswordError(error: PasswordError, instance: string) {
+  switch (error.type) {
+    case "INCORRECT_PASSWORD":
+      return unauthorized("Current password is incorrect", { instance });
+    case "WEAK_PASSWORD":
+      return validationError(
+        "New password does not meet requirements",
+        error.requirements.map((r) => ({ field: "newPassword", message: r })),
+        { instance }
+      );
+    case "SAME_AS_CURRENT":
+      return badRequest("New password must be different from current", {
+        instance,
+      });
+  }
+}
+
+/**
+ * Maps token errors to RFC 9457 Problem Details.
+ */
+export function mapTokenError(error: TokenError, instance: string) {
+  switch (error.type) {
+    case "INVALID_TOKEN":
+      return badRequest("Invalid or expired token", { instance });
+    case "EXPIRED_TOKEN":
+      return badRequest("Token has expired", { instance });
+  }
+}
+
+/**
+ * Maps OAuth errors to RFC 9457 Problem Details.
+ */
+export function mapOAuthError(error: OAuthError, instance: string) {
+  switch (error.type) {
+    case "INVALID_STATE":
+      return badRequest("Invalid OAuth state", { instance });
+    case "TOKEN_EXCHANGE_FAILED":
+      return serviceUnavailable("OAuth token exchange failed", { instance });
+    case "PROFILE_FETCH_FAILED":
+      return serviceUnavailable("Failed to fetch OAuth profile", { instance });
+    case "ACCOUNT_ALREADY_LINKED":
+      return conflict("This 42 account is already linked to another user", {
+        instance,
+      });
+  }
+}
+
+/**
+ * Maps TOTP errors to RFC 9457 Problem Details.
+ */
+export function mapTotpError(error: TotpError, instance: string) {
+  switch (error.type) {
+    case "INVALID_CODE":
+      return badRequest("Invalid verification code", { instance });
+    case "ALREADY_ENABLED":
+      return conflict("2FA is already enabled", { instance });
+    case "NOT_ENABLED":
+      return badRequest("2FA is not enabled", { instance });
+  }
+}

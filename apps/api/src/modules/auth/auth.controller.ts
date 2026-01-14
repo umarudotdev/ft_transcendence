@@ -1,9 +1,10 @@
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 
-import { authGuard } from "../../common/guards/auth.guard";
+import { authGuard } from "../../common/guards/auth.macro";
 import { rateLimit } from "../../common/plugins/rate-limit";
 import { env } from "../../env";
-import { authService } from "./auth.service";
+import { AuthModel } from "./auth.model";
+import { AuthService } from "./auth.service";
 
 const isProduction = env.NODE_ENV === "production";
 
@@ -38,7 +39,7 @@ export const authController = new Elysia({ prefix: "/auth" })
     app.use(rateLimit({ max: 3, window: 60 * 60 * 1000 })).post(
       "/register",
       async ({ body, set }) => {
-        const result = await authService.register(body);
+        const result = await AuthService.register(body);
 
         if (result.isErr()) {
           const err = result.error;
@@ -65,11 +66,7 @@ export const authController = new Elysia({ prefix: "/auth" })
         };
       },
       {
-        body: t.Object({
-          email: t.String({ format: "email" }),
-          password: t.String({ minLength: 8 }),
-          displayName: t.String({ minLength: 3, maxLength: 30 }),
-        }),
+        body: AuthModel.register,
       }
     )
   )
@@ -81,7 +78,7 @@ export const authController = new Elysia({ prefix: "/auth" })
     app.use(rateLimit({ max: 5, window: 15 * 60 * 1000 })).post(
       "/login",
       async ({ body, cookie, set }) => {
-        const result = await authService.login(body.email, body.password);
+        const result = await AuthService.login(body.email, body.password);
 
         if (result.isErr()) {
           const err = result.error;
@@ -130,10 +127,7 @@ export const authController = new Elysia({ prefix: "/auth" })
         };
       },
       {
-        body: t.Object({
-          email: t.String({ format: "email" }),
-          password: t.String({ minLength: 1 }),
-        }),
+        body: AuthModel.login,
       }
     )
   )
@@ -159,7 +153,7 @@ export const authController = new Elysia({ prefix: "/auth" })
           return { message: "Invalid 2FA session" };
         }
 
-        const result = await authService.loginWith2fa(userId, body.code);
+        const result = await AuthService.loginWith2fa(userId, body.code);
 
         // Clear pending 2FA cookie regardless of result
         cookie.pending_2fa.remove();
@@ -183,9 +177,7 @@ export const authController = new Elysia({ prefix: "/auth" })
         };
       },
       {
-        body: t.Object({
-          code: t.String({ pattern: "^[0-9]{6}$" }), // 6-digit code
-        }),
+        body: AuthModel.totpCode,
       }
     )
   )
@@ -196,7 +188,7 @@ export const authController = new Elysia({ prefix: "/auth" })
   .post(
     "/verify-email",
     async ({ body, set }) => {
-      const result = await authService.verifyEmail(body.token);
+      const result = await AuthService.verifyEmail(body.token);
 
       if (result.isErr()) {
         const err = result.error;
@@ -212,9 +204,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       return { message: "Email verified successfully" };
     },
     {
-      body: t.Object({
-        token: t.String(),
-      }),
+      body: AuthModel.verifyEmail,
     }
   )
 
@@ -226,7 +216,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       "/forgot-password",
       async ({ body }) => {
         // Always returns success to prevent email enumeration
-        const result = await authService.requestPasswordReset(body.email);
+        const result = await AuthService.requestPasswordReset(body.email);
 
         // In production, send email with reset link
         // For development, log the token
@@ -241,9 +231,7 @@ export const authController = new Elysia({ prefix: "/auth" })
         };
       },
       {
-        body: t.Object({
-          email: t.String({ format: "email" }),
-        }),
+        body: AuthModel.forgotPassword,
       }
     )
   )
@@ -255,7 +243,7 @@ export const authController = new Elysia({ prefix: "/auth" })
     app.use(rateLimit({ max: 5, window: 60 * 60 * 1000 })).post(
       "/reset-password",
       async ({ body, set }) => {
-        const result = await authService.resetPassword(
+        const result = await AuthService.resetPassword(
           body.token,
           body.password
         );
@@ -280,10 +268,7 @@ export const authController = new Elysia({ prefix: "/auth" })
         return { message: "Password reset successfully" };
       },
       {
-        body: t.Object({
-          token: t.String(),
-          password: t.String({ minLength: 8 }),
-        }),
+        body: AuthModel.resetPassword,
       }
     )
   )
@@ -292,7 +277,7 @@ export const authController = new Elysia({ prefix: "/auth" })
   // OAuth: Initiate 42 Login (no rate limit - redirects to external)
   // ---------------------------------------------------------------------------
   .get("/42", ({ cookie, set }) => {
-    const result = authService.generateOAuthUrl();
+    const result = AuthService.generateOAuthUrl();
 
     if (!result) {
       set.status = 503;
@@ -331,7 +316,7 @@ export const authController = new Elysia({ prefix: "/auth" })
         return { message: "Redirecting with error" };
       }
 
-      const result = await authService.handleOAuthCallback(
+      const result = await AuthService.handleOAuthCallback(
         code,
         String(storedState),
         state
@@ -361,11 +346,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       return { message: "Redirecting to app" };
     },
     {
-      query: t.Object({
-        code: t.Optional(t.String()),
-        state: t.Optional(t.String()),
-        error: t.Optional(t.String()),
-      }),
+      query: AuthModel.oauthCallback,
     }
   )
 
@@ -387,7 +368,7 @@ export const authController = new Elysia({ prefix: "/auth" })
   .post("/logout", async ({ cookie }) => {
     const sessionId = cookie.session?.value;
     if (sessionId) {
-      await authService.logout(String(sessionId));
+      await AuthService.logout(String(sessionId));
     }
     cookie.session.remove();
     return { message: "Logged out successfully" };
@@ -397,7 +378,7 @@ export const authController = new Elysia({ prefix: "/auth" })
   // Logout All Devices
   // ---------------------------------------------------------------------------
   .post("/logout-all", async ({ user, cookie }) => {
-    await authService.logoutAllDevices(user.id);
+    await AuthService.logoutAllDevices(user.id);
     cookie.session.remove();
     return { message: "Logged out from all devices" };
   })
@@ -406,7 +387,7 @@ export const authController = new Elysia({ prefix: "/auth" })
   // Resend Verification Email
   // ---------------------------------------------------------------------------
   .post("/resend-verification", async ({ user }) => {
-    const result = await authService.resendVerificationEmail(user.id);
+    const result = await AuthService.resendVerificationEmail(user.id);
 
     // In production, send email
     // For development, return token
@@ -426,7 +407,7 @@ export const authController = new Elysia({ prefix: "/auth" })
   .post(
     "/change-password",
     async ({ body, user, cookie, set }) => {
-      const result = await authService.changePassword(
+      const result = await AuthService.changePassword(
         user.id,
         body.currentPassword,
         body.newPassword
@@ -457,10 +438,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       return { message: "Password changed successfully. Please log in again." };
     },
     {
-      body: t.Object({
-        currentPassword: t.String(),
-        newPassword: t.String({ minLength: 8 }),
-      }),
+      body: AuthModel.changePassword,
     }
   )
 
@@ -468,7 +446,7 @@ export const authController = new Elysia({ prefix: "/auth" })
   // Link 42 Account
   // ---------------------------------------------------------------------------
   .get("/42/link", ({ cookie, set }) => {
-    const result = authService.generateOAuthUrl();
+    const result = AuthService.generateOAuthUrl();
 
     if (!result) {
       set.status = 503;
@@ -506,7 +484,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       // Extract actual state (remove "link:" prefix)
       const actualStoredState = String(storedState).replace("link:", "");
 
-      const result = await authService.linkOAuthAccount(
+      const result = await AuthService.linkOAuthAccount(
         user.id,
         code,
         actualStoredState,
@@ -523,11 +501,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       return { message: "Redirecting to settings" };
     },
     {
-      query: t.Object({
-        code: t.Optional(t.String()),
-        state: t.Optional(t.String()),
-        error: t.Optional(t.String()),
-      }),
+      query: AuthModel.oauthCallback,
     }
   )
 
@@ -535,7 +509,7 @@ export const authController = new Elysia({ prefix: "/auth" })
   // 2FA: Enable (Step 1 - Generate)
   // ---------------------------------------------------------------------------
   .post("/2fa/enable", async ({ user, set }) => {
-    const result = await authService.enableTotp(user.id);
+    const result = await AuthService.enableTotp(user.id);
 
     if (result.isErr()) {
       const err = result.error;
@@ -560,7 +534,7 @@ export const authController = new Elysia({ prefix: "/auth" })
   .post(
     "/2fa/verify",
     async ({ body, user, set }) => {
-      const result = await authService.confirmTotp(user.id, body.code);
+      const result = await AuthService.confirmTotp(user.id, body.code);
 
       if (result.isErr()) {
         const err = result.error;
@@ -579,9 +553,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       return { message: "2FA enabled successfully" };
     },
     {
-      body: t.Object({
-        code: t.String({ pattern: "^[0-9]{6}$" }), // 6-digit code
-      }),
+      body: AuthModel.totpCode,
     }
   )
 
@@ -591,7 +563,7 @@ export const authController = new Elysia({ prefix: "/auth" })
   .post(
     "/2fa/disable",
     async ({ body, user, set }) => {
-      const result = await authService.disableTotp(user.id, body.code);
+      const result = await AuthService.disableTotp(user.id, body.code);
 
       if (result.isErr()) {
         const err = result.error;
@@ -608,8 +580,6 @@ export const authController = new Elysia({ prefix: "/auth" })
       return { message: "2FA disabled successfully" };
     },
     {
-      body: t.Object({
-        code: t.String({ pattern: "^[0-9]{6}$" }),
-      }),
+      body: AuthModel.totpCode,
     }
   );

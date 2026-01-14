@@ -6,10 +6,11 @@ import type {
   OAuthError,
   PasswordError,
   RegisterError,
+  SafeUser,
   SessionError,
-  TokenError,
   TotpError,
-} from "./auth.errors";
+  TokenError,
+} from "./auth.model";
 
 import { authRepository } from "./auth.repository";
 import { fortyTwo, type IntraProfile, OAUTH_SCOPES } from "./oauth";
@@ -34,19 +35,8 @@ const EMAIL_VERIFICATION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 const PASSWORD_RESET_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
 // =============================================================================
-// Safe User type for service responses (excludes sensitive fields)
+// Helper Functions
 // =============================================================================
-
-export interface SafeUser {
-  id: number;
-  email: string;
-  displayName: string;
-  avatarUrl: string | null;
-  emailVerified: boolean;
-  twoFactorEnabled: boolean;
-  intraId: number | null;
-  createdAt: Date;
-}
 
 function toSafeUser(user: {
   id: number;
@@ -74,12 +64,12 @@ function toSafeUser(user: {
 // Auth Service
 // =============================================================================
 
-export const authService = {
+abstract class AuthService {
   // ---------------------------------------------------------------------------
   // Registration
   // ---------------------------------------------------------------------------
 
-  register(data: {
+  static register(data: {
     email: string;
     password: string;
     displayName: string;
@@ -125,13 +115,13 @@ export const authService = {
       })(),
       () => ({ type: "EMAIL_EXISTS" as const }) // Fallback error
     ).andThen((result) => result);
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Login
   // ---------------------------------------------------------------------------
 
-  login(
+  static login(
     email: string,
     password: string
   ): ResultAsync<
@@ -199,13 +189,13 @@ export const authService = {
       })(),
       () => ({ type: "INVALID_CREDENTIALS" as const })
     ).andThen((result) => result);
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Login with 2FA
   // ---------------------------------------------------------------------------
 
-  loginWith2fa(
+  static loginWith2fa(
     userId: number,
     code: string
   ): ResultAsync<{ sessionId: string; user: SafeUser }, TotpError> {
@@ -236,13 +226,15 @@ export const authService = {
       })(),
       () => ({ type: "INVALID_CODE" as const })
     ).andThen((result) => result);
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Session Validation
   // ---------------------------------------------------------------------------
 
-  validateSession(sessionId: string): ResultAsync<SafeUser, SessionError> {
+  static validateSession(
+    sessionId: string
+  ): ResultAsync<SafeUser, SessionError> {
     return ResultAsync.fromPromise(
       (async () => {
         const session = await authRepository.findSessionById(sessionId);
@@ -261,31 +253,31 @@ export const authService = {
       })(),
       () => ({ type: "NOT_FOUND" as const })
     ).andThen((result) => result);
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Logout
   // ---------------------------------------------------------------------------
 
-  logout(sessionId: string): ResultAsync<void, never> {
+  static logout(sessionId: string): ResultAsync<void, never> {
     return ResultAsync.fromPromise(
       authRepository.deleteSession(sessionId),
       () => undefined as never // logout never fails
     ).map(() => undefined);
-  },
+  }
 
-  logoutAllDevices(userId: number): ResultAsync<void, never> {
+  static logoutAllDevices(userId: number): ResultAsync<void, never> {
     return ResultAsync.fromPromise(
       authRepository.deleteAllUserSessions(userId),
       () => undefined as never
     ).map(() => undefined);
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Email Verification
   // ---------------------------------------------------------------------------
 
-  verifyEmail(tokenId: string): ResultAsync<void, TokenError> {
+  static verifyEmail(tokenId: string): ResultAsync<void, TokenError> {
     return ResultAsync.fromPromise(
       (async () => {
         const token = await authRepository.findEmailVerificationToken(tokenId);
@@ -309,9 +301,9 @@ export const authService = {
       })(),
       () => ({ type: "INVALID_TOKEN" as const })
     ).andThen((result) => result);
-  },
+  }
 
-  resendVerificationEmail(
+  static resendVerificationEmail(
     userId: number
   ): ResultAsync<{ verificationToken: string }, never> {
     return ResultAsync.fromPromise(
@@ -328,13 +320,13 @@ export const authService = {
         throw new Error("Unexpected error creating verification token");
       }
     );
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Password Reset
   // ---------------------------------------------------------------------------
 
-  requestPasswordReset(
+  static requestPasswordReset(
     email: string
   ): ResultAsync<{ resetToken: string | null }, never> {
     // Always returns success to prevent email enumeration
@@ -359,9 +351,9 @@ export const authService = {
         throw new Error("Unexpected error in password reset");
       }
     );
-  },
+  }
 
-  resetPassword(
+  static resetPassword(
     tokenId: string,
     newPassword: string
   ): ResultAsync<void, TokenError | PasswordError> {
@@ -401,13 +393,13 @@ export const authService = {
       })(),
       () => ({ type: "INVALID_TOKEN" as const })
     ).andThen((result) => result);
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Change Password (for logged-in users)
   // ---------------------------------------------------------------------------
 
-  changePassword(
+  static changePassword(
     userId: number,
     currentPassword: string,
     newPassword: string
@@ -455,13 +447,13 @@ export const authService = {
       })(),
       () => ({ type: "INCORRECT_PASSWORD" as const })
     ).andThen((result) => result);
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // OAuth
   // ---------------------------------------------------------------------------
 
-  generateOAuthUrl(): { url: string; state: string } | null {
+  static generateOAuthUrl(): { url: string; state: string } | null {
     if (!fortyTwo) {
       return null;
     }
@@ -472,9 +464,9 @@ export const authService = {
     const url = fortyTwo.createAuthorizationURL(state, OAUTH_SCOPES);
 
     return { url: url.toString(), state };
-  },
+  }
 
-  handleOAuthCallback(
+  static handleOAuthCallback(
     code: string,
     storedState: string,
     receivedState: string
@@ -570,9 +562,9 @@ export const authService = {
       })(),
       () => ({ type: "TOKEN_EXCHANGE_FAILED" as const })
     ).andThen((result) => result);
-  },
+  }
 
-  linkOAuthAccount(
+  static linkOAuthAccount(
     userId: number,
     code: string,
     storedState: string,
@@ -630,13 +622,13 @@ export const authService = {
       })(),
       () => ({ type: "TOKEN_EXCHANGE_FAILED" as const })
     ).andThen((result) => result);
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Two-Factor Authentication
   // ---------------------------------------------------------------------------
 
-  enableTotp(
+  static enableTotp(
     userId: number
   ): ResultAsync<{ qrCodeUrl: string; secret: string }, TotpError> {
     return ResultAsync.fromPromise(
@@ -665,9 +657,12 @@ export const authService = {
       })(),
       () => ({ type: "NOT_ENABLED" as const })
     ).andThen((result) => result);
-  },
+  }
 
-  confirmTotp(userId: number, code: string): ResultAsync<void, TotpError> {
+  static confirmTotp(
+    userId: number,
+    code: string
+  ): ResultAsync<void, TotpError> {
     return ResultAsync.fromPromise(
       (async () => {
         const user = await authRepository.findUserById(userId);
@@ -695,9 +690,12 @@ export const authService = {
       })(),
       () => ({ type: "INVALID_CODE" as const })
     ).andThen((result) => result);
-  },
+  }
 
-  verifyTotp(userId: number, code: string): ResultAsync<void, TotpError> {
+  static verifyTotp(
+    userId: number,
+    code: string
+  ): ResultAsync<void, TotpError> {
     return ResultAsync.fromPromise(
       (async () => {
         const user = await authRepository.findUserById(userId);
@@ -717,9 +715,12 @@ export const authService = {
       })(),
       () => ({ type: "INVALID_CODE" as const })
     ).andThen((result) => result);
-  },
+  }
 
-  disableTotp(userId: number, code: string): ResultAsync<void, TotpError> {
+  static disableTotp(
+    userId: number,
+    code: string
+  ): ResultAsync<void, TotpError> {
     return ResultAsync.fromPromise(
       (async () => {
         const user = await authRepository.findUserById(userId);
@@ -743,5 +744,7 @@ export const authService = {
       })(),
       () => ({ type: "INVALID_CODE" as const })
     ).andThen((result) => result);
-  },
-};
+  }
+}
+
+export { AuthService };

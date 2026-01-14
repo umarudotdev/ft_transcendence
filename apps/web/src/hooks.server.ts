@@ -16,9 +16,21 @@ function isProtectedRoute(pathname: string): boolean {
 }
 
 /**
+ * Check if path is an API route (should be proxied, not handled by SvelteKit)
+ */
+function isApiRoute(pathname: string): boolean {
+  return pathname.startsWith("/api");
+}
+
+/**
  * Authentication handler - redirects unauthenticated users to login
  */
 const handleAuth: Handle = async ({ event, resolve }) => {
+  // Skip API routes - let Vite proxy handle them
+  if (isApiRoute(event.url.pathname)) {
+    return resolve(event);
+  }
+
   // Only check protected routes
   if (!isProtectedRoute(event.url.pathname)) {
     return resolve(event);
@@ -67,8 +79,13 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 /**
  * Paraglide i18n handler
  */
-const handleParaglide: Handle = ({ event, resolve }) =>
-  paraglideMiddleware(event.request, ({ request, locale }) => {
+const handleParaglide: Handle = ({ event, resolve }) => {
+  // Skip API routes - they don't need i18n
+  if (isApiRoute(event.url.pathname)) {
+    return resolve(event);
+  }
+
+  return paraglideMiddleware(event.request, ({ request, locale }) => {
     event.request = request;
 
     return resolve(event, {
@@ -76,5 +93,6 @@ const handleParaglide: Handle = ({ event, resolve }) =>
         html.replace("%paraglide.lang%", locale),
     });
   });
+};
 
 export const handle: Handle = sequence(handleAuth, handleParaglide);

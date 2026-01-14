@@ -1,9 +1,10 @@
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import { mkdir, unlink } from "node:fs/promises";
 import { join } from "node:path";
 
-import { authGuard } from "../../common/guards/auth.guard";
-import { usersService } from "./users.service";
+import { authGuard } from "../../common/guards/auth.macro";
+import { UsersModel } from "./users.model";
+import { UsersService } from "./users.service";
 
 // =============================================================================
 // CONSTANTS
@@ -28,7 +29,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   // Get Current User Profile
   // ---------------------------------------------------------------------------
   .get("/me", async ({ user }) => {
-    const result = await usersService.getProfile(user.id);
+    const result = await UsersService.getProfile(user.id);
 
     if (result.isErr()) {
       return { user: null };
@@ -43,7 +44,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   .patch(
     "/me",
     async ({ body, user, set }) => {
-      const result = await usersService.updateProfile(user.id, body);
+      const result = await UsersService.updateProfile(user.id, body);
 
       if (result.isErr()) {
         const err = result.error;
@@ -67,9 +68,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       return { user: result.isOk() ? result.value : null };
     },
     {
-      body: t.Object({
-        displayName: t.Optional(t.String({ minLength: 3, maxLength: 20 })),
-      }),
+      body: UsersModel.updateProfile,
     }
   )
 
@@ -82,7 +81,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       const { file } = body;
 
       // Validate file
-      const validationResult = await usersService.validateAvatarFile(file);
+      const validationResult = await UsersService.validateAvatarFile(file);
 
       if (validationResult.isErr()) {
         const err = validationResult.error;
@@ -142,7 +141,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       const avatarUrl = `/uploads/avatars/${filename}`;
 
       // Update the user's avatar URL
-      const updateResult = await usersService.updateAvatarUrl(
+      const updateResult = await UsersService.updateAvatarUrl(
         user.id,
         avatarUrl
       );
@@ -158,12 +157,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       };
     },
     {
-      body: t.Object({
-        file: t.File({
-          type: ["image/jpeg", "image/png", "image/webp"],
-          maxSize: 2 * 1024 * 1024, // 2MB
-        }),
-      }),
+      body: UsersModel.uploadAvatar,
     }
   )
 
@@ -173,7 +167,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   .get(
     "/me/stats",
     async ({ user, query }) => {
-      const result = await usersService.getStats(user.id, query.gameType);
+      const result = await UsersService.getStats(user.id, query.gameType);
 
       if (result.isErr()) {
         return { stats: null };
@@ -182,9 +176,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       return { stats: result.value };
     },
     {
-      query: t.Object({
-        gameType: t.Optional(t.String()),
-      }),
+      query: UsersModel.statsQuery,
     }
   )
 
@@ -194,7 +186,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   .get(
     "/me/matches",
     async ({ user, query }) => {
-      const result = await usersService.getMatchHistory(user.id, user.id, {
+      const result = await UsersService.getMatchHistory(user.id, user.id, {
         limit: query.limit,
         offset: query.offset,
         gameType: query.gameType,
@@ -208,12 +200,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       return result.value;
     },
     {
-      query: t.Object({
-        limit: t.Optional(t.Numeric({ minimum: 1, maximum: 100, default: 10 })),
-        offset: t.Optional(t.Numeric({ minimum: 0, default: 0 })),
-        gameType: t.Optional(t.String()),
-        result: t.Optional(t.Union([t.Literal("win"), t.Literal("loss")])),
-      }),
+      query: UsersModel.matchesQuery,
     }
   )
 
@@ -221,7 +208,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   // Get Current User Friends
   // ---------------------------------------------------------------------------
   .get("/me/friends", async ({ user }) => {
-    const result = await usersService.getFriends(user.id);
+    const result = await UsersService.getFriends(user.id);
 
     if (result.isErr()) {
       return { friends: [] };
@@ -234,7 +221,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   // Get Pending Friend Requests
   // ---------------------------------------------------------------------------
   .get("/me/friends/pending", async ({ user }) => {
-    const result = await usersService.getPendingRequests(user.id);
+    const result = await UsersService.getPendingRequests(user.id);
 
     if (result.isErr()) {
       return { requests: [] };
@@ -247,7 +234,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   // Get Sent Friend Requests
   // ---------------------------------------------------------------------------
   .get("/me/friends/sent", async ({ user }) => {
-    const result = await usersService.getSentRequests(user.id);
+    const result = await UsersService.getSentRequests(user.id);
 
     if (result.isErr()) {
       return { requests: [] };
@@ -262,7 +249,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   .get(
     "/search",
     async ({ user, query }) => {
-      const result = await usersService.searchUsers(
+      const result = await UsersService.searchUsers(
         query.q,
         user.id,
         query.limit
@@ -275,10 +262,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       return { users: result.value };
     },
     {
-      query: t.Object({
-        q: t.String({ minLength: 1 }),
-        limit: t.Optional(t.Numeric({ minimum: 1, maximum: 50, default: 10 })),
-      }),
+      query: UsersModel.searchQuery,
     }
   )
 
@@ -290,7 +274,7 @@ export const usersController = new Elysia({ prefix: "/users" })
     async ({ params, user, set }) => {
       const userId = params.id;
 
-      const result = await usersService.getPublicProfile(userId);
+      const result = await UsersService.getPublicProfile(userId);
 
       if (result.isErr() || !result.value) {
         set.status = 404;
@@ -298,7 +282,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       }
 
       // Get friendship status
-      const friendshipResult = await usersService.getFriendshipStatus(
+      const friendshipResult = await UsersService.getFriendshipStatus(
         user.id,
         userId
       );
@@ -311,9 +295,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       };
     },
     {
-      params: t.Object({
-        id: t.Numeric(),
-      }),
+      params: UsersModel.userIdParam,
     }
   )
 
@@ -326,13 +308,13 @@ export const usersController = new Elysia({ prefix: "/users" })
       const userId = params.id;
 
       // Check if user exists
-      const userResult = await usersService.getPublicProfile(userId);
+      const userResult = await UsersService.getPublicProfile(userId);
       if (userResult.isErr() || !userResult.value) {
         set.status = 404;
         return { message: "User not found" };
       }
 
-      const result = await usersService.getStats(userId, query.gameType);
+      const result = await UsersService.getStats(userId, query.gameType);
 
       if (result.isErr()) {
         return { stats: null };
@@ -341,12 +323,8 @@ export const usersController = new Elysia({ prefix: "/users" })
       return { stats: result.value };
     },
     {
-      params: t.Object({
-        id: t.Numeric(),
-      }),
-      query: t.Object({
-        gameType: t.Optional(t.String()),
-      }),
+      params: UsersModel.userIdParam,
+      query: UsersModel.statsQuery,
     }
   )
 
@@ -359,13 +337,13 @@ export const usersController = new Elysia({ prefix: "/users" })
       const userId = params.id;
 
       // Check if user exists
-      const userResult = await usersService.getPublicProfile(userId);
+      const userResult = await UsersService.getPublicProfile(userId);
       if (userResult.isErr() || !userResult.value) {
         set.status = 404;
         return { message: "User not found" };
       }
 
-      const result = await usersService.getMatchHistory(userId, user.id, {
+      const result = await UsersService.getMatchHistory(userId, user.id, {
         limit: query.limit,
         offset: query.offset,
         gameType: query.gameType,
@@ -379,15 +357,8 @@ export const usersController = new Elysia({ prefix: "/users" })
       return result.value;
     },
     {
-      params: t.Object({
-        id: t.Numeric(),
-      }),
-      query: t.Object({
-        limit: t.Optional(t.Numeric({ minimum: 1, maximum: 100, default: 10 })),
-        offset: t.Optional(t.Numeric({ minimum: 0, default: 0 })),
-        gameType: t.Optional(t.String()),
-        result: t.Optional(t.Union([t.Literal("win"), t.Literal("loss")])),
-      }),
+      params: UsersModel.userIdParam,
+      query: UsersModel.matchesQuery,
     }
   )
 
@@ -399,7 +370,7 @@ export const usersController = new Elysia({ prefix: "/users" })
     async ({ params, user, set }) => {
       const targetId = params.id;
 
-      const result = await usersService.sendFriendRequest(user.id, targetId);
+      const result = await UsersService.sendFriendRequest(user.id, targetId);
 
       if (result.isErr()) {
         const err = result.error;
@@ -436,9 +407,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       };
     },
     {
-      params: t.Object({
-        id: t.Numeric(),
-      }),
+      params: UsersModel.userIdParam,
     }
   )
 
@@ -450,7 +419,7 @@ export const usersController = new Elysia({ prefix: "/users" })
     async ({ params, user, set }) => {
       const targetId = params.id;
 
-      const result = await usersService.removeFriend(user.id, targetId);
+      const result = await UsersService.removeFriend(user.id, targetId);
 
       if (result.isErr()) {
         const err = result.error;
@@ -464,9 +433,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       return { message: "Friend removed" };
     },
     {
-      params: t.Object({
-        id: t.Numeric(),
-      }),
+      params: UsersModel.userIdParam,
     }
   )
 
@@ -478,7 +445,7 @@ export const usersController = new Elysia({ prefix: "/users" })
     async ({ params, user, set }) => {
       const targetId = params.id;
 
-      const result = await usersService.blockUser(user.id, targetId);
+      const result = await UsersService.blockUser(user.id, targetId);
 
       if (result.isErr()) {
         const err = result.error;
@@ -497,9 +464,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       return { message: "User blocked" };
     },
     {
-      params: t.Object({
-        id: t.Numeric(),
-      }),
+      params: UsersModel.userIdParam,
     }
   )
 
@@ -511,7 +476,7 @@ export const usersController = new Elysia({ prefix: "/users" })
     async ({ params, user, set }) => {
       const targetId = params.id;
 
-      const result = await usersService.unblockUser(user.id, targetId);
+      const result = await UsersService.unblockUser(user.id, targetId);
 
       if (result.isErr()) {
         set.status = 404;
@@ -521,9 +486,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       return { message: "User unblocked" };
     },
     {
-      params: t.Object({
-        id: t.Numeric(),
-      }),
+      params: UsersModel.userIdParam,
     }
   )
 
@@ -533,7 +496,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   .post(
     "/friends/requests/:requestId/accept",
     async ({ params, user, set }) => {
-      const result = await usersService.acceptFriendRequest(
+      const result = await UsersService.acceptFriendRequest(
         user.id,
         params.requestId
       );
@@ -546,9 +509,7 @@ export const usersController = new Elysia({ prefix: "/users" })
       return { message: "Friend request accepted" };
     },
     {
-      params: t.Object({
-        requestId: t.Numeric(),
-      }),
+      params: UsersModel.requestIdParam,
     }
   )
 
@@ -558,7 +519,7 @@ export const usersController = new Elysia({ prefix: "/users" })
   .post(
     "/friends/requests/:requestId/reject",
     async ({ params, user, set }) => {
-      const result = await usersService.rejectFriendRequest(
+      const result = await UsersService.rejectFriendRequest(
         user.id,
         params.requestId
       );
@@ -571,8 +532,6 @@ export const usersController = new Elysia({ prefix: "/users" })
       return { message: "Friend request rejected" };
     },
     {
-      params: t.Object({
-        requestId: t.Numeric(),
-      }),
+      params: UsersModel.requestIdParam,
     }
   );

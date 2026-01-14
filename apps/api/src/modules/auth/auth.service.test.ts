@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { authService } from "./auth.service";
+import { AuthService } from "./auth.service";
 import { hashPassword } from "./password";
 import { encryptSecret, generateTotpSecret } from "./totp";
 
@@ -50,7 +50,7 @@ describe("Auth Service", () => {
   describe("generateOAuthUrl", () => {
     test("should return null when OAuth is not configured", () => {
       // Without FORTYTWO_CLIENT_ID/SECRET env vars, fortyTwo will be null
-      const result = authService.generateOAuthUrl();
+      const result = AuthService.generateOAuthUrl();
 
       // In test env without OAuth config, this returns null
       // This behavior depends on whether env vars are set

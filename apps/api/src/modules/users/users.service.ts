@@ -3,75 +3,39 @@ import { err, ok, ResultAsync } from "neverthrow";
 import type {
   AvatarUploadError,
   FriendshipError,
+  MatchHistoryItem,
   ProfileUpdateError,
-} from "./users.errors";
+  PublicUser,
+  UserProfile,
+  UserStats,
+} from "./users.model";
 
 import { usersRepository } from "./users.repository";
-
-// =============================================================================
-// CONSTANTS
-// =============================================================================
-
-const DISPLAY_NAME_MIN_LENGTH = 3;
-const DISPLAY_NAME_MAX_LENGTH = 20;
-const DISPLAY_NAME_PATTERN = /^[a-zA-Z0-9 ]+$/;
-
-const MAX_AVATAR_SIZE = 2 * 1024 * 1024; // 2MB
-const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
-
-// =============================================================================
-// Types
-// =============================================================================
-
-export interface PublicUser {
-  id: number;
-  displayName: string;
-  avatarUrl: string | null;
-  createdAt: Date;
-}
-
-export interface UserProfile extends PublicUser {
-  email: string;
-  emailVerified: boolean;
-  twoFactorEnabled: boolean;
-  intraId: number | null;
-}
-
-export interface UserStats {
-  gamesPlayed: number;
-  wins: number;
-  losses: number;
-  draws: number;
-  winRate: number;
-  averageDuration: number;
-}
-
-export interface MatchHistoryItem {
-  id: number;
-  opponent: {
-    id: number | null;
-    displayName: string;
-    avatarUrl: string | null;
-  };
-  playerScore: number;
-  opponentScore: number;
-  result: "win" | "loss" | "draw";
-  gameType: string;
-  isAiGame: boolean;
-  duration: number;
-  createdAt: Date;
-}
 
 // =============================================================================
 // USERS SERVICE
 // =============================================================================
 
-export const usersService = {
+abstract class UsersService {
+  // ---------------------------------------------------------------------------
+  // Constants
+  // ---------------------------------------------------------------------------
+
+  private static readonly DISPLAY_NAME_MIN_LENGTH = 3;
+  private static readonly DISPLAY_NAME_MAX_LENGTH = 20;
+  private static readonly DISPLAY_NAME_PATTERN = /^[a-zA-Z0-9 ]+$/;
+  private static readonly MAX_AVATAR_SIZE = 2 * 1024 * 1024; // 2MB
+  private static readonly ALLOWED_AVATAR_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+  ];
+
   // ---------------------------------------------------------------------------
   // Profile
   // ---------------------------------------------------------------------------
 
-  getProfile(userId: number): ResultAsync<UserProfile | null, never> {
+  static getProfile(userId: number): ResultAsync<UserProfile | null, never> {
     return ResultAsync.fromPromise(
       (async () => {
         const user = await usersRepository.findById(userId);
@@ -93,9 +57,11 @@ export const usersService = {
       })(),
       () => null as never
     );
-  },
+  }
 
-  getPublicProfile(userId: number): ResultAsync<PublicUser | null, never> {
+  static getPublicProfile(
+    userId: number
+  ): ResultAsync<PublicUser | null, never> {
     return ResultAsync.fromPromise(
       (async () => {
         const user = await usersRepository.findById(userId);
@@ -113,9 +79,9 @@ export const usersService = {
       })(),
       () => null as never
     );
-  },
+  }
 
-  updateProfile(
+  static updateProfile(
     userId: number,
     data: { displayName?: string }
   ): ResultAsync<UserProfile, ProfileUpdateError> {
@@ -131,21 +97,21 @@ export const usersService = {
         if (data.displayName !== undefined) {
           const displayName = data.displayName.trim();
 
-          if (displayName.length < DISPLAY_NAME_MIN_LENGTH) {
+          if (displayName.length < UsersService.DISPLAY_NAME_MIN_LENGTH) {
             return err({
               type: "INVALID_DISPLAY_NAME" as const,
-              message: `Display name must be at least ${DISPLAY_NAME_MIN_LENGTH} characters`,
+              message: `Display name must be at least ${UsersService.DISPLAY_NAME_MIN_LENGTH} characters`,
             });
           }
 
-          if (displayName.length > DISPLAY_NAME_MAX_LENGTH) {
+          if (displayName.length > UsersService.DISPLAY_NAME_MAX_LENGTH) {
             return err({
               type: "INVALID_DISPLAY_NAME" as const,
-              message: `Display name must be at most ${DISPLAY_NAME_MAX_LENGTH} characters`,
+              message: `Display name must be at most ${UsersService.DISPLAY_NAME_MAX_LENGTH} characters`,
             });
           }
 
-          if (!DISPLAY_NAME_PATTERN.test(displayName)) {
+          if (!UsersService.DISPLAY_NAME_PATTERN.test(displayName)) {
             return err({
               type: "INVALID_DISPLAY_NAME" as const,
               message:
@@ -175,30 +141,30 @@ export const usersService = {
       })(),
       () => ({ type: "USER_NOT_FOUND" as const })
     ).andThen((result) => result);
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Avatar
   // ---------------------------------------------------------------------------
 
-  validateAvatarFile(
+  static validateAvatarFile(
     file: File
   ): ResultAsync<{ valid: true }, AvatarUploadError> {
     return ResultAsync.fromPromise(
       (async () => {
         // Check file type
-        if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+        if (!UsersService.ALLOWED_AVATAR_TYPES.includes(file.type)) {
           return err({
             type: "INVALID_FILE_TYPE" as const,
-            allowed: ALLOWED_AVATAR_TYPES,
+            allowed: UsersService.ALLOWED_AVATAR_TYPES,
           });
         }
 
         // Check file size
-        if (file.size > MAX_AVATAR_SIZE) {
+        if (file.size > UsersService.MAX_AVATAR_SIZE) {
           return err({
             type: "FILE_TOO_LARGE" as const,
-            maxSize: MAX_AVATAR_SIZE,
+            maxSize: UsersService.MAX_AVATAR_SIZE,
           });
         }
 
@@ -206,9 +172,9 @@ export const usersService = {
       })(),
       () => ({ type: "UPLOAD_FAILED" as const })
     ).andThen((result) => result);
-  },
+  }
 
-  updateAvatarUrl(
+  static updateAvatarUrl(
     userId: number,
     avatarUrl: string
   ): ResultAsync<UserProfile, AvatarUploadError> {
@@ -238,13 +204,13 @@ export const usersService = {
       })(),
       () => ({ type: "UPLOAD_FAILED" as const })
     ).andThen((result) => result);
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Match History
   // ---------------------------------------------------------------------------
 
-  getMatchHistory(
+  static getMatchHistory(
     userId: number,
     viewerId: number,
     options: {
@@ -352,26 +318,29 @@ export const usersService = {
         throw new Error("Unexpected error fetching match history");
       }
     );
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Statistics
   // ---------------------------------------------------------------------------
 
-  getStats(userId: number, gameType?: string): ResultAsync<UserStats, never> {
+  static getStats(
+    userId: number,
+    gameType?: string
+  ): ResultAsync<UserStats, never> {
     return ResultAsync.fromPromise(
       usersRepository.getStats(userId, gameType),
       (): never => {
         throw new Error("Unexpected error fetching stats");
       }
     );
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Friends
   // ---------------------------------------------------------------------------
 
-  getFriends(userId: number): ResultAsync<
+  static getFriends(userId: number): ResultAsync<
     Array<{
       friendshipId: number;
       id: number;
@@ -387,9 +356,9 @@ export const usersService = {
         throw new Error("Unexpected error fetching friends");
       }
     );
-  },
+  }
 
-  getPendingRequests(userId: number): ResultAsync<
+  static getPendingRequests(userId: number): ResultAsync<
     Array<{
       requestId: number;
       from: { id: number; displayName: string; avatarUrl: string | null };
@@ -403,9 +372,9 @@ export const usersService = {
         throw new Error("Unexpected error fetching pending requests");
       }
     );
-  },
+  }
 
-  getSentRequests(userId: number): ResultAsync<
+  static getSentRequests(userId: number): ResultAsync<
     Array<{
       requestId: number;
       to: { id: number; displayName: string; avatarUrl: string | null };
@@ -419,9 +388,9 @@ export const usersService = {
         throw new Error("Unexpected error fetching sent requests");
       }
     );
-  },
+  }
 
-  sendFriendRequest(
+  static sendFriendRequest(
     userId: number,
     friendId: number
   ): ResultAsync<{ requestId: number }, FriendshipError> {
@@ -462,9 +431,9 @@ export const usersService = {
       })(),
       () => ({ type: "USER_NOT_FOUND" as const })
     ).andThen((result) => result);
-  },
+  }
 
-  acceptFriendRequest(
+  static acceptFriendRequest(
     userId: number,
     requestId: number
   ): ResultAsync<void, FriendshipError> {
@@ -484,9 +453,9 @@ export const usersService = {
       })(),
       () => ({ type: "REQUEST_NOT_FOUND" as const })
     ).andThen((result) => result);
-  },
+  }
 
-  rejectFriendRequest(
+  static rejectFriendRequest(
     userId: number,
     requestId: number
   ): ResultAsync<void, FriendshipError> {
@@ -506,9 +475,9 @@ export const usersService = {
       })(),
       () => ({ type: "REQUEST_NOT_FOUND" as const })
     ).andThen((result) => result);
-  },
+  }
 
-  removeFriend(
+  static removeFriend(
     userId: number,
     friendId: number
   ): ResultAsync<void, FriendshipError> {
@@ -529,9 +498,9 @@ export const usersService = {
       })(),
       () => ({ type: "NOT_FRIENDS" as const })
     ).andThen((result) => result);
-  },
+  }
 
-  blockUser(
+  static blockUser(
     userId: number,
     targetId: number
   ): ResultAsync<void, FriendshipError> {
@@ -571,9 +540,9 @@ export const usersService = {
       })(),
       () => ({ type: "USER_NOT_FOUND" as const })
     ).andThen((result) => result);
-  },
+  }
 
-  unblockUser(
+  static unblockUser(
     userId: number,
     targetId: number
   ): ResultAsync<void, FriendshipError> {
@@ -598,9 +567,9 @@ export const usersService = {
       })(),
       () => ({ type: "USER_NOT_FOUND" as const })
     ).andThen((result) => result);
-  },
+  }
 
-  getFriendshipStatus(
+  static getFriendshipStatus(
     userId: number,
     targetId: number
   ): ResultAsync<
@@ -647,13 +616,13 @@ export const usersService = {
         throw new Error("Unexpected error checking friendship status");
       }
     );
-  },
+  }
 
   // ---------------------------------------------------------------------------
   // Search
   // ---------------------------------------------------------------------------
 
-  searchUsers(
+  static searchUsers(
     query: string,
     currentUserId: number,
     limit = 10
@@ -667,5 +636,7 @@ export const usersService = {
         throw new Error("Unexpected error searching users");
       }
     );
-  },
-};
+  }
+}
+
+export { UsersService };

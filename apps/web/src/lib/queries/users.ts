@@ -1,3 +1,13 @@
+import type {
+  FriendItem,
+  MatchHistoryItem,
+  PendingRequest,
+  PublicUser,
+  SentRequest,
+  UserProfile,
+  UserStats,
+} from "@api/modules/users/users.model";
+
 import { api } from "$lib/api";
 import {
   createMutation,
@@ -20,72 +30,17 @@ export const usersKeys = {
   search: (query: string) => [...usersKeys.all, "search", query] as const,
 };
 
-export interface PublicUser {
-  id: number;
-  displayName: string;
-  avatarUrl: string | null;
-  createdAt: Date;
-}
+export type {
+  PublicUser,
+  UserProfile,
+  UserStats,
+  MatchHistoryItem,
+  SentRequest,
+};
 
-export interface UserProfile extends PublicUser {
-  email: string;
-  emailVerified: boolean;
-  twoFactorEnabled: boolean;
-  intraId: number | null;
-}
+export type Friend = FriendItem;
 
-export interface UserStats {
-  gamesPlayed: number;
-  wins: number;
-  losses: number;
-  draws: number;
-  winRate: number;
-  averageDuration: number;
-}
-
-export interface MatchHistoryItem {
-  id: number;
-  opponent: {
-    id: number | null;
-    displayName: string;
-    avatarUrl: string | null;
-  };
-  playerScore: number;
-  opponentScore: number;
-  result: "win" | "loss" | "draw";
-  gameType: string;
-  isAiGame: boolean;
-  duration: number;
-  createdAt: Date;
-}
-
-export interface Friend {
-  friendshipId: number;
-  id: number;
-  displayName: string;
-  avatarUrl: string | null;
-  since: Date;
-}
-
-export interface FriendRequest {
-  requestId: number;
-  from: {
-    id: number;
-    displayName: string;
-    avatarUrl: string | null;
-  };
-  createdAt: Date;
-}
-
-export interface SentRequest {
-  requestId: number;
-  to: {
-    id: number;
-    displayName: string;
-    avatarUrl: string | null;
-  };
-  createdAt: Date;
-}
+export type FriendRequest = PendingRequest;
 
 export type FriendshipStatus =
   | "none"

@@ -1,3 +1,13 @@
+import type {
+  ChangePasswordBody,
+  ForgotPasswordBody,
+  LoginBody,
+  RegisterBody,
+  ResetPasswordBody,
+  SafeUser,
+  TotpCodeBody,
+} from "@api/modules/auth/auth.model";
+
 import { api } from "$lib/api";
 import {
   createMutation,
@@ -10,27 +20,11 @@ export const authKeys = {
   me: () => [...authKeys.all, "me"] as const,
 };
 
-export interface User {
-  id: number;
-  email: string;
-  displayName: string;
-  avatarUrl: string | null;
-  emailVerified: boolean;
-  twoFactorEnabled: boolean;
-  intraId: number | null;
-  createdAt: Date;
-}
+export type User = SafeUser;
 
-export interface RegisterInput {
-  email: string;
-  password: string;
-  displayName: string;
-}
+export type RegisterInput = RegisterBody;
 
-export interface LoginInput {
-  email: string;
-  password: string;
-}
+export type LoginInput = LoginBody;
 
 export interface LoginResponse {
   message: string;
@@ -38,23 +32,13 @@ export interface LoginResponse {
   requires2fa?: boolean;
 }
 
-export interface Verify2faInput {
-  code: string;
-}
+export type Verify2faInput = TotpCodeBody;
 
-export interface ForgotPasswordInput {
-  email: string;
-}
+export type ForgotPasswordInput = ForgotPasswordBody;
 
-export interface ResetPasswordInput {
-  token: string;
-  password: string;
-}
+export type ResetPasswordInput = ResetPasswordBody;
 
-export interface ChangePasswordInput {
-  currentPassword: string;
-  newPassword: string;
-}
+export type ChangePasswordInput = ChangePasswordBody;
 
 export interface Enable2faResponse {
   message: string;
@@ -62,9 +46,7 @@ export interface Enable2faResponse {
   secret: string;
 }
 
-export interface Verify2faSetupInput {
-  code: string;
-}
+export type Verify2faSetupInput = TotpCodeBody;
 
 /**
  * Query to get the current authenticated user.

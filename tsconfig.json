@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@api/*": ["./apps/api/src/*"],
+      "@web/*": ["./apps/web/src/*"]
+    },
+    "strict": true,
+    "skipLibCheck": true
+  }
+}

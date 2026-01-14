@@ -2,13 +2,14 @@ import cors from "@elysiajs/cors";
 import { staticPlugin } from "@elysiajs/static";
 import { Elysia } from "elysia";
 
+import { env } from "./env";
 import { authController } from "./modules/auth/auth.controller";
 import { statusController } from "./modules/status/status.controller";
 import { usersController } from "./modules/users/users.controller";
 
 // Allowed origins for CORS
 const ALLOWED_ORIGINS = [
-  process.env.FRONTEND_URL ?? "http://localhost:5173",
+  env.FRONTEND_URL,
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 ];
@@ -42,7 +43,7 @@ const app = new Elysia()
   .group("/api", (app) =>
     app.use(statusController).use(authController).use(usersController)
   )
-  .listen(3000);
+  .listen(env.PORT);
 
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`

@@ -2,12 +2,15 @@ import { Elysia, t } from "elysia";
 
 import { authGuard } from "../../common/guards/auth.guard";
 import { rateLimit } from "../../common/plugins/rate-limit";
+import { env } from "../../env";
 import { authService } from "./auth.service";
+
+const isProduction = env.NODE_ENV === "production";
 
 // Cookie configuration for sessions
 const SESSION_COOKIE_OPTIONS = {
   httpOnly: true, // Not accessible via JavaScript
-  secure: process.env.NODE_ENV === "production", // HTTPS only in production
+  secure: isProduction, // HTTPS only in production
   sameSite: "lax" as const, // CSRF protection
   path: "/", // Available on all paths
   maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
@@ -16,14 +19,11 @@ const SESSION_COOKIE_OPTIONS = {
 // OAuth state cookie options (shorter-lived)
 const OAUTH_STATE_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
+  secure: isProduction,
   sameSite: "lax" as const,
   path: "/",
   maxAge: 10 * 60, // 10 minutes
 };
-
-// Frontend URL for redirects
-const FRONTEND_URL = process.env.FRONTEND_URL ?? "http://localhost:5173";
 
 export const authController = new Elysia({ prefix: "/auth" })
 
@@ -61,10 +61,7 @@ export const authController = new Elysia({ prefix: "/auth" })
           message: "Registration successful. Please verify your email.",
           user,
           // TODO: Remove in production - send via email instead
-          verificationToken:
-            process.env.NODE_ENV !== "production"
-              ? verificationToken
-              : undefined,
+          verificationToken: !isProduction ? verificationToken : undefined,
         };
       },
       {
@@ -108,7 +105,7 @@ export const authController = new Elysia({ prefix: "/auth" })
           cookie.pending_2fa.set({
             value: String(err.userId),
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: isProduction,
             sameSite: "lax",
             path: "/",
             maxAge: 5 * 60, // 5 minutes to complete 2FA
@@ -233,11 +230,7 @@ export const authController = new Elysia({ prefix: "/auth" })
 
         // In production, send email with reset link
         // For development, log the token
-        if (
-          result.isOk() &&
-          result.value.resetToken &&
-          process.env.NODE_ENV !== "production"
-        ) {
+        if (result.isOk() && result.value.resetToken && !isProduction) {
           console.log(
             `Password reset token for ${body.email}: ${result.value.resetToken}`
           );
@@ -334,7 +327,7 @@ export const authController = new Elysia({ prefix: "/auth" })
 
       if (!code || !state || !storedState) {
         // Redirect to frontend with error
-        set.redirect = `${FRONTEND_URL}/auth/login?error=invalid_oauth`;
+        set.redirect = `${env.FRONTEND_URL}/auth/login?error=invalid_oauth`;
         return { message: "Redirecting with error" };
       }
 
@@ -347,7 +340,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       if (result.isErr()) {
         const err = result.error;
         // Redirect to frontend with error
-        set.redirect = `${FRONTEND_URL}/auth/login?error=${err.type.toLowerCase()}`;
+        set.redirect = `${env.FRONTEND_URL}/auth/login?error=${err.type.toLowerCase()}`;
         return { message: "Redirecting with error" };
       }
 
@@ -361,8 +354,8 @@ export const authController = new Elysia({ prefix: "/auth" })
 
       // Redirect to frontend
       const redirectUrl = isNewUser
-        ? `${FRONTEND_URL}/welcome`
-        : `${FRONTEND_URL}/`;
+        ? `${env.FRONTEND_URL}/welcome`
+        : `${env.FRONTEND_URL}/`;
 
       set.redirect = redirectUrl;
       return { message: "Redirecting to app" };
@@ -421,7 +414,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       message: "Verification email sent",
       // TODO: Remove in production
       verificationToken:
-        process.env.NODE_ENV !== "production" && result.isOk()
+        !isProduction && result.isOk()
           ? result.value.verificationToken
           : undefined,
     };
@@ -506,7 +499,7 @@ export const authController = new Elysia({ prefix: "/auth" })
       cookie.oauth_state.remove();
 
       if (!code || !state || !storedState) {
-        set.redirect = `${FRONTEND_URL}/settings/security?error=invalid_oauth`;
+        set.redirect = `${env.FRONTEND_URL}/settings/security?error=invalid_oauth`;
         return { message: "Redirecting with error" };
       }
 
@@ -522,11 +515,11 @@ export const authController = new Elysia({ prefix: "/auth" })
 
       if (result.isErr()) {
         const err = result.error;
-        set.redirect = `${FRONTEND_URL}/settings/security?error=${err.type.toLowerCase()}`;
+        set.redirect = `${env.FRONTEND_URL}/settings/security?error=${err.type.toLowerCase()}`;
         return { message: "Redirecting with error" };
       }
 
-      set.redirect = `${FRONTEND_URL}/settings/security?success=42_linked`;
+      set.redirect = `${env.FRONTEND_URL}/settings/security?success=42_linked`;
       return { message: "Redirecting to settings" };
     },
     {

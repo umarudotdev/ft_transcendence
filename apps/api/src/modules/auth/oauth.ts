@@ -1,20 +1,18 @@
 import { FortyTwo } from "arctic";
 
+import { env } from "../../env";
+
 // Initialize the 42 OAuth client
 // These values come from your 42 API application settings
 function createFortyTwoClient(): FortyTwo | null {
-  const clientId = process.env.INTRA_CLIENT_ID;
-  const clientSecret = process.env.INTRA_CLIENT_SECRET;
-  const redirectUri = process.env.INTRA_REDIRECT_URI;
+  const { INTRA_CLIENT_ID, INTRA_CLIENT_SECRET, INTRA_REDIRECT_URI } = env;
 
-  if (!clientId || !clientSecret || !redirectUri) {
-    console.warn(
-      "WARNING: 42 OAuth not configured. Set INTRA_CLIENT_ID, INTRA_CLIENT_SECRET, and INTRA_REDIRECT_URI."
-    );
+  if (!INTRA_CLIENT_ID || !INTRA_CLIENT_SECRET || !INTRA_REDIRECT_URI) {
+    // Warning is already logged by env.ts
     return null;
   }
 
-  return new FortyTwo(clientId, clientSecret, redirectUri);
+  return new FortyTwo(INTRA_CLIENT_ID, INTRA_CLIENT_SECRET, INTRA_REDIRECT_URI);
 }
 
 export const fortyTwo = createFortyTwoClient();

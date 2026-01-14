@@ -1,12 +1,10 @@
+import { env } from "$lib/env";
 import { paraglideMiddleware } from "$lib/paraglide/server";
 import { redirect, type Handle } from "@sveltejs/kit";
 import { sequence } from "@sveltejs/kit/hooks";
 
 // Routes that require authentication
 const PROTECTED_ROUTES = ["/profile", "/settings"];
-
-// API base URL for server-side requests
-const API_URL = process.env.API_URL ?? "http://localhost:3000";
 
 /**
  * Check if a path requires authentication
@@ -36,7 +34,7 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 
   // Validate session by calling the API
   try {
-    const response = await fetch(`${API_URL}/api/auth/me`, {
+    const response = await fetch(`${env.API_URL}/api/auth/me`, {
       headers: {
         cookie: `session=${sessionCookie}`,
       },

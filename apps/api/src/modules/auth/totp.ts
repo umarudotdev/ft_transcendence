@@ -2,6 +2,8 @@ import { encodeBase32 } from "@oslojs/encoding";
 import { createTOTPKeyURI, verifyTOTP } from "@oslojs/otp";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
+import { env } from "../../env";
+
 // App name shown in authenticator
 const TOTP_ISSUER = "ft_transcendence";
 
@@ -11,7 +13,7 @@ const TOTP_DIGITS = 6;
 
 // Get encryption key from environment or generate a temporary one (for development)
 function getEncryptionKey(): Buffer {
-  const keyHex = process.env.TOTP_ENCRYPTION_KEY;
+  const keyHex = env.TOTP_ENCRYPTION_KEY;
   if (keyHex) {
     const key = Buffer.from(keyHex, "hex");
     if (key.length !== 32) {
@@ -19,10 +21,7 @@ function getEncryptionKey(): Buffer {
     }
     return key;
   }
-  // For development - generate a temporary key (not secure for production)
-  console.warn(
-    "WARNING: Using temporary TOTP encryption key. Set TOTP_ENCRYPTION_KEY in production."
-  );
+  // For development - generate a temporary key (warnings already logged by env.ts)
   return randomBytes(32);
 }
 

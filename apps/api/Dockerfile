@@ -24,6 +24,9 @@ COPY . .
 
 WORKDIR /usr/src/app/apps/api
 
+# Create uploads directory with proper ownership before switching to bun user
+RUN mkdir -p uploads/avatars && chown -R bun:bun uploads
+
 USER bun
 EXPOSE 3000/tcp
 CMD ["bun", "run", "dev"]
@@ -35,6 +38,9 @@ COPY --from=install /usr/src/app/apps/api/node_modules ./apps/api/node_modules
 COPY apps/api ./apps/api
 
 WORKDIR /usr/src/app/apps/api
+
+# Create uploads directory with proper ownership before switching to bun user
+RUN mkdir -p uploads/avatars && chown -R bun:bun uploads
 
 ENV NODE_ENV=production
 USER bun

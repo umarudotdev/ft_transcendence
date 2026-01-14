@@ -102,7 +102,6 @@
 					<Label for="password">Password</Label>
 					<Input id="password" type="password" bind:value={password} required minlength={8} />
 
-					<!-- Password strength indicator -->
 					<div class="text-sm space-y-1 mt-2">
 						<p class="font-medium">Password requirements:</p>
 						<ul class="list-inside list-disc text-muted-foreground">

@@ -169,7 +169,6 @@
 <div class="min-h-screen bg-gray-50 py-8">
   <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
     {#if isOwnProfile}
-      <!-- Redirect to own profile -->
       <Card>
         <CardContent class="p-6 text-center">
           <p class="text-muted-foreground">
@@ -181,7 +180,6 @@
         </CardContent>
       </Card>
     {:else if profileQuery.isPending}
-      <!-- Loading Skeleton -->
       <div class="space-y-6">
         <Card>
           <CardContent class="p-6">
@@ -209,11 +207,9 @@
       {@const { user, friendshipStatus } = profileQuery.data}
       {@const friendButton = getFriendButtonProps(friendshipStatus)}
 
-      <!-- Profile Header -->
       <Card class="mb-6">
         <CardContent class="p-6">
           <div class="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
-            <!-- Avatar -->
             <Avatar class="h-24 w-24 sm:h-32 sm:w-32">
               {#if user.avatarUrl}
                 <AvatarImage src={user.avatarUrl} alt={user.displayName} />
@@ -223,14 +219,12 @@
               </AvatarFallback>
             </Avatar>
 
-            <!-- User Info -->
             <div class="flex-1 text-center sm:text-left">
               <h1 class="text-2xl font-bold">{user.displayName}</h1>
               <p class="mt-1 text-muted-foreground">
                 Member since {formatJoinDate(user.createdAt)}
               </p>
 
-              <!-- Friendship Status Badge -->
               {#if friendshipStatus === "friends"}
                 <Badge variant="secondary" class="mt-2">
                   <svg class="mr-1 h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
@@ -244,7 +238,6 @@
                 </Badge>
               {/if}
 
-              <!-- Actions -->
               <div class="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
                 {#if friendButton.action}
                   <Button
@@ -284,18 +277,15 @@
         </CardContent>
       </Card>
 
-      <!-- Tabs -->
       <Tabs value="overview" class="space-y-6">
         <TabsList class="grid w-full grid-cols-2">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="matches">Match History</TabsTrigger>
         </TabsList>
 
-        <!-- Overview Tab -->
         <TabsContent value="overview" class="space-y-6">
           <StatsCard stats={statsQuery.data} loading={statsQuery.isPending} />
 
-          <!-- Recent Matches Preview -->
           <Card>
             <CardContent class="p-4">
               <h3 class="mb-4 font-semibold">Recent Matches</h3>
@@ -340,7 +330,6 @@
           </Card>
         </TabsContent>
 
-        <!-- Match History Tab -->
         <TabsContent value="matches">
           <MatchHistory
             matches={matchesQuery.data?.matches ?? []}

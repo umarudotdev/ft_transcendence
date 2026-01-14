@@ -34,7 +34,6 @@ export {
   Label,
   GroupHeading,
   Portal,
-  //
   Root as Menubar,
   CheckboxItem as MenubarCheckboxItem,
   Content as MenubarContent,

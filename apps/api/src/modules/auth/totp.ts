@@ -4,14 +4,11 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
 import { env } from "../../env";
 
-// App name shown in authenticator
 const TOTP_ISSUER = "ft_transcendence";
 
-// TOTP settings (standard values)
 const TOTP_PERIOD_SECONDS = 30;
 const TOTP_DIGITS = 6;
 
-// Get encryption key from environment or generate a temporary one (for development)
 function getEncryptionKey(): Buffer {
   const keyHex = env.TOTP_ENCRYPTION_KEY;
   if (keyHex) {
@@ -21,7 +18,7 @@ function getEncryptionKey(): Buffer {
     }
     return key;
   }
-  // For development - generate a temporary key (warnings already logged by env.ts)
+
   return randomBytes(32);
 }
 
@@ -36,10 +33,8 @@ export function generateTotpSecret(userEmail: string): {
   secret: Uint8Array;
   keyUri: string;
 } {
-  // 20 bytes is standard for TOTP (160 bits)
   const secret = randomBytes(20);
 
-  // Generate the otpauth:// URI for QR codes
   const keyUri = createTOTPKeyURI(
     TOTP_ISSUER,
     userEmail,
@@ -73,7 +68,6 @@ export function encryptSecret(secret: Uint8Array): string {
 
   const authTag = cipher.getAuthTag();
 
-  // Format: iv:authTag:encrypted (all base64)
   return [
     iv.toString("base64"),
     authTag.toString("base64"),

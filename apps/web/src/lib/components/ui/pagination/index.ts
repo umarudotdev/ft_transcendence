@@ -18,7 +18,6 @@ export {
   Ellipsis,
   Previous,
   Next,
-  //
   Root as Pagination,
   Content as PaginationContent,
   Item as PaginationItem,

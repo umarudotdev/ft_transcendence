@@ -21,8 +21,6 @@ type EmblaCarouselConfig = NonNullable<
 export type CarouselOptions = EmblaCarouselConfig["options"];
 export type CarouselPlugins = EmblaCarouselConfig["plugins"];
 
-////
-
 export type CarouselProps = {
   opts?: CarouselOptions;
   plugins?: CarouselPlugins;

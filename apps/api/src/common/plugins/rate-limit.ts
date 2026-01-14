@@ -10,7 +10,6 @@ interface RateLimitRecord {
   resetAt: number;
 }
 
-// Custom error class for rate limit errors
 class RateLimitError extends Error {
   constructor(public retryAfter: number) {
     super(`Too many requests. Retry after ${retryAfter} seconds.`);
@@ -18,8 +17,6 @@ class RateLimitError extends Error {
   }
 }
 
-// Simple in-memory rate limiter
-// In production, use Redis for distributed environments
 const requestCounts = new Map<string, RateLimitRecord>();
 
 /**
@@ -43,18 +40,15 @@ export function rateLimit(config: RateLimitConfig) {
       }
     })
     .derive({ as: "scoped" }, (ctx) => {
-      // Get client IP (handle proxies)
       const forwardedFor = ctx.request.headers.get("x-forwarded-for");
       const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
 
-      // Create a key based on IP and URL path
       const url = new URL(ctx.request.url);
       const key = `${ip}:${url.pathname}`;
       const now = Date.now();
 
       let record = requestCounts.get(key);
 
-      // Reset if window expired
       if (!record || now > record.resetAt) {
         record = { count: 0, resetAt: now + config.window };
         requestCounts.set(key, record);
@@ -62,7 +56,6 @@ export function rateLimit(config: RateLimitConfig) {
 
       record.count++;
 
-      // Add rate limit headers
       const remaining = Math.max(0, config.max - record.count);
       const resetSeconds = Math.ceil((record.resetAt - now) / 1000);
 
@@ -70,7 +63,6 @@ export function rateLimit(config: RateLimitConfig) {
       ctx.set.headers["X-RateLimit-Remaining"] = String(remaining);
       ctx.set.headers["X-RateLimit-Reset"] = String(resetSeconds);
 
-      // Check if over limit
       if (record.count > config.max) {
         throw new RateLimitError(resetSeconds);
       }
@@ -79,7 +71,6 @@ export function rateLimit(config: RateLimitConfig) {
     });
 }
 
-// Cleanup old entries periodically (every minute)
 setInterval(() => {
   const now = Date.now();
   for (const [key, record] of requestCounts) {

@@ -57,7 +57,6 @@
 </svelte:head>
 
 <div class="min-h-screen bg-background relative overflow-hidden">
-  <!-- Decorative background grid -->
   <div
     class="absolute inset-0 opacity-[0.02]"
     style="background-image: linear-gradient(var(--foreground) 1px, transparent 1px),
@@ -65,7 +64,6 @@
            background-size: 32px 32px;"
   ></div>
 
-  <!-- Decorative orbs -->
   <div
     class="absolute -top-32 -right-32 w-96 h-96 rounded-full blur-3xl opacity-20 pointer-events-none"
     class:bg-emerald-500={status && !error}
@@ -74,7 +72,6 @@
   ></div>
 
   <div class="relative container mx-auto px-4 py-16 max-w-2xl">
-    <!-- Header -->
     <header class="text-center mb-12 space-y-4">
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border bg-card/50 backdrop-blur-sm">
         <span class="relative flex h-2 w-2">
@@ -107,7 +104,6 @@
       </p>
     </header>
 
-    <!-- Main status card -->
     <Card.Root class="border-2 shadow-lg overflow-hidden">
       <Card.Header class="pb-4">
         <div class="flex items-center justify-between">
@@ -161,7 +157,6 @@
           </Alert.Root>
         {/if}
 
-        <!-- Status details -->
         {#if !loading}
           <div class="pt-4 border-t">
             <dl class="grid grid-cols-2 gap-4 text-sm">
@@ -201,7 +196,6 @@
       </Card.Footer>
     </Card.Root>
 
-    <!-- Footer note -->
     <p class="text-center text-xs text-muted-foreground mt-8">
       Automatic health checks run every 30 seconds in production
     </p>

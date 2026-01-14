@@ -7,8 +7,6 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
  * @param length - Number of bytes (output is URL-safe base64 encoded)
  */
 export function generateSecureToken(length = 32): string {
-  // randomBytes is cryptographically secure
-  // toString("base64url") is URL-safe (no +, /, =)
   return randomBytes(length).toString("base64url");
 }
 

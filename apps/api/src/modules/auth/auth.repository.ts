@@ -9,15 +9,7 @@ import {
   users,
 } from "../../db/schema";
 
-// =============================================================================
-// AUTH REPOSITORY
-// =============================================================================
-
 export const authRepository = {
-  // ---------------------------------------------------------------------------
-  // User Queries
-  // ---------------------------------------------------------------------------
-
   async findUserById(id: number) {
     return db.query.users.findFirst({
       where: eq(users.id, id),
@@ -25,7 +17,6 @@ export const authRepository = {
   },
 
   async findUserByEmail(email: string) {
-    // Normalize email to lowercase for case-insensitive matching
     return db.query.users.findFirst({
       where: eq(users.email, email.toLowerCase()),
     });
@@ -36,10 +27,6 @@ export const authRepository = {
       where: eq(users.intraId, intraId),
     });
   },
-
-  // ---------------------------------------------------------------------------
-  // User Mutations
-  // ---------------------------------------------------------------------------
 
   async createUser(data: {
     email: string;
@@ -56,7 +43,6 @@ export const authRepository = {
         displayName: data.displayName,
         intraId: data.intraId,
         avatarUrl: data.avatarUrl,
-        // OAuth users are pre-verified (we trust the provider)
         emailVerified: data.intraId !== undefined,
       })
       .returning();
@@ -134,17 +120,11 @@ export const authRepository = {
     return updated;
   },
 
-  // ---------------------------------------------------------------------------
-  // Account Lockout
-  // ---------------------------------------------------------------------------
-
   async incrementFailedLogins(userId: number) {
     const user = await this.findUserById(userId);
     if (!user) return null;
 
     const newCount = user.failedLoginAttempts + 1;
-
-    // Lock account after 10 failed attempts for 15 minutes
     const lockUntil =
       newCount >= 10 ? new Date(Date.now() + 15 * 60 * 1000) : null;
 
@@ -174,10 +154,6 @@ export const authRepository = {
 
     return updated;
   },
-
-  // ---------------------------------------------------------------------------
-  // Session Operations
-  // ---------------------------------------------------------------------------
 
   async createSession(userId: number, expiresAt: Date) {
     const id = generateSecureToken(32);
@@ -215,12 +191,7 @@ export const authRepository = {
     await db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
   },
 
-  // ---------------------------------------------------------------------------
-  // Email Verification Tokens
-  // ---------------------------------------------------------------------------
-
   async createEmailVerificationToken(userId: number, expiresAt: Date) {
-    // Delete any existing tokens for this user first
     await db
       .delete(emailVerificationTokens)
       .where(eq(emailVerificationTokens.userId, userId));
@@ -251,12 +222,7 @@ export const authRepository = {
       .where(eq(emailVerificationTokens.id, tokenId));
   },
 
-  // ---------------------------------------------------------------------------
-  // Password Reset Tokens
-  // ---------------------------------------------------------------------------
-
   async createPasswordResetToken(userId: number, expiresAt: Date) {
-    // Delete any existing tokens for this user first
     await db
       .delete(passwordResetTokens)
       .where(eq(passwordResetTokens.userId, userId));

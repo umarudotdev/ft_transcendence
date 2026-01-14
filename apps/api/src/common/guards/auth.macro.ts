@@ -4,10 +4,6 @@ import type { SafeUser } from "../../modules/auth/auth.model";
 
 import { AuthService } from "../../modules/auth/auth.service";
 
-// =============================================================================
-// Auth Error
-// =============================================================================
-
 class AuthError extends Error {
   constructor(
     message: string,
@@ -17,10 +13,6 @@ class AuthError extends Error {
     this.name = "AuthError";
   }
 }
-
-// =============================================================================
-// Auth Macro - Elysia Best Practice Pattern
-// =============================================================================
 
 /**
  * Authentication macro for Elysia routes.
@@ -52,7 +44,6 @@ export const AuthMacro = new Elysia({ name: "Auth.Macro" })
         const result = await AuthService.validateSession(String(sessionId));
 
         if (result.isErr()) {
-          // Clear invalid session cookie
           cookie.session.remove();
 
           const err = result.error;
@@ -66,10 +57,6 @@ export const AuthMacro = new Elysia({ name: "Auth.Macro" })
       },
     },
   });
-
-// =============================================================================
-// Legacy Auth Guard (for backward compatibility during migration)
-// =============================================================================
 
 /**
  * Legacy authentication guard using derive pattern.
@@ -94,7 +81,6 @@ export const authGuard = new Elysia({ name: "auth-guard" })
     const result = await AuthService.validateSession(String(sessionId));
 
     if (result.isErr()) {
-      // Clear invalid session cookie
       ctx.cookie.session.remove();
 
       const err = result.error;
@@ -107,5 +93,4 @@ export const authGuard = new Elysia({ name: "auth-guard" })
     return { user: result.value };
   });
 
-// Re-export SafeUser for convenience
 export type { SafeUser };

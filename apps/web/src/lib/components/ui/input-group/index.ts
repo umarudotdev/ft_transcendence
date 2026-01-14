@@ -12,7 +12,6 @@ export {
   Input,
   Text,
   Textarea,
-  //
   Root as InputGroup,
   Addon as InputGroupAddon,
   Button as InputGroupButton,

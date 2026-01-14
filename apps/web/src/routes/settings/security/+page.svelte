@@ -92,7 +92,6 @@
     {:else if meQuery.data}
       {@const user = meQuery.data}
       <div class="space-y-6">
-        <!-- Change Password Section -->
         <div class="overflow-hidden rounded-lg bg-white shadow">
           <div class="px-4 py-5 sm:p-6">
             <h2 class="text-lg font-medium text-gray-900">Change Password</h2>
@@ -172,7 +171,6 @@
                   />
                 </div>
 
-                <!-- Password Requirements -->
                 {#if newPassword.length > 0}
                   <div class="rounded-md bg-gray-50 p-4">
                     <p class="text-sm font-medium text-gray-700">
@@ -237,7 +235,6 @@
           </div>
         </div>
 
-        <!-- 42 OAuth Section -->
         <div class="overflow-hidden rounded-lg bg-white shadow">
           <div class="px-4 py-5 sm:p-6">
             <h2 class="text-lg font-medium text-gray-900">42 Account</h2>
@@ -286,7 +283,6 @@
           </div>
         </div>
 
-        <!-- Two-Factor Authentication Section -->
         <div class="overflow-hidden rounded-lg bg-white shadow">
           <div class="px-4 py-5 sm:p-6">
             <h2 class="text-lg font-medium text-gray-900">
@@ -351,7 +347,6 @@
           </div>
         </div>
 
-        <!-- Logout All Sessions -->
         <div class="overflow-hidden rounded-lg bg-white shadow">
           <div class="px-4 py-5 sm:p-6">
             <h2 class="text-lg font-medium text-gray-900">Active Sessions</h2>

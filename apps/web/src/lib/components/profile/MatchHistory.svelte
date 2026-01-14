@@ -116,7 +116,6 @@
         <p class="mt-1 text-sm">Start playing to see your match history!</p>
       </div>
     {:else}
-      <!-- Desktop Table -->
       <div class="hidden md:block">
         <Table>
           <TableHeader>
@@ -174,7 +173,6 @@
         </Table>
       </div>
 
-      <!-- Mobile List -->
       <div class="space-y-3 md:hidden">
         {#each matches as match}
           <div
@@ -216,7 +214,6 @@
         {/each}
       </div>
 
-      <!-- Load More -->
       {#if hasMore}
         <div class="mt-4 flex justify-center">
           <Button

@@ -7,16 +7,11 @@ import {
 } from "./password";
 
 describe("Password Utilities", () => {
-  // ---------------------------------------------------------------------------
-  // hashPassword
-  // ---------------------------------------------------------------------------
-
   describe("hashPassword", () => {
     test("should generate a valid Argon2id hash", async () => {
       const password = "TestPassword123";
       const hash = await hashPassword(password);
 
-      // Argon2id hashes start with $argon2id$
       expect(hash.startsWith("$argon2id$")).toBe(true);
     });
 
@@ -25,7 +20,6 @@ describe("Password Utilities", () => {
       const hash1 = await hashPassword(password);
       const hash2 = await hashPassword(password);
 
-      // Each hash includes a unique salt, so they should be different
       expect(hash1).not.toBe(hash2);
     });
 
@@ -33,16 +27,11 @@ describe("Password Utilities", () => {
       const password = "TestPassword123";
       const hash = await hashPassword(password);
 
-      // Check that OWASP-recommended parameters are in the hash
-      expect(hash).toContain("m=19456"); // memoryCost
-      expect(hash).toContain("t=2"); // timeCost
-      expect(hash).toContain("p=1"); // parallelism
+      expect(hash).toContain("m=19456");
+      expect(hash).toContain("t=2");
+      expect(hash).toContain("p=1");
     });
   });
-
-  // ---------------------------------------------------------------------------
-  // verifyPassword
-  // ---------------------------------------------------------------------------
 
   describe("verifyPassword", () => {
     test("should return true for matching password", async () => {
@@ -84,10 +73,6 @@ describe("Password Utilities", () => {
       expect(result).toBe(false);
     });
   });
-
-  // ---------------------------------------------------------------------------
-  // validatePasswordStrength
-  // ---------------------------------------------------------------------------
 
   describe("validatePasswordStrength", () => {
     test("should accept valid password meeting all requirements", () => {
@@ -136,7 +121,7 @@ describe("Password Utilities", () => {
 
       for (const pwd of commonPasswords) {
         const result = validatePasswordStrength(pwd);
-        // Some may fail for other reasons too, but common ones should be flagged
+
         if (pwd.toLowerCase() === "password") {
           expect(result.requirements).toContain("Password is too common");
         }

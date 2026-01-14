@@ -141,7 +141,6 @@
               </div>
             </div>
           {:else if isDisableMode}
-            <!-- Disable 2FA Mode -->
             {#if !user.twoFactorEnabled}
               <div class="rounded-md bg-yellow-50 p-4">
                 <p class="text-sm text-yellow-800">
@@ -224,7 +223,6 @@
               </form>
             {/if}
           {:else}
-            <!-- Enable 2FA Mode -->
             {#if user.twoFactorEnabled}
               <div class="rounded-md bg-green-50 p-4">
                 <div class="flex">
@@ -254,7 +252,6 @@
                 </div>
               </div>
             {:else if step === "initial"}
-              <!-- Step 1: Show setup button -->
               <div class="space-y-6">
                 <div class="text-center">
                   <div
@@ -318,7 +315,6 @@
                 </button>
               </div>
             {:else if step === "verify" && qrData}
-              <!-- Step 2: Show QR code and verify -->
               <form onsubmit={handleVerifyAndEnable} class="space-y-6">
                 <div class="text-center">
                   <h3 class="text-lg font-medium text-gray-900">
@@ -329,7 +325,6 @@
                   </p>
                 </div>
 
-                <!-- QR Code Display -->
                 <div class="flex justify-center">
                   <div class="rounded-lg bg-white p-4 shadow-inner">
                     <img
@@ -340,7 +335,6 @@
                   </div>
                 </div>
 
-                <!-- Manual entry secret -->
                 <div class="rounded-md bg-gray-50 p-4">
                   <p class="text-sm font-medium text-gray-700">
                     Can't scan the code? Enter this key manually:

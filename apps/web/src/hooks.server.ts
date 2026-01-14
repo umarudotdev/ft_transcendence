@@ -3,7 +3,6 @@ import { paraglideMiddleware } from "$lib/paraglide/server";
 import { redirect, type Handle } from "@sveltejs/kit";
 import { sequence } from "@sveltejs/kit/hooks";
 
-// Routes that require authentication
 const PROTECTED_ROUTES = ["/profile", "/settings"];
 
 /**
@@ -26,25 +25,20 @@ function isApiRoute(pathname: string): boolean {
  * Authentication handler - redirects unauthenticated users to login
  */
 const handleAuth: Handle = async ({ event, resolve }) => {
-  // Skip API routes - let Vite proxy handle them
   if (isApiRoute(event.url.pathname)) {
     return resolve(event);
   }
 
-  // Only check protected routes
   if (!isProtectedRoute(event.url.pathname)) {
     return resolve(event);
   }
 
-  // Get session cookie from the request
   const sessionCookie = event.cookies.get("session");
 
   if (!sessionCookie) {
-    // No session cookie - redirect to login
     throw redirect(302, "/auth/login");
   }
 
-  // Validate session by calling the API
   try {
     const response = await fetch(`${env.API_URL}/api/auth/me`, {
       headers: {
@@ -53,15 +47,12 @@ const handleAuth: Handle = async ({ event, resolve }) => {
     });
 
     if (!response.ok) {
-      // Session invalid or expired - redirect to login
       throw redirect(302, "/auth/login");
     }
 
-    // Session is valid - attach user to locals for use in pages
     const data = await response.json();
     event.locals.user = data.user;
   } catch (error) {
-    // If it's already a redirect, rethrow it
     if (
       error instanceof Response ||
       (error as { status?: number }).status === 302
@@ -69,7 +60,6 @@ const handleAuth: Handle = async ({ event, resolve }) => {
       throw error;
     }
 
-    // Network error or other issue - redirect to login
     throw redirect(302, "/auth/login");
   }
 
@@ -80,7 +70,6 @@ const handleAuth: Handle = async ({ event, resolve }) => {
  * Paraglide i18n handler
  */
 const handleParaglide: Handle = ({ event, resolve }) => {
-  // Skip API routes - they don't need i18n
   if (isApiRoute(event.url.pathname)) {
     return resolve(event);
   }

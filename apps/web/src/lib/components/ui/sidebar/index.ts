@@ -46,7 +46,6 @@ export {
   Rail,
   Root,
   Separator,
-  //
   Root as Sidebar,
   Content as SidebarContent,
   Footer as SidebarFooter,

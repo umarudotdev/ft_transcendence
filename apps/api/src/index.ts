@@ -7,7 +7,6 @@ import { authController } from "./modules/auth/auth.controller";
 import { statusController } from "./modules/status/status.controller";
 import { usersController } from "./modules/users/users.controller";
 
-// Allowed origins for CORS
 const ALLOWED_ORIGINS = [
   env.FRONTEND_URL,
   "http://localhost:5173",

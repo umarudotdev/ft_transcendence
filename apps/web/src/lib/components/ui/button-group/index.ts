@@ -6,7 +6,6 @@ export {
   Root,
   Text,
   Separator,
-  //
   Root as ButtonGroup,
   Text as ButtonGroupText,
   Separator as ButtonGroupSeparator,

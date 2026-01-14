@@ -1,12 +1,10 @@
 import { hash, verify } from "@node-rs/argon2";
 
-// OWASP recommended settings for Argon2id
-// These values balance security and performance
 const ARGON2_OPTIONS = {
-  memoryCost: 19456, // 19 MiB - makes GPU attacks expensive
-  timeCost: 2, // Number of iterations
-  parallelism: 1, // Single-threaded (adjust based on server)
-  outputLen: 32, // Output hash length in bytes
+  memoryCost: 19456,
+  timeCost: 2,
+  parallelism: 1,
+  outputLen: 32,
 };
 
 /**
@@ -31,21 +29,15 @@ export async function verifyPassword(
   try {
     return await verify(storedHash, password);
   } catch {
-    // Invalid hash format
     return false;
   }
 }
-
-// =============================================================================
-// Password Strength Validation
-// =============================================================================
 
 interface PasswordValidation {
   valid: boolean;
   requirements: string[];
 }
 
-// Common passwords to check against (top passwords from various breaches)
 const COMMON_PASSWORDS = new Set([
   "password",
   "123456",

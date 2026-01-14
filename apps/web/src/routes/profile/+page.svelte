@@ -135,7 +135,6 @@
 <div class="min-h-screen bg-gray-50 py-8">
   <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
     {#if meQuery.isPending}
-      <!-- Loading Skeleton -->
       <div class="space-y-6">
         <Card>
           <CardContent class="p-6">
@@ -162,11 +161,9 @@
     {:else if meQuery.data}
       {@const user = meQuery.data}
 
-      <!-- Profile Header -->
       <Card class="mb-6">
         <CardContent class="p-6">
           <div class="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
-            <!-- Avatar -->
             <div class="text-center">
               <AvatarUpload
                 avatarUrl={user.avatarUrl}
@@ -176,7 +173,6 @@
               />
             </div>
 
-            <!-- User Info -->
             <div class="flex-1 text-center sm:text-left">
               <div class="flex flex-col items-center gap-2 sm:flex-row">
                 <h1 class="text-2xl font-bold">{user.displayName}</h1>
@@ -202,7 +198,6 @@
               </div>
               <p class="mt-1 text-muted-foreground">{user.email}</p>
 
-              <!-- Badges -->
               <div class="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
                 {#if user.emailVerified}
                   <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
@@ -225,7 +220,6 @@
                 {/if}
               </div>
 
-              <!-- Quick Actions -->
               <div class="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
                 <Button variant="outline" size="sm" onclick={() => goto("/settings")}>
                   Settings
@@ -239,7 +233,6 @@
         </CardContent>
       </Card>
 
-      <!-- Tabs -->
       <Tabs value="overview" class="space-y-6">
         <TabsList class="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -247,11 +240,9 @@
           <TabsTrigger value="friends">Friends</TabsTrigger>
         </TabsList>
 
-        <!-- Overview Tab -->
         <TabsContent value="overview" class="space-y-6">
           <StatsCard stats={statsQuery.data} loading={statsQuery.isPending} />
 
-          <!-- Recent Matches Preview -->
           <Card>
             <CardHeader class="flex flex-row items-center justify-between pb-2">
               <CardTitle class="text-lg">Recent Matches</CardTitle>
@@ -299,7 +290,6 @@
           </Card>
         </TabsContent>
 
-        <!-- Match History Tab -->
         <TabsContent value="matches">
           <MatchHistory
             matches={matchesQuery.data?.matches ?? []}
@@ -312,7 +302,6 @@
           />
         </TabsContent>
 
-        <!-- Friends Tab -->
         <TabsContent value="friends">
           <FriendsList
             friends={friendsQuery.data ?? []}
@@ -329,7 +318,6 @@
   </div>
 </div>
 
-<!-- Edit Display Name Dialog -->
 <Dialog bind:open={showEditDialog}>
   <DialogContent>
     <DialogHeader>

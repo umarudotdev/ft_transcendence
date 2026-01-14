@@ -5,18 +5,10 @@ import {
   useQueryClient,
 } from "@tanstack/svelte-query";
 
-// =============================================================================
-// Query Keys
-// =============================================================================
-
 export const authKeys = {
   all: ["auth"] as const,
   me: () => [...authKeys.all, "me"] as const,
 };
-
-// =============================================================================
-// Types
-// =============================================================================
 
 export interface User {
   id: number;
@@ -74,10 +66,6 @@ export interface Verify2faSetupInput {
   code: string;
 }
 
-// =============================================================================
-// Queries
-// =============================================================================
-
 /**
  * Query to get the current authenticated user.
  */
@@ -101,10 +89,6 @@ export function createMeQuery() {
     retry: false,
   }));
 }
-
-// =============================================================================
-// Mutations
-// =============================================================================
 
 /**
  * Mutation to register a new user.
@@ -374,7 +358,6 @@ export function createChangePasswordMutation() {
       return response.data;
     },
     onSuccess: () => {
-      // Password change invalidates all sessions
       queryClient.invalidateQueries({ queryKey: authKeys.me() });
       queryClient.clear();
     },
@@ -456,10 +439,6 @@ export function createDisable2faMutation() {
     },
   }));
 }
-
-// =============================================================================
-// OAuth Helpers
-// =============================================================================
 
 /**
  * Redirect to 42 OAuth login.

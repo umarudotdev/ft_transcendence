@@ -43,7 +43,6 @@
     {:else if meQuery.data}
       {@const user = meQuery.data}
 
-      <!-- User Profile Card -->
       <div class="mb-6 overflow-hidden rounded-lg bg-white shadow">
         <div class="px-4 py-5 sm:p-6">
           <div class="flex items-center">
@@ -92,7 +91,6 @@
         </div>
       </div>
 
-      <!-- Settings Navigation -->
       <div class="space-y-4">
         <a
           href="/settings/security"
@@ -142,7 +140,6 @@
           </div>
         </a>
 
-        <!-- Logout Button -->
         <div class="pt-4">
           <button
             type="button"

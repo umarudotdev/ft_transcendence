@@ -5,10 +5,6 @@ import {
   useQueryClient,
 } from "@tanstack/svelte-query";
 
-// =============================================================================
-// Query Keys
-// =============================================================================
-
 export const usersKeys = {
   all: ["users"] as const,
   profile: (id: number) => [...usersKeys.all, "profile", id] as const,
@@ -23,10 +19,6 @@ export const usersKeys = {
   sentRequests: () => [...usersKeys.all, "sent-requests"] as const,
   search: (query: string) => [...usersKeys.all, "search", query] as const,
 };
-
-// =============================================================================
-// Types
-// =============================================================================
 
 export interface PublicUser {
   id: number;
@@ -102,10 +94,6 @@ export type FriendshipStatus =
   | "pending_received"
   | "blocked"
   | "blocked_by";
-
-// =============================================================================
-// Current User Queries
-// =============================================================================
 
 export function createMyStatsQuery(gameType?: string) {
   return createQuery<UserStats | null, Error>(() => ({
@@ -227,10 +215,6 @@ export function createSentRequestsQuery() {
   }));
 }
 
-// =============================================================================
-// Public Profile Queries
-// =============================================================================
-
 export function createUserProfileQuery(userId: number) {
   return createQuery<
     { user: PublicUser; friendshipStatus: FriendshipStatus } | null,
@@ -325,10 +309,6 @@ export function createUserMatchesQuery(
   }));
 }
 
-// =============================================================================
-// Search Query
-// =============================================================================
-
 export function createSearchUsersQuery(query: string) {
   return createQuery<
     Array<{ id: number; displayName: string; avatarUrl: string | null }>,
@@ -354,10 +334,6 @@ export function createSearchUsersQuery(query: string) {
     enabled: query.length >= 1,
   }));
 }
-
-// =============================================================================
-// Mutations
-// =============================================================================
 
 export function createUpdateProfileMutation() {
   const queryClient = useQueryClient();

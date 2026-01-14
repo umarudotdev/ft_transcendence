@@ -8,33 +8,23 @@ import { AuthService } from "./auth.service";
 
 const isProduction = env.NODE_ENV === "production";
 
-// Cookie configuration for sessions
 const SESSION_COOKIE_OPTIONS = {
-  httpOnly: true, // Not accessible via JavaScript
-  secure: isProduction, // HTTPS only in production
-  sameSite: "lax" as const, // CSRF protection
-  path: "/", // Available on all paths
-  maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: "lax" as const,
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60,
 };
 
-// OAuth state cookie options (shorter-lived)
 const OAUTH_STATE_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: isProduction,
   sameSite: "lax" as const,
   path: "/",
-  maxAge: 10 * 60, // 10 minutes
+  maxAge: 10 * 60,
 };
 
 export const authController = new Elysia({ prefix: "/auth" })
-
-  // ===========================================================================
-  // RATE-LIMITED PUBLIC ROUTES (isolated in groups to prevent cascade)
-  // ===========================================================================
-
-  // ---------------------------------------------------------------------------
-  // Registration (rate limited: 3/hour)
-  // ---------------------------------------------------------------------------
   .group("", (app) =>
     app.use(rateLimit({ max: 3, window: 60 * 60 * 1000 })).post(
       "/register",
@@ -47,7 +37,7 @@ export const authController = new Elysia({ prefix: "/auth" })
             set.status = 409;
             return { message: "Email already registered" };
           }
-          // Must be WEAK_PASSWORD
+
           set.status = 400;
           return {
             message: "Password too weak",
@@ -55,13 +45,11 @@ export const authController = new Elysia({ prefix: "/auth" })
           };
         }
 
-        // In production, send verification email
-        // For now, return the token for testing purposes
         const { user, verificationToken } = result.value;
         return {
           message: "Registration successful. Please verify your email.",
           user,
-          // TODO: Remove in production - send via email instead
+
           verificationToken: !isProduction ? verificationToken : undefined,
         };
       },
@@ -70,10 +58,6 @@ export const authController = new Elysia({ prefix: "/auth" })
       }
     )
   )
-
-  // ---------------------------------------------------------------------------
-  // Login (rate limited: 5/15min)
-  // ---------------------------------------------------------------------------
   .group("", (app) =>
     app.use(rateLimit({ max: 5, window: 15 * 60 * 1000 })).post(
       "/login",
@@ -97,15 +81,14 @@ export const authController = new Elysia({ prefix: "/auth" })
               unlockAt: err.unlockAt.toISOString(),
             };
           }
-          // Must be REQUIRES_2FA
-          // Store user ID temporarily for 2FA verification
+
           cookie.pending_2fa.set({
             value: String(err.userId),
             httpOnly: true,
             secure: isProduction,
             sameSite: "lax",
             path: "/",
-            maxAge: 5 * 60, // 5 minutes to complete 2FA
+            maxAge: 5 * 60,
           });
           return {
             message: "2FA required",
@@ -115,7 +98,6 @@ export const authController = new Elysia({ prefix: "/auth" })
 
         const { sessionId, user } = result.value;
 
-        // Set session cookie
         cookie.session.set({
           value: sessionId,
           ...SESSION_COOKIE_OPTIONS,
@@ -131,10 +113,6 @@ export const authController = new Elysia({ prefix: "/auth" })
       }
     )
   )
-
-  // ---------------------------------------------------------------------------
-  // 2FA Verification (during login) - shares login rate limit via group
-  // ---------------------------------------------------------------------------
   .group("", (app) =>
     app.use(rateLimit({ max: 5, window: 15 * 60 * 1000 })).post(
       "/2fa/login",
@@ -155,7 +133,6 @@ export const authController = new Elysia({ prefix: "/auth" })
 
         const result = await AuthService.loginWith2fa(userId, body.code);
 
-        // Clear pending 2FA cookie regardless of result
         cookie.pending_2fa.remove();
 
         if (result.isErr()) {
@@ -165,7 +142,6 @@ export const authController = new Elysia({ prefix: "/auth" })
 
         const { sessionId, user } = result.value;
 
-        // Set session cookie
         cookie.session.set({
           value: sessionId,
           ...SESSION_COOKIE_OPTIONS,
@@ -181,10 +157,6 @@ export const authController = new Elysia({ prefix: "/auth" })
       }
     )
   )
-
-  // ---------------------------------------------------------------------------
-  // Email Verification (no rate limit needed - tokens are one-time use)
-  // ---------------------------------------------------------------------------
   .post(
     "/verify-email",
     async ({ body, set }) => {
@@ -207,19 +179,12 @@ export const authController = new Elysia({ prefix: "/auth" })
       body: AuthModel.verifyEmail,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Forgot Password (rate limited: 3/hour)
-  // ---------------------------------------------------------------------------
   .group("", (app) =>
     app.use(rateLimit({ max: 3, window: 60 * 60 * 1000 })).post(
       "/forgot-password",
       async ({ body }) => {
-        // Always returns success to prevent email enumeration
         const result = await AuthService.requestPasswordReset(body.email);
 
-        // In production, send email with reset link
-        // For development, log the token
         if (result.isOk() && result.value.resetToken && !isProduction) {
           console.log(
             `Password reset token for ${body.email}: ${result.value.resetToken}`
@@ -235,10 +200,6 @@ export const authController = new Elysia({ prefix: "/auth" })
       }
     )
   )
-
-  // ---------------------------------------------------------------------------
-  // Reset Password (rate limited: 5/hour)
-  // ---------------------------------------------------------------------------
   .group("", (app) =>
     app.use(rateLimit({ max: 5, window: 60 * 60 * 1000 })).post(
       "/reset-password",
@@ -272,10 +233,6 @@ export const authController = new Elysia({ prefix: "/auth" })
       }
     )
   )
-
-  // ---------------------------------------------------------------------------
-  // OAuth: Initiate 42 Login (no rate limit - redirects to external)
-  // ---------------------------------------------------------------------------
   .get("/42", ({ cookie, set }) => {
     const result = AuthService.generateOAuthUrl();
 
@@ -286,20 +243,14 @@ export const authController = new Elysia({ prefix: "/auth" })
 
     const { url, state } = result;
 
-    // Store state in cookie for CSRF protection
     cookie.oauth_state.set({
       value: state,
       ...OAUTH_STATE_COOKIE_OPTIONS,
     });
 
-    // Redirect to 42
     set.redirect = url;
     return { message: "Redirecting to 42 OAuth" };
   })
-
-  // ---------------------------------------------------------------------------
-  // OAuth: Handle 42 Callback
-  // ---------------------------------------------------------------------------
   .get(
     "/42/callback",
     async ({ query, cookie, set }) => {
@@ -307,11 +258,9 @@ export const authController = new Elysia({ prefix: "/auth" })
       const state = query.state;
       const storedState = cookie.oauth_state?.value;
 
-      // Clear the state cookie
       cookie.oauth_state.remove();
 
       if (!code || !state || !storedState) {
-        // Redirect to frontend with error
         set.redirect = `${env.FRONTEND_URL}/auth/login?error=invalid_oauth`;
         return { message: "Redirecting with error" };
       }
@@ -324,20 +273,18 @@ export const authController = new Elysia({ prefix: "/auth" })
 
       if (result.isErr()) {
         const err = result.error;
-        // Redirect to frontend with error
+
         set.redirect = `${env.FRONTEND_URL}/auth/login?error=${err.type.toLowerCase()}`;
         return { message: "Redirecting with error" };
       }
 
       const { sessionId, isNewUser } = result.value;
 
-      // Set session cookie
       cookie.session.set({
         value: sessionId,
         ...SESSION_COOKIE_OPTIONS,
       });
 
-      // Redirect to frontend
       const redirectUrl = isNewUser
         ? `${env.FRONTEND_URL}/welcome`
         : `${env.FRONTEND_URL}/`;
@@ -349,22 +296,10 @@ export const authController = new Elysia({ prefix: "/auth" })
       query: AuthModel.oauthCallback,
     }
   )
-
-  // ===========================================================================
-  // PROTECTED ROUTES (Authentication required)
-  // ===========================================================================
   .use(authGuard)
-
-  // ---------------------------------------------------------------------------
-  // Get Current User
-  // ---------------------------------------------------------------------------
   .get("/me", ({ user }) => {
     return { user };
   })
-
-  // ---------------------------------------------------------------------------
-  // Logout
-  // ---------------------------------------------------------------------------
   .post("/logout", async ({ cookie }) => {
     const sessionId = cookie.session?.value;
     if (sessionId) {
@@ -373,37 +308,22 @@ export const authController = new Elysia({ prefix: "/auth" })
     cookie.session.remove();
     return { message: "Logged out successfully" };
   })
-
-  // ---------------------------------------------------------------------------
-  // Logout All Devices
-  // ---------------------------------------------------------------------------
   .post("/logout-all", async ({ user, cookie }) => {
     await AuthService.logoutAllDevices(user.id);
     cookie.session.remove();
     return { message: "Logged out from all devices" };
   })
-
-  // ---------------------------------------------------------------------------
-  // Resend Verification Email
-  // ---------------------------------------------------------------------------
   .post("/resend-verification", async ({ user }) => {
     const result = await AuthService.resendVerificationEmail(user.id);
 
-    // In production, send email
-    // For development, return token
     return {
       message: "Verification email sent",
-      // TODO: Remove in production
       verificationToken:
         !isProduction && result.isOk()
           ? result.value.verificationToken
           : undefined,
     };
   })
-
-  // ---------------------------------------------------------------------------
-  // Change Password
-  // ---------------------------------------------------------------------------
   .post(
     "/change-password",
     async ({ body, user, cookie, set }) => {
@@ -432,7 +352,6 @@ export const authController = new Elysia({ prefix: "/auth" })
         }
       }
 
-      // Clear session cookie (all sessions invalidated)
       cookie.session.remove();
 
       return { message: "Password changed successfully. Please log in again." };
@@ -441,10 +360,6 @@ export const authController = new Elysia({ prefix: "/auth" })
       body: AuthModel.changePassword,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Link 42 Account
-  // ---------------------------------------------------------------------------
   .get("/42/link", ({ cookie, set }) => {
     const result = AuthService.generateOAuthUrl();
 
@@ -455,13 +370,11 @@ export const authController = new Elysia({ prefix: "/auth" })
 
     const { url, state } = result;
 
-    // Store state with "link" prefix to distinguish from login
     cookie.oauth_state.set({
       value: `link:${state}`,
       ...OAUTH_STATE_COOKIE_OPTIONS,
     });
 
-    // Redirect to 42
     set.redirect = url;
     return { message: "Redirecting to 42 OAuth" };
   })
@@ -473,7 +386,6 @@ export const authController = new Elysia({ prefix: "/auth" })
       const state = query.state;
       const storedState = cookie.oauth_state?.value;
 
-      // Clear the state cookie
       cookie.oauth_state.remove();
 
       if (!code || !state || !storedState) {
@@ -481,7 +393,6 @@ export const authController = new Elysia({ prefix: "/auth" })
         return { message: "Redirecting with error" };
       }
 
-      // Extract actual state (remove "link:" prefix)
       const actualStoredState = String(storedState).replace("link:", "");
 
       const result = await AuthService.linkOAuthAccount(
@@ -504,10 +415,6 @@ export const authController = new Elysia({ prefix: "/auth" })
       query: AuthModel.oauthCallback,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // 2FA: Enable (Step 1 - Generate)
-  // ---------------------------------------------------------------------------
   .post("/2fa/enable", async ({ user, set }) => {
     const result = await AuthService.enableTotp(user.id);
 
@@ -524,13 +431,9 @@ export const authController = new Elysia({ prefix: "/auth" })
     return {
       message: "Scan the QR code with your authenticator app",
       qrCodeUrl: result.value.qrCodeUrl,
-      secret: result.value.secret, // For manual entry
+      secret: result.value.secret,
     };
   })
-
-  // ---------------------------------------------------------------------------
-  // 2FA: Confirm (Step 2 - Verify and Activate)
-  // ---------------------------------------------------------------------------
   .post(
     "/2fa/verify",
     async ({ body, user, set }) => {
@@ -556,10 +459,6 @@ export const authController = new Elysia({ prefix: "/auth" })
       body: AuthModel.totpCode,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // 2FA: Disable
-  // ---------------------------------------------------------------------------
   .post(
     "/2fa/disable",
     async ({ body, user, set }) => {

@@ -37,7 +37,6 @@
       </div>
     {:else if stats}
       <div class="space-y-4">
-        <!-- Win Rate -->
         <div>
           <div class="mb-1 flex items-center justify-between text-sm">
             <span class="font-medium">Win Rate</span>
@@ -46,7 +45,6 @@
           <Progress value={stats.winRate} max={100} class="h-2" />
         </div>
 
-        <!-- Games Stats Grid -->
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div class="text-center">
             <div class="text-2xl font-bold text-primary">{stats.gamesPlayed}</div>
@@ -66,7 +64,6 @@
           </div>
         </div>
 
-        <!-- Additional Stats -->
         {#if stats.averageDuration > 0}
           <div class="flex items-center justify-between border-t pt-3 text-sm">
             <span class="text-muted-foreground">Avg. Game Duration</span>

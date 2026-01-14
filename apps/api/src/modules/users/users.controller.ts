@@ -6,28 +6,12 @@ import { authGuard } from "../../common/guards/auth.macro";
 import { UsersModel } from "./users.model";
 import { UsersService } from "./users.service";
 
-// =============================================================================
-// CONSTANTS
-// =============================================================================
-
 const UPLOADS_DIR = join(process.cwd(), "uploads", "avatars");
 
-// Ensure uploads directory exists
 await mkdir(UPLOADS_DIR, { recursive: true });
 
-// =============================================================================
-// USERS CONTROLLER
-// =============================================================================
-
 export const usersController = new Elysia({ prefix: "/users" })
-  // ===========================================================================
-  // PROTECTED ROUTES (Authentication required)
-  // ===========================================================================
   .use(authGuard)
-
-  // ---------------------------------------------------------------------------
-  // Get Current User Profile
-  // ---------------------------------------------------------------------------
   .get("/me", async ({ user }) => {
     const result = await UsersService.getProfile(user.id);
 
@@ -37,10 +21,6 @@ export const usersController = new Elysia({ prefix: "/users" })
 
     return { user: result.value };
   })
-
-  // ---------------------------------------------------------------------------
-  // Update Current User Profile
-  // ---------------------------------------------------------------------------
   .patch(
     "/me",
     async ({ body, user, set }) => {
@@ -71,16 +51,11 @@ export const usersController = new Elysia({ prefix: "/users" })
       body: UsersModel.updateProfile,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Upload Avatar
-  // ---------------------------------------------------------------------------
   .post(
     "/me/avatar",
     async ({ body, user, set }) => {
       const { file } = body;
 
-      // Validate file
       const validationResult = await UsersService.validateAvatarFile(file);
 
       if (validationResult.isErr()) {
@@ -106,24 +81,17 @@ export const usersController = new Elysia({ prefix: "/users" })
         return { message: "Upload failed" };
       }
 
-      // Process and save the file
-      const extension = "webp"; // We'll convert to webp
+      const extension = "webp";
       const filename = `${user.id}.${extension}`;
       const filepath = join(UPLOADS_DIR, filename);
 
-      // Delete old avatar if exists
       try {
         await unlink(filepath);
-      } catch {
-        // Ignore if file doesn't exist
-      }
+      } catch {}
 
-      // Read and process the image using sharp (if available)
-      // For now, we'll save the original and let the client handle display
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
-      // Try to use sharp for image processing
       try {
         const sharp = await import("sharp");
         await sharp
@@ -132,15 +100,12 @@ export const usersController = new Elysia({ prefix: "/users" })
           .webp({ quality: 80 })
           .toFile(filepath);
       } catch {
-        // If sharp is not available, save the original
         const { writeFile } = await import("node:fs/promises");
         await writeFile(filepath, buffer);
       }
 
-      // Generate the avatar URL
       const avatarUrl = `/uploads/avatars/${filename}`;
 
-      // Update the user's avatar URL
       const updateResult = await UsersService.updateAvatarUrl(
         user.id,
         avatarUrl
@@ -160,10 +125,6 @@ export const usersController = new Elysia({ prefix: "/users" })
       body: UsersModel.uploadAvatar,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Get Current User Stats
-  // ---------------------------------------------------------------------------
   .get(
     "/me/stats",
     async ({ user, query }) => {
@@ -179,10 +140,6 @@ export const usersController = new Elysia({ prefix: "/users" })
       query: UsersModel.statsQuery,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Get Current User Match History
-  // ---------------------------------------------------------------------------
   .get(
     "/me/matches",
     async ({ user, query }) => {
@@ -203,10 +160,6 @@ export const usersController = new Elysia({ prefix: "/users" })
       query: UsersModel.matchesQuery,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Get Current User Friends
-  // ---------------------------------------------------------------------------
   .get("/me/friends", async ({ user }) => {
     const result = await UsersService.getFriends(user.id);
 
@@ -216,10 +169,6 @@ export const usersController = new Elysia({ prefix: "/users" })
 
     return { friends: result.value };
   })
-
-  // ---------------------------------------------------------------------------
-  // Get Pending Friend Requests
-  // ---------------------------------------------------------------------------
   .get("/me/friends/pending", async ({ user }) => {
     const result = await UsersService.getPendingRequests(user.id);
 
@@ -229,10 +178,6 @@ export const usersController = new Elysia({ prefix: "/users" })
 
     return { requests: result.value };
   })
-
-  // ---------------------------------------------------------------------------
-  // Get Sent Friend Requests
-  // ---------------------------------------------------------------------------
   .get("/me/friends/sent", async ({ user }) => {
     const result = await UsersService.getSentRequests(user.id);
 
@@ -242,10 +187,6 @@ export const usersController = new Elysia({ prefix: "/users" })
 
     return { requests: result.value };
   })
-
-  // ---------------------------------------------------------------------------
-  // Search Users
-  // ---------------------------------------------------------------------------
   .get(
     "/search",
     async ({ user, query }) => {
@@ -265,10 +206,6 @@ export const usersController = new Elysia({ prefix: "/users" })
       query: UsersModel.searchQuery,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Get Public Profile by ID
-  // ---------------------------------------------------------------------------
   .get(
     "/:id",
     async ({ params, user, set }) => {
@@ -281,7 +218,6 @@ export const usersController = new Elysia({ prefix: "/users" })
         return { message: "User not found" };
       }
 
-      // Get friendship status
       const friendshipResult = await UsersService.getFriendshipStatus(
         user.id,
         userId
@@ -298,16 +234,11 @@ export const usersController = new Elysia({ prefix: "/users" })
       params: UsersModel.userIdParam,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Get User Stats by ID
-  // ---------------------------------------------------------------------------
   .get(
     "/:id/stats",
     async ({ params, query, set }) => {
       const userId = params.id;
 
-      // Check if user exists
       const userResult = await UsersService.getPublicProfile(userId);
       if (userResult.isErr() || !userResult.value) {
         set.status = 404;
@@ -327,16 +258,11 @@ export const usersController = new Elysia({ prefix: "/users" })
       query: UsersModel.statsQuery,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Get User Match History by ID
-  // ---------------------------------------------------------------------------
   .get(
     "/:id/matches",
     async ({ params, user, query, set }) => {
       const userId = params.id;
 
-      // Check if user exists
       const userResult = await UsersService.getPublicProfile(userId);
       if (userResult.isErr() || !userResult.value) {
         set.status = 404;
@@ -361,10 +287,6 @@ export const usersController = new Elysia({ prefix: "/users" })
       query: UsersModel.matchesQuery,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Send Friend Request
-  // ---------------------------------------------------------------------------
   .post(
     "/:id/friend",
     async ({ params, user, set }) => {
@@ -410,10 +332,6 @@ export const usersController = new Elysia({ prefix: "/users" })
       params: UsersModel.userIdParam,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Remove Friend
-  // ---------------------------------------------------------------------------
   .delete(
     "/:id/friend",
     async ({ params, user, set }) => {
@@ -436,10 +354,6 @@ export const usersController = new Elysia({ prefix: "/users" })
       params: UsersModel.userIdParam,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Block User
-  // ---------------------------------------------------------------------------
   .post(
     "/:id/block",
     async ({ params, user, set }) => {
@@ -467,10 +381,6 @@ export const usersController = new Elysia({ prefix: "/users" })
       params: UsersModel.userIdParam,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Unblock User
-  // ---------------------------------------------------------------------------
   .delete(
     "/:id/block",
     async ({ params, user, set }) => {
@@ -489,10 +399,6 @@ export const usersController = new Elysia({ prefix: "/users" })
       params: UsersModel.userIdParam,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Accept Friend Request
-  // ---------------------------------------------------------------------------
   .post(
     "/friends/requests/:requestId/accept",
     async ({ params, user, set }) => {
@@ -512,10 +418,6 @@ export const usersController = new Elysia({ prefix: "/users" })
       params: UsersModel.requestIdParam,
     }
   )
-
-  // ---------------------------------------------------------------------------
-  // Reject Friend Request
-  // ---------------------------------------------------------------------------
   .post(
     "/friends/requests/:requestId/reject",
     async ({ params, user, set }) => {

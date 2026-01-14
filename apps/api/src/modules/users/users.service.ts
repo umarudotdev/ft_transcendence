@@ -12,28 +12,16 @@ import type {
 
 import { usersRepository } from "./users.repository";
 
-// =============================================================================
-// USERS SERVICE
-// =============================================================================
-
 abstract class UsersService {
-  // ---------------------------------------------------------------------------
-  // Constants
-  // ---------------------------------------------------------------------------
-
   private static readonly DISPLAY_NAME_MIN_LENGTH = 3;
   private static readonly DISPLAY_NAME_MAX_LENGTH = 20;
   private static readonly DISPLAY_NAME_PATTERN = /^[a-zA-Z0-9 ]+$/;
-  private static readonly MAX_AVATAR_SIZE = 2 * 1024 * 1024; // 2MB
+  private static readonly MAX_AVATAR_SIZE = 2 * 1024 * 1024;
   private static readonly ALLOWED_AVATAR_TYPES = [
     "image/jpeg",
     "image/png",
     "image/webp",
   ];
-
-  // ---------------------------------------------------------------------------
-  // Profile
-  // ---------------------------------------------------------------------------
 
   static getProfile(userId: number): ResultAsync<UserProfile | null, never> {
     return ResultAsync.fromPromise(
@@ -93,7 +81,6 @@ abstract class UsersService {
           return err({ type: "USER_NOT_FOUND" as const });
         }
 
-        // Validate display name if provided
         if (data.displayName !== undefined) {
           const displayName = data.displayName.trim();
 
@@ -119,7 +106,6 @@ abstract class UsersService {
             });
           }
 
-          // Check if display name is taken (case-insensitive)
           const existing = await usersRepository.findByDisplayName(displayName);
           if (existing && existing.id !== userId) {
             return err({ type: "DISPLAY_NAME_TAKEN" as const });
@@ -143,16 +129,11 @@ abstract class UsersService {
     ).andThen((result) => result);
   }
 
-  // ---------------------------------------------------------------------------
-  // Avatar
-  // ---------------------------------------------------------------------------
-
   static validateAvatarFile(
     file: File
   ): ResultAsync<{ valid: true }, AvatarUploadError> {
     return ResultAsync.fromPromise(
       (async () => {
-        // Check file type
         if (!UsersService.ALLOWED_AVATAR_TYPES.includes(file.type)) {
           return err({
             type: "INVALID_FILE_TYPE" as const,
@@ -160,7 +141,6 @@ abstract class UsersService {
           });
         }
 
-        // Check file size
         if (file.size > UsersService.MAX_AVATAR_SIZE) {
           return err({
             type: "FILE_TOO_LARGE" as const,
@@ -206,10 +186,6 @@ abstract class UsersService {
     ).andThen((result) => result);
   }
 
-  // ---------------------------------------------------------------------------
-  // Match History
-  // ---------------------------------------------------------------------------
-
   static getMatchHistory(
     userId: number,
     viewerId: number,
@@ -228,7 +204,7 @@ abstract class UsersService {
         const { limit = 10, offset = 0, gameType } = options;
 
         const rawMatches = await usersRepository.getMatchHistory(userId, {
-          limit: limit + 1, // Fetch one extra to check hasMore
+          limit: limit + 1,
           offset,
           gameType,
         });
@@ -243,7 +219,6 @@ abstract class UsersService {
           ? rawMatches.slice(0, limit)
           : rawMatches;
 
-        // Transform matches to MatchHistoryItem format
         const mappedMatches: MatchHistoryItem[] = matchesToReturn.map(
           (match) => {
             const isPlayer1 = match.player1Id === userId;
@@ -254,7 +229,6 @@ abstract class UsersService {
               ? match.player2Score
               : match.player1Score;
 
-            // Determine opponent
             let opponent: {
               id: number | null;
               displayName: string;
@@ -283,7 +257,6 @@ abstract class UsersService {
               opponent = { id: null, displayName: "Unknown", avatarUrl: null };
             }
 
-            // Determine result
             let result: "win" | "loss" | "draw";
             if (match.winnerId === null) {
               result = "draw";
@@ -307,7 +280,6 @@ abstract class UsersService {
           }
         );
 
-        // Filter by result if specified
         const filteredMatches = options.result
           ? mappedMatches.filter((m) => m.result === options.result)
           : mappedMatches;
@@ -320,10 +292,6 @@ abstract class UsersService {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Statistics
-  // ---------------------------------------------------------------------------
-
   static getStats(
     userId: number,
     gameType?: string
@@ -335,10 +303,6 @@ abstract class UsersService {
       }
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // Friends
-  // ---------------------------------------------------------------------------
 
   static getFriends(userId: number): ResultAsync<
     Array<{
@@ -396,18 +360,15 @@ abstract class UsersService {
   ): ResultAsync<{ requestId: number }, FriendshipError> {
     return ResultAsync.fromPromise(
       (async () => {
-        // Cannot friend yourself
         if (userId === friendId) {
           return err({ type: "CANNOT_FRIEND_SELF" as const });
         }
 
-        // Check if target user exists
         const targetUser = await usersRepository.findById(friendId);
         if (!targetUser) {
           return err({ type: "USER_NOT_FOUND" as const });
         }
 
-        // Check existing friendship
         const existing = await usersRepository.getFriendship(userId, friendId);
 
         if (existing) {
@@ -439,7 +400,6 @@ abstract class UsersService {
   ): ResultAsync<void, FriendshipError> {
     return ResultAsync.fromPromise(
       (async () => {
-        // Find the request - must be directed at current user
         const requests = await usersRepository.getPendingRequests(userId);
         const request = requests.find((r) => r.requestId === requestId);
 
@@ -461,7 +421,6 @@ abstract class UsersService {
   ): ResultAsync<void, FriendshipError> {
     return ResultAsync.fromPromise(
       (async () => {
-        // Find the request - must be directed at current user
         const requests = await usersRepository.getPendingRequests(userId);
         const request = requests.find((r) => r.requestId === requestId);
 
@@ -515,14 +474,11 @@ abstract class UsersService {
           return err({ type: "USER_NOT_FOUND" as const });
         }
 
-        // Check for existing relationship
         const existing = await usersRepository.getFriendship(userId, targetId);
 
         if (existing) {
-          // Update to blocked
           await usersRepository.updateFriendshipStatus(existing.id, "blocked");
         } else {
-          // Create blocked relationship
           await usersRepository.createFriendRequest(userId, targetId);
           const newRelation = await usersRepository.getFriendship(
             userId,
@@ -617,10 +573,6 @@ abstract class UsersService {
       }
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // Search
-  // ---------------------------------------------------------------------------
 
   static searchUsers(
     query: string,

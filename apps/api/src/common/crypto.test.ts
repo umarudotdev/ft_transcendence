@@ -3,24 +3,18 @@ import { describe, expect, test } from "bun:test";
 import { generateSecureToken, secureCompare } from "./crypto";
 
 describe("Crypto Utilities", () => {
-  // ---------------------------------------------------------------------------
-  // generateSecureToken
-  // ---------------------------------------------------------------------------
-
   describe("generateSecureToken", () => {
     test("should generate token with default length", () => {
       const token = generateSecureToken();
 
-      // 32 bytes in base64url is ~43 characters
       expect(token.length).toBeGreaterThan(0);
-      // base64url encoding of 32 bytes
+
       expect(token.length).toBe(43);
     });
 
     test("should generate token with custom length", () => {
       const token = generateSecureToken(16);
 
-      // 16 bytes in base64url is ~22 characters
       expect(token.length).toBe(22);
     });
 
@@ -35,16 +29,13 @@ describe("Crypto Utilities", () => {
     });
 
     test("should generate URL-safe tokens", () => {
-      // Generate many tokens to increase chance of catching unsafe chars
       for (let i = 0; i < 100; i++) {
         const token = generateSecureToken();
 
-        // URL-safe base64 should not contain +, /, or =
         expect(token).not.toContain("+");
         expect(token).not.toContain("/");
         expect(token).not.toContain("=");
 
-        // Should only contain alphanumeric, -, and _
         expect(/^[A-Za-z0-9_-]+$/.test(token)).toBe(true);
       }
     });
@@ -56,10 +47,6 @@ describe("Crypto Utilities", () => {
       expect(lengths.size).toBe(1);
     });
   });
-
-  // ---------------------------------------------------------------------------
-  // secureCompare
-  // ---------------------------------------------------------------------------
 
   describe("secureCompare", () => {
     test("should return true for equal strings", () => {

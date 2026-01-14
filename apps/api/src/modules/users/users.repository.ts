@@ -8,15 +8,7 @@ import {
   users,
 } from "../../db/schema";
 
-// =============================================================================
-// USERS REPOSITORY
-// =============================================================================
-
 export const usersRepository = {
-  // ---------------------------------------------------------------------------
-  // User Queries
-  // ---------------------------------------------------------------------------
-
   async findById(id: number) {
     return db.query.users.findFirst({
       where: eq(users.id, id),
@@ -28,10 +20,6 @@ export const usersRepository = {
       where: eq(users.displayName, displayName),
     });
   },
-
-  // ---------------------------------------------------------------------------
-  // Profile Updates
-  // ---------------------------------------------------------------------------
 
   async updateProfile(
     id: number,
@@ -62,10 +50,6 @@ export const usersRepository = {
     return updated;
   },
 
-  // ---------------------------------------------------------------------------
-  // Match History
-  // ---------------------------------------------------------------------------
-
   async getMatchHistory(
     userId: number,
     options: {
@@ -87,7 +71,7 @@ export const usersRepository = {
     const matchList = await db.query.matches.findMany({
       where: and(...conditions),
       orderBy: [desc(matches.createdAt)],
-      limit: Math.min(limit, 100), // Cap at 100
+      limit: Math.min(limit, 100),
       offset,
       with: {
         player1: {
@@ -133,10 +117,6 @@ export const usersRepository = {
     return result?.count ?? 0;
   },
 
-  // ---------------------------------------------------------------------------
-  // Statistics
-  // ---------------------------------------------------------------------------
-
   async getStats(userId: number, gameType?: string) {
     const baseCondition = or(
       eq(matches.player1Id, userId),
@@ -147,13 +127,11 @@ export const usersRepository = {
       ? and(baseCondition, eq(matches.gameType, gameType))
       : baseCondition;
 
-    // Get total games
     const [totalGames] = await db
       .select({ count: count() })
       .from(matches)
       .where(conditions);
 
-    // Get wins
     const winConditions = gameType
       ? and(eq(matches.winnerId, userId), eq(matches.gameType, gameType))
       : eq(matches.winnerId, userId);
@@ -163,7 +141,6 @@ export const usersRepository = {
       .from(matches)
       .where(winConditions);
 
-    // Get losses (games where user participated but didn't win, excluding draws)
     const lossConditions = gameType
       ? and(
           baseCondition,
@@ -182,7 +159,6 @@ export const usersRepository = {
       .from(matches)
       .where(lossConditions);
 
-    // Get average duration
     const [avgDuration] = await db
       .select({ avg: sql<number>`AVG(${matches.duration})` })
       .from(matches)
@@ -203,12 +179,7 @@ export const usersRepository = {
     };
   },
 
-  // ---------------------------------------------------------------------------
-  // Friends
-  // ---------------------------------------------------------------------------
-
   async getFriends(userId: number) {
-    // Get accepted friendships where user is either initiator or receiver
     const friendships = await db.query.friends.findMany({
       where: and(
         or(eq(friends.userId, userId), eq(friends.friendId, userId)),
@@ -232,7 +203,6 @@ export const usersRepository = {
       },
     });
 
-    // Map to friend user (the other person)
     return friendships.map((f) => ({
       friendshipId: f.id,
       ...(f.userId === userId ? f.friend : f.user),
@@ -241,7 +211,6 @@ export const usersRepository = {
   },
 
   async getPendingRequests(userId: number) {
-    // Get pending requests where user is the receiver
     const requests = await db.query.friends.findMany({
       where: and(eq(friends.friendId, userId), eq(friends.status, "pending")),
       with: {
@@ -263,7 +232,6 @@ export const usersRepository = {
   },
 
   async getSentRequests(userId: number) {
-    // Get pending requests where user is the initiator
     const requests = await db.query.friends.findMany({
       where: and(eq(friends.userId, userId), eq(friends.status, "pending")),
       with: {
@@ -340,10 +308,6 @@ export const usersRepository = {
       blockedAt: b.createdAt,
     }));
   },
-
-  // ---------------------------------------------------------------------------
-  // Search Users
-  // ---------------------------------------------------------------------------
 
   async searchUsers(query: string, currentUserId: number, limit = 10) {
     return db.query.users.findMany({

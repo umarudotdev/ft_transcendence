@@ -68,7 +68,6 @@
         {/each}
       </div>
     {:else}
-      <!-- Pending Requests -->
       {#if showPending && pendingRequests.length > 0}
         <div class="mb-4">
           <h4 class="mb-2 text-sm font-medium text-muted-foreground">
@@ -119,7 +118,6 @@
         </div>
       {/if}
 
-      <!-- Friends List -->
       {#if friends.length === 0}
         <div class="py-8 text-center text-muted-foreground">
           <p>No friends yet.</p>

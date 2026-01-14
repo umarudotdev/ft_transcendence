@@ -1,14 +1,6 @@
 import { t } from "elysia";
 
-// =============================================================================
-// USERS MODEL - Single Source of Truth for Types
-// =============================================================================
-
 export const UsersModel = {
-  // ---------------------------------------------------------------------------
-  // Request Bodies
-  // ---------------------------------------------------------------------------
-
   updateProfile: t.Object({
     displayName: t.Optional(t.String({ minLength: 3, maxLength: 20 })),
   }),
@@ -20,10 +12,6 @@ export const UsersModel = {
     }),
   }),
 
-  // ---------------------------------------------------------------------------
-  // Params
-  // ---------------------------------------------------------------------------
-
   userIdParam: t.Object({
     id: t.Numeric(),
   }),
@@ -31,10 +19,6 @@ export const UsersModel = {
   requestIdParam: t.Object({
     requestId: t.Numeric(),
   }),
-
-  // ---------------------------------------------------------------------------
-  // Query
-  // ---------------------------------------------------------------------------
 
   statsQuery: t.Object({
     gameType: t.Optional(t.String()),
@@ -51,10 +35,6 @@ export const UsersModel = {
     q: t.String({ minLength: 1 }),
     limit: t.Optional(t.Numeric({ minimum: 1, maximum: 50, default: 10 })),
   }),
-
-  // ---------------------------------------------------------------------------
-  // Response Types
-  // ---------------------------------------------------------------------------
 
   publicUser: t.Object({
     id: t.Number(),
@@ -136,10 +116,6 @@ export const UsersModel = {
     t.Object({ status: t.Literal("blocked_by") }),
   ]),
 
-  // ---------------------------------------------------------------------------
-  // Error Types
-  // ---------------------------------------------------------------------------
-
   profileUpdateError: t.Union([
     t.Object({ type: t.Literal("USER_NOT_FOUND") }),
     t.Object({
@@ -173,11 +149,6 @@ export const UsersModel = {
   ]),
 };
 
-// =============================================================================
-// Derived Types
-// =============================================================================
-
-// Request Types
 export type UpdateProfileBody = (typeof UsersModel.updateProfile)["static"];
 export type UploadAvatarBody = (typeof UsersModel.uploadAvatar)["static"];
 export type UserIdParam = (typeof UsersModel.userIdParam)["static"];
@@ -186,7 +157,6 @@ export type StatsQuery = (typeof UsersModel.statsQuery)["static"];
 export type MatchesQuery = (typeof UsersModel.matchesQuery)["static"];
 export type SearchQuery = (typeof UsersModel.searchQuery)["static"];
 
-// Response Types
 export type PublicUser = (typeof UsersModel.publicUser)["static"];
 export type UserProfile = (typeof UsersModel.userProfile)["static"];
 export type UserStats = (typeof UsersModel.userStats)["static"];
@@ -196,7 +166,6 @@ export type PendingRequest = (typeof UsersModel.pendingRequest)["static"];
 export type SentRequest = (typeof UsersModel.sentRequest)["static"];
 export type FriendshipStatus = (typeof UsersModel.friendshipStatus)["static"];
 
-// Error Types
 export type ProfileUpdateError =
   (typeof UsersModel.profileUpdateError)["static"];
 export type AvatarUploadError = (typeof UsersModel.avatarUploadError)["static"];

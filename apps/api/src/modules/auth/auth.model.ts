@@ -1,14 +1,6 @@
 import { t } from "elysia";
 
-// =============================================================================
-// AUTH MODEL - Single Source of Truth for Types
-// =============================================================================
-
 export const AuthModel = {
-  // ---------------------------------------------------------------------------
-  // Request Bodies
-  // ---------------------------------------------------------------------------
-
   register: t.Object({
     email: t.String({ format: "email" }),
     password: t.String({ minLength: 8 }),
@@ -48,10 +40,6 @@ export const AuthModel = {
     error: t.Optional(t.String()),
   }),
 
-  // ---------------------------------------------------------------------------
-  // Response Types
-  // ---------------------------------------------------------------------------
-
   safeUser: t.Object({
     id: t.Number(),
     email: t.String(),
@@ -62,10 +50,6 @@ export const AuthModel = {
     intraId: t.Nullable(t.Number()),
     createdAt: t.Date(),
   }),
-
-  // ---------------------------------------------------------------------------
-  // Error Types (for documentation and type derivation)
-  // ---------------------------------------------------------------------------
 
   registerError: t.Union([
     t.Object({ type: t.Literal("EMAIL_EXISTS") }),
@@ -115,11 +99,6 @@ export const AuthModel = {
   ]),
 };
 
-// =============================================================================
-// Derived Types
-// =============================================================================
-
-// Request Types
 export type RegisterBody = (typeof AuthModel.register)["static"];
 export type LoginBody = (typeof AuthModel.login)["static"];
 export type TotpCodeBody = (typeof AuthModel.totpCode)["static"];
@@ -129,10 +108,8 @@ export type ResetPasswordBody = (typeof AuthModel.resetPassword)["static"];
 export type ChangePasswordBody = (typeof AuthModel.changePassword)["static"];
 export type OAuthCallbackQuery = (typeof AuthModel.oauthCallback)["static"];
 
-// Response Types
 export type SafeUser = (typeof AuthModel.safeUser)["static"];
 
-// Error Types
 export type RegisterError = (typeof AuthModel.registerError)["static"];
 export type LoginError = (typeof AuthModel.loginError)["static"];
 export type PasswordError = (typeof AuthModel.passwordError)["static"];

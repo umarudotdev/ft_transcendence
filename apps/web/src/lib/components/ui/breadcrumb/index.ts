@@ -14,7 +14,6 @@ export {
   Link,
   List,
   Page,
-  //
   Root as Breadcrumb,
   Ellipsis as BreadcrumbEllipsis,
   Item as BreadcrumbItem,

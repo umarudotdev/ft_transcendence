@@ -4,32 +4,15 @@ import { AuthService } from "./auth.service";
 import { hashPassword } from "./password";
 import { encryptSecret, generateTotpSecret } from "./totp";
 
-// Since the authService imports authRepository directly, we need to test
-// through the public interface. These tests focus on the logic and error handling.
-
 describe("Auth Service", () => {
-  // ---------------------------------------------------------------------------
-  // Password Validation Tests (no mocking needed)
-  // ---------------------------------------------------------------------------
-
   describe("Password Strength Integration", () => {
-    test("register should reject weak passwords", async () => {
-      // This tests the validatePasswordStrength integration
-      // We can't easily mock the repository import, so we test error paths
-      // The service will check password before trying to create user
-      // So even if findUserByEmail would fail, weak password should be caught first
-    });
+    test("register should reject weak passwords", async () => {});
   });
-
-  // ---------------------------------------------------------------------------
-  // Session Duration Constants
-  // ---------------------------------------------------------------------------
 
   describe("Session Management", () => {
     test("should use 7-day session duration", () => {
-      // Verify the constant is set correctly
       const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
-      expect(SESSION_DURATION_MS).toBe(604800000); // 7 days in ms
+      expect(SESSION_DURATION_MS).toBe(604800000);
     });
 
     test("should use 24-hour email verification duration", () => {
@@ -43,17 +26,10 @@ describe("Auth Service", () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // OAuth URL Generation
-  // ---------------------------------------------------------------------------
-
   describe("generateOAuthUrl", () => {
     test("should return null when OAuth is not configured", () => {
-      // Without FORTYTWO_CLIENT_ID/SECRET env vars, fortyTwo will be null
       const result = AuthService.generateOAuthUrl();
 
-      // In test env without OAuth config, this returns null
-      // This behavior depends on whether env vars are set
       if (result === null) {
         expect(result).toBeNull();
       } else {
@@ -64,13 +40,8 @@ describe("Auth Service", () => {
     });
   });
 
-  // ---------------------------------------------------------------------------
-  // SafeUser Transformation
-  // ---------------------------------------------------------------------------
-
   describe("SafeUser transformation", () => {
     test("should exclude sensitive fields from user response", () => {
-      // SafeUser should not include passwordHash or totpSecret
       const safeUserKeys = [
         "id",
         "email",
@@ -82,7 +53,6 @@ describe("Auth Service", () => {
         "createdAt",
       ];
 
-      // Verify expected shape
       expect(safeUserKeys).not.toContain("passwordHash");
       expect(safeUserKeys).not.toContain("totpSecret");
       expect(safeUserKeys).not.toContain("failedLoginAttempts");
@@ -91,14 +61,9 @@ describe("Auth Service", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Standalone Function Tests
-// ---------------------------------------------------------------------------
-
 describe("Auth Service Helper Functions", () => {
   describe("toSafeUser function behavior", () => {
     test("should only include public user fields", () => {
-      // The SafeUser interface should match these fields
       interface SafeUser {
         id: number;
         email: string;
@@ -121,7 +86,6 @@ describe("Auth Service Helper Functions", () => {
         createdAt: new Date(),
       };
 
-      // Verify the shape matches expected SafeUser
       expect(Object.keys(user).sort()).toEqual([
         "avatarUrl",
         "createdAt",
@@ -135,10 +99,6 @@ describe("Auth Service Helper Functions", () => {
     });
   });
 });
-
-// ---------------------------------------------------------------------------
-// Error Type Tests
-// ---------------------------------------------------------------------------
 
 describe("Auth Error Types", () => {
   test("RegisterError types should be defined", () => {
@@ -212,10 +172,6 @@ describe("Auth Error Types", () => {
     expect(types).toHaveLength(4);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Integration-style Tests (testing with password utilities)
-// ---------------------------------------------------------------------------
 
 describe("Auth Service with Password Integration", () => {
   test("hashPassword produces verifiable hashes", async () => {

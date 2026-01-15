@@ -1,0 +1,315 @@
+<script lang="ts">
+	import { goto } from "$app/navigation";
+	import * as Card from "$lib/components/ui/card";
+	import { Button } from "$lib/components/ui/button";
+	import { Input } from "$lib/components/ui/input";
+	import { Label } from "$lib/components/ui/label";
+	import { Badge } from "$lib/components/ui/badge";
+	import { Alert, AlertDescription } from "$lib/components/ui/alert";
+	import { Skeleton } from "$lib/components/ui/skeleton";
+	import {
+		createChangePasswordMutation,
+		createMeQuery,
+		redirectToLink42,
+	} from "$lib/queries/auth";
+	import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
+	import KeyIcon from "@lucide/svelte/icons/key";
+	import LinkIcon from "@lucide/svelte/icons/link";
+	import ShieldIcon from "@lucide/svelte/icons/shield";
+	import LogOutIcon from "@lucide/svelte/icons/log-out";
+	import CheckCircleIcon from "@lucide/svelte/icons/check-circle";
+	import CircleIcon from "@lucide/svelte/icons/circle";
+	import AlertTriangleIcon from "@lucide/svelte/icons/alert-triangle";
+
+	const meQuery = createMeQuery();
+	const changePasswordMutation = createChangePasswordMutation();
+
+	let currentPassword = $state("");
+	let newPassword = $state("");
+	let confirmPassword = $state("");
+	let successMessage = $state("");
+
+	const passwordRequirements = $derived({
+		minLength: newPassword.length >= 8,
+		hasUpper: /[A-Z]/.test(newPassword),
+		hasLower: /[a-z]/.test(newPassword),
+		hasNumber: /[0-9]/.test(newPassword),
+		passwordsMatch: newPassword === confirmPassword && newPassword.length > 0,
+	});
+
+	const isPasswordValid = $derived(
+		passwordRequirements.minLength &&
+			passwordRequirements.hasUpper &&
+			passwordRequirements.hasLower &&
+			passwordRequirements.hasNumber &&
+			passwordRequirements.passwordsMatch
+	);
+
+	async function handleChangePassword(e: Event) {
+		e.preventDefault();
+		successMessage = "";
+
+		if (!isPasswordValid) {
+			return;
+		}
+
+		changePasswordMutation.mutate(
+			{ currentPassword, newPassword },
+			{
+				onSuccess: () => {
+					successMessage =
+						"Password changed successfully. You have been logged out of all sessions.";
+					currentPassword = "";
+					newPassword = "";
+					confirmPassword = "";
+					setTimeout(() => {
+						goto("/auth/login?message=Password changed. Please log in again.");
+					}, 2000);
+				},
+			}
+		);
+	}
+</script>
+
+<svelte:head>
+	<title>Security Settings | ft_transcendence</title>
+</svelte:head>
+
+<div class="mx-auto max-w-2xl space-y-6">
+	<div>
+		<a
+			href="/settings"
+			class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+		>
+			<ArrowLeftIcon class="size-4" />
+			Back to Settings
+		</a>
+		<h1 class="mt-4 text-2xl font-bold tracking-tight">Security Settings</h1>
+		<p class="text-muted-foreground">Manage your account security settings</p>
+	</div>
+
+	{#if meQuery.isPending}
+		<div class="space-y-6">
+			{#each Array(4) as _}
+				<Card.Root>
+					<Card.Content class="p-6">
+						<Skeleton class="mb-2 h-5 w-32" />
+						<Skeleton class="h-4 w-48" />
+					</Card.Content>
+				</Card.Root>
+			{/each}
+		</div>
+	{:else if meQuery.error}
+		<Alert variant="destructive">
+			<AlertTriangleIcon class="size-4" />
+			<AlertDescription>
+				Please <a href="/auth/login" class="font-medium underline">log in</a> to access security
+				settings.
+			</AlertDescription>
+		</Alert>
+	{:else if meQuery.data}
+		{@const user = meQuery.data}
+		<div class="space-y-6">
+			<!-- Change Password -->
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="flex items-center gap-2">
+						<KeyIcon class="size-5" />
+						Change Password
+					</Card.Title>
+					<Card.Description>Update your password to keep your account secure</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					{#if user.intraId && !user.email}
+						<p class="text-sm text-muted-foreground">
+							You signed up with 42 OAuth and don't have a password set. To add password
+							authentication, please contact support.
+						</p>
+					{:else}
+						<form onsubmit={handleChangePassword} class="space-y-4">
+							{#if successMessage}
+								<Alert class="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+									<CheckCircleIcon class="size-4" />
+									<AlertDescription>{successMessage}</AlertDescription>
+								</Alert>
+							{/if}
+
+							{#if changePasswordMutation.error}
+								<Alert variant="destructive">
+									<AlertTriangleIcon class="size-4" />
+									<AlertDescription>{changePasswordMutation.error.message}</AlertDescription>
+								</Alert>
+							{/if}
+
+							<div class="space-y-2">
+								<Label for="current-password">Current Password</Label>
+								<Input
+									type="password"
+									id="current-password"
+									bind:value={currentPassword}
+									required
+									autocomplete="current-password"
+								/>
+							</div>
+
+							<div class="space-y-2">
+								<Label for="new-password">New Password</Label>
+								<Input
+									type="password"
+									id="new-password"
+									bind:value={newPassword}
+									required
+									autocomplete="new-password"
+								/>
+							</div>
+
+							<div class="space-y-2">
+								<Label for="confirm-password">Confirm New Password</Label>
+								<Input
+									type="password"
+									id="confirm-password"
+									bind:value={confirmPassword}
+									required
+									autocomplete="new-password"
+								/>
+							</div>
+
+							{#if newPassword.length > 0}
+								<div class="rounded-lg bg-muted p-4">
+									<p class="text-sm font-medium">Password requirements:</p>
+									<ul class="mt-2 space-y-1 text-sm">
+										<li class="flex items-center gap-2 {passwordRequirements.minLength ? 'text-green-600' : 'text-muted-foreground'}">
+											{#if passwordRequirements.minLength}
+												<CheckCircleIcon class="size-4" />
+											{:else}
+												<CircleIcon class="size-4" />
+											{/if}
+											At least 8 characters
+										</li>
+										<li class="flex items-center gap-2 {passwordRequirements.hasUpper ? 'text-green-600' : 'text-muted-foreground'}">
+											{#if passwordRequirements.hasUpper}
+												<CheckCircleIcon class="size-4" />
+											{:else}
+												<CircleIcon class="size-4" />
+											{/if}
+											One uppercase letter
+										</li>
+										<li class="flex items-center gap-2 {passwordRequirements.hasLower ? 'text-green-600' : 'text-muted-foreground'}">
+											{#if passwordRequirements.hasLower}
+												<CheckCircleIcon class="size-4" />
+											{:else}
+												<CircleIcon class="size-4" />
+											{/if}
+											One lowercase letter
+										</li>
+										<li class="flex items-center gap-2 {passwordRequirements.hasNumber ? 'text-green-600' : 'text-muted-foreground'}">
+											{#if passwordRequirements.hasNumber}
+												<CheckCircleIcon class="size-4" />
+											{:else}
+												<CircleIcon class="size-4" />
+											{/if}
+											One number
+										</li>
+										<li class="flex items-center gap-2 {passwordRequirements.passwordsMatch ? 'text-green-600' : 'text-muted-foreground'}">
+											{#if passwordRequirements.passwordsMatch}
+												<CheckCircleIcon class="size-4" />
+											{:else}
+												<CircleIcon class="size-4" />
+											{/if}
+											Passwords match
+										</li>
+									</ul>
+								</div>
+							{/if}
+
+							<Button type="submit" disabled={!isPasswordValid || changePasswordMutation.isPending}>
+								{changePasswordMutation.isPending ? "Changing Password..." : "Change Password"}
+							</Button>
+						</form>
+					{/if}
+				</Card.Content>
+			</Card.Root>
+
+			<!-- 42 Account -->
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="flex items-center gap-2">
+						<LinkIcon class="size-5" />
+						42 Account
+					</Card.Title>
+					<Card.Description>Link your 42 account for quick sign-in</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					{#if user.intraId}
+						<div class="flex items-center gap-2">
+							<Badge variant="secondary" class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+								<CheckCircleIcon class="mr-1 size-3" />
+								42 Account Linked
+							</Badge>
+						</div>
+						<p class="mt-2 text-sm text-muted-foreground">
+							Your 42 account is connected. You can use it to sign in.
+						</p>
+					{:else}
+						<Button variant="outline" onclick={redirectToLink42}>
+							<LinkIcon class="mr-2 size-4" />
+							Link 42 Account
+						</Button>
+					{/if}
+				</Card.Content>
+			</Card.Root>
+
+			<!-- Two-Factor Authentication -->
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="flex items-center gap-2">
+						<ShieldIcon class="size-5" />
+						Two-Factor Authentication
+					</Card.Title>
+					<Card.Description>Add an extra layer of security to your account</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					{#if user.twoFactorEnabled}
+						<div class="flex items-center justify-between">
+							<Badge variant="secondary" class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+								<CheckCircleIcon class="mr-1 size-3" />
+								2FA Enabled
+							</Badge>
+							<Button variant="link" class="text-destructive" href="/settings/2fa?action=disable">
+								Disable 2FA
+							</Button>
+						</div>
+						<p class="mt-2 text-sm text-muted-foreground">
+							Your account is protected with two-factor authentication.
+						</p>
+					{:else}
+						<Button href="/settings/2fa">
+							<ShieldIcon class="mr-2 size-4" />
+							Enable 2FA
+						</Button>
+						<p class="mt-2 text-sm text-muted-foreground">
+							Protect your account with time-based one-time passwords (TOTP).
+						</p>
+					{/if}
+				</Card.Content>
+			</Card.Root>
+
+			<!-- Active Sessions -->
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="flex items-center gap-2">
+						<LogOutIcon class="size-5" />
+						Active Sessions
+					</Card.Title>
+					<Card.Description>Sign out from all devices if you suspect unauthorized access</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<Button variant="destructive" href="/auth/logout?all=true">
+						<LogOutIcon class="mr-2 size-4" />
+						Sign Out All Devices
+					</Button>
+				</Card.Content>
+			</Card.Root>
+		</div>
+	{/if}
+</div>

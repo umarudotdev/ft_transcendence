@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { QueryClientProvider } from '@tanstack/svelte-query';
+	import { ModeWatcher } from 'mode-watcher';
 	import { page } from '$app/state';
 	import { locales, localizeHref } from '$lib/paraglide/runtime';
 	import { createQueryClient } from '$lib/query';
@@ -12,6 +13,8 @@
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
+
+<ModeWatcher />
 
 <QueryClientProvider client={queryClient}>
 	{@render children()}

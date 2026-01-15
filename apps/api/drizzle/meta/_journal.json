@@ -15,6 +15,13 @@
       "when": 1768338538708,
       "tag": "0001_young_sleeper",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768515791107,
+      "tag": "0002_slimy_madame_hydra",
+      "breakpoints": true
     }
   ]
 }

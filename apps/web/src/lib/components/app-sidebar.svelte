@@ -11,6 +11,9 @@
 	import ActivityIcon from "@lucide/svelte/icons/activity";
 	import ChevronDownIcon from "@lucide/svelte/icons/chevron-down";
 	import LogOutIcon from "@lucide/svelte/icons/log-out";
+	import TrophyIcon from "@lucide/svelte/icons/trophy";
+	import MedalIcon from "@lucide/svelte/icons/medal";
+	import BellIcon from "@lucide/svelte/icons/bell";
 
 	const meQuery = createMeQuery();
 	const logoutMutation = createLogoutMutation();
@@ -19,6 +22,9 @@
 
 	const navItems = [
 		{ href: "/", label: "Game Lobby", icon: GamepadIcon },
+		{ href: "/leaderboard", label: "Leaderboard", icon: TrophyIcon },
+		{ href: "/achievements", label: "Achievements", icon: MedalIcon },
+		{ href: "/notifications", label: "Notifications", icon: BellIcon },
 		{ href: "/profile", label: "Profile", icon: UserIcon },
 	];
 

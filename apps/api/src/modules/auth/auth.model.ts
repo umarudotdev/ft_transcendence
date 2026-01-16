@@ -97,6 +97,16 @@ export const AuthModel = {
     t.Object({ type: t.Literal("ACCOUNT_ALREADY_LINKED") }),
   ]),
 
+  unlinkOAuth: t.Object({
+    password: t.String({ minLength: 1 }),
+  }),
+
+  oauthUnlinkError: t.Union([
+    t.Object({ type: t.Literal("NOT_LINKED") }),
+    t.Object({ type: t.Literal("PASSWORD_REQUIRED") }),
+    t.Object({ type: t.Literal("INVALID_PASSWORD") }),
+  ]),
+
   sessionError: t.Union([
     t.Object({ type: t.Literal("NOT_FOUND") }),
     t.Object({ type: t.Literal("EXPIRED") }),
@@ -125,6 +135,7 @@ export type LoginError = (typeof AuthModel.loginError)["static"];
 export type PasswordError = (typeof AuthModel.passwordError)["static"];
 export type TokenError = (typeof AuthModel.tokenError)["static"];
 export type OAuthError = (typeof AuthModel.oauthError)["static"];
+export type OAuthUnlinkError = (typeof AuthModel.oauthUnlinkError)["static"];
 export type SessionError = (typeof AuthModel.sessionError)["static"];
 export type TotpError = (typeof AuthModel.totpError)["static"];
 
@@ -211,6 +222,23 @@ export function mapOAuthError(error: OAuthError, instance: string) {
       return conflict("This 42 account is already linked to another user", {
         instance,
       });
+  }
+}
+
+/**
+ * Maps OAuth unlink errors to RFC 9457 Problem Details.
+ */
+export function mapOAuthUnlinkError(error: OAuthUnlinkError, instance: string) {
+  switch (error.type) {
+    case "NOT_LINKED":
+      return badRequest("No 42 account is linked to this user", { instance });
+    case "PASSWORD_REQUIRED":
+      return badRequest(
+        "Password is required to unlink. OAuth-only accounts cannot unlink.",
+        { instance }
+      );
+    case "INVALID_PASSWORD":
+      return unauthorized("Invalid password", { instance });
   }
 }
 

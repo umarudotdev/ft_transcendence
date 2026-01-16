@@ -384,3 +384,31 @@ export function redirectTo42OAuth() {
 export function redirectToLink42() {
   window.location.href = `${window.location.origin}/api/auth/42/link`;
 }
+
+export interface Unlink42Input {
+  password: string;
+}
+
+/**
+ * Mutation to unlink 42 account.
+ */
+export function createUnlink42Mutation() {
+  const queryClient = useQueryClient();
+
+  return createMutation<unknown, ApiError, Unlink42Input>(() => ({
+    mutationFn: async (input: Unlink42Input) => {
+      const response = await api.api.auth["42"].unlink.post(input, {
+        fetch: { credentials: "include" },
+      });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.me() });
+    },
+  }));
+}

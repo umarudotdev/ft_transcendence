@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import * as Card from "$lib/components/ui/card";
+	import * as Dialog from "$lib/components/ui/dialog";
 	import { Button } from "$lib/components/ui/button";
 	import { Input } from "$lib/components/ui/input";
 	import { Label } from "$lib/components/ui/label";
@@ -10,11 +11,13 @@
 	import {
 		createChangePasswordMutation,
 		createMeQuery,
+		createUnlink42Mutation,
 		redirectToLink42,
 	} from "$lib/queries/auth";
 	import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
 	import KeyIcon from "@lucide/svelte/icons/key";
 	import LinkIcon from "@lucide/svelte/icons/link";
+	import UnlinkIcon from "@lucide/svelte/icons/unlink";
 	import ShieldIcon from "@lucide/svelte/icons/shield";
 	import LogOutIcon from "@lucide/svelte/icons/log-out";
 	import CheckCircleIcon from "@lucide/svelte/icons/check-circle";
@@ -23,11 +26,17 @@
 
 	const meQuery = createMeQuery();
 	const changePasswordMutation = createChangePasswordMutation();
+	const unlink42Mutation = createUnlink42Mutation();
 
 	let currentPassword = $state("");
 	let newPassword = $state("");
 	let confirmPassword = $state("");
 	let successMessage = $state("");
+
+	// 42 Unlink state
+	let unlinkDialogOpen = $state(false);
+	let unlinkPassword = $state("");
+	let unlinkSuccessMessage = $state("");
 
 	const passwordRequirements = $derived({
 		minLength: newPassword.length >= 8,
@@ -65,6 +74,26 @@
 					setTimeout(() => {
 						goto("/auth/login?message=Password changed. Please log in again.");
 					}, 2000);
+				},
+			}
+		);
+	}
+
+	function handleUnlink42(e: Event) {
+		e.preventDefault();
+		unlinkSuccessMessage = "";
+
+		if (!unlinkPassword) {
+			return;
+		}
+
+		unlink42Mutation.mutate(
+			{ password: unlinkPassword },
+			{
+				onSuccess: () => {
+					unlinkSuccessMessage = "42 account unlinked successfully.";
+					unlinkPassword = "";
+					unlinkDialogOpen = false;
 				},
 			}
 		);
@@ -240,16 +269,83 @@
 					<Card.Description>Link your 42 account for quick sign-in</Card.Description>
 				</Card.Header>
 				<Card.Content>
+					{#if unlinkSuccessMessage}
+						<Alert class="mb-4 border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+							<CheckCircleIcon class="size-4" />
+							<AlertDescription>{unlinkSuccessMessage}</AlertDescription>
+						</Alert>
+					{/if}
+
 					{#if user.intraId}
-						<div class="flex items-center gap-2">
-							<Badge variant="secondary" class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-								<CheckCircleIcon class="mr-1 size-3" />
-								42 Account Linked
-							</Badge>
+						<div class="flex items-center justify-between">
+							<div>
+								<Badge variant="secondary" class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+									<CheckCircleIcon class="mr-1 size-3" />
+									42 Account Linked
+								</Badge>
+								<p class="mt-2 text-sm text-muted-foreground">
+									Your 42 account is connected. You can use it to sign in.
+								</p>
+							</div>
+							{#if user.email}
+								<Dialog.Root bind:open={unlinkDialogOpen}>
+									<Dialog.Trigger>
+										{#snippet child({ props })}
+											<Button variant="outline" class="text-destructive hover:text-destructive" {...props}>
+												<UnlinkIcon class="mr-2 size-4" />
+												Unlink
+											</Button>
+										{/snippet}
+									</Dialog.Trigger>
+									<Dialog.Content class="sm:max-w-md">
+										<Dialog.Header>
+											<Dialog.Title>Unlink 42 Account</Dialog.Title>
+											<Dialog.Description>
+												Enter your password to confirm unlinking your 42 account. You can re-link it later.
+											</Dialog.Description>
+										</Dialog.Header>
+										<form onsubmit={handleUnlink42} class="space-y-4">
+											{#if unlink42Mutation.error}
+												<Alert variant="destructive">
+													<AlertTriangleIcon class="size-4" />
+													<AlertDescription>{unlink42Mutation.error.message}</AlertDescription>
+												</Alert>
+											{/if}
+
+											<div class="space-y-2">
+												<Label for="unlink-password">Password</Label>
+												<Input
+													type="password"
+													id="unlink-password"
+													bind:value={unlinkPassword}
+													placeholder="Enter your password"
+													required
+													autocomplete="current-password"
+												/>
+											</div>
+
+											<Dialog.Footer>
+												<Button type="button" variant="outline" onclick={() => (unlinkDialogOpen = false)}>
+													Cancel
+												</Button>
+												<Button
+													type="submit"
+													variant="destructive"
+													disabled={!unlinkPassword || unlink42Mutation.isPending}
+												>
+													{unlink42Mutation.isPending ? "Unlinking..." : "Unlink Account"}
+												</Button>
+											</Dialog.Footer>
+										</form>
+									</Dialog.Content>
+								</Dialog.Root>
+							{/if}
 						</div>
-						<p class="mt-2 text-sm text-muted-foreground">
-							Your 42 account is connected. You can use it to sign in.
-						</p>
+						{#if !user.email}
+							<p class="mt-2 text-sm text-muted-foreground">
+								Set up a password first to be able to unlink your 42 account.
+							</p>
+						{/if}
 					{:else}
 						<Button variant="outline" onclick={redirectToLink42}>
 							<LinkIcon class="mr-2 size-4" />

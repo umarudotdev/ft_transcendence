@@ -4,6 +4,7 @@ import { err, ok, ResultAsync } from "neverthrow";
 import type {
   LoginError,
   OAuthError,
+  OAuthUnlinkError,
   PasswordError,
   RegisterError,
   SafeUser,
@@ -526,6 +527,36 @@ abstract class AuthService {
         return ok(undefined);
       })(),
       () => ({ type: "TOKEN_EXCHANGE_FAILED" as const })
+    ).andThen((result) => result);
+  }
+
+  static unlinkOAuthAccount(
+    userId: number,
+    password: string
+  ): ResultAsync<void, OAuthUnlinkError> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        const user = await authRepository.findUserById(userId);
+
+        if (!user?.intraId) {
+          return err({ type: "NOT_LINKED" as const });
+        }
+
+        // Users who signed up via OAuth and never set a password cannot unlink
+        if (!user.passwordHash) {
+          return err({ type: "PASSWORD_REQUIRED" as const });
+        }
+
+        const isValid = await verifyPassword(password, user.passwordHash);
+        if (!isValid) {
+          return err({ type: "INVALID_PASSWORD" as const });
+        }
+
+        await authRepository.unlinkIntraAccount(userId);
+
+        return ok(undefined);
+      })(),
+      () => ({ type: "INVALID_PASSWORD" as const })
     ).andThen((result) => result);
   }
 

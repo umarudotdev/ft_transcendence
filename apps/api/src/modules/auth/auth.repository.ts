@@ -89,6 +89,19 @@ export const authRepository = {
     return updated;
   },
 
+  async unlinkIntraAccount(userId: number) {
+    const [updated] = await db
+      .update(users)
+      .set({
+        intraId: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updated;
+  },
+
   async updateUserTotp(
     userId: number,
     secret: string | null,

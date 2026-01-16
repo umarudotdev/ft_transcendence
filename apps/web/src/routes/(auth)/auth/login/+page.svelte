@@ -27,6 +27,19 @@
 	const verifiedSuccess = $derived(page.url.searchParams.get('verified') === 'true');
 	const oauthError = $derived(page.url.searchParams.get('error'));
 
+	// User-friendly OAuth error messages
+	const oauthErrorMessages: Record<string, string> = {
+		invalid_oauth: 'Invalid OAuth response. Please try again.',
+		invalid_state: 'Security check failed. Please try again.',
+		token_exchange_failed: 'Unable to complete authentication. Please try again.',
+		profile_fetch_failed: 'Unable to fetch your profile. Please try again.',
+		account_already_linked: 'This 42 account is already linked to another user.',
+	};
+
+	const friendlyOAuthError = $derived(
+		oauthError ? oauthErrorMessages[oauthError] || `Authentication error: ${oauthError.replace(/_/g, ' ')}` : null
+	);
+
 	async function handleLogin(e: SubmitEvent) {
 		e.preventDefault();
 		errorMessage = '';
@@ -100,10 +113,22 @@
 				</Alert>
 			{/if}
 
-			{#if oauthError}
+			{#if friendlyOAuthError}
 				<Alert variant="destructive" class="mb-4">
-					<AlertDescription>
-						OAuth login failed: {oauthError.replace(/_/g, ' ')}
+					<AlertDescription class="flex flex-col gap-2">
+						<span>{friendlyOAuthError}</span>
+						<Button
+							variant="outline"
+							size="sm"
+							class="w-fit"
+							onclick={() => {
+								// Clear the error and redirect to OAuth
+								window.history.replaceState({}, '', '/auth/login');
+								redirectTo42OAuth();
+							}}
+						>
+							Try again with 42
+						</Button>
 					</AlertDescription>
 				</Alert>
 			{/if}

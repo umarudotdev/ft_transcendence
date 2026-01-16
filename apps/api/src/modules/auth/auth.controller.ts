@@ -11,6 +11,7 @@ import { env } from "../../env";
 import {
   AuthModel,
   mapLoginError,
+  mapOAuthUnlinkError,
   mapPasswordError,
   mapRegisterError,
   mapTokenError,
@@ -242,68 +243,77 @@ export const authController = new Elysia({ prefix: "/auth" })
       }
     )
   )
-  .get("/42", ({ cookie, request, set }) => {
-    const instance = new URL(request.url).pathname;
-    const result = AuthService.generateOAuthUrl();
+  .group("", (app) =>
+    app
+      .use(rateLimit({ max: 10, window: 60 * 1000 }))
+      .get("/42", ({ cookie, request, set }) => {
+        const instance = new URL(request.url).pathname;
+        const result = AuthService.generateOAuthUrl();
 
-    if (!result) {
-      set.status = HttpStatus.SERVICE_UNAVAILABLE;
-      set.headers["Content-Type"] = "application/problem+json";
-      return serviceUnavailable("OAuth is not configured", { instance });
-    }
-
-    const { url, state } = result;
-
-    cookie.oauth_state.set({
-      value: state,
-      ...OAUTH_STATE_COOKIE_OPTIONS,
-    });
-
-    set.redirect = url;
-    return { message: "Redirecting to 42 OAuth" };
-  })
-  .get(
-    "/42/callback",
-    async ({ query, cookie, set }) => {
-      const code = query.code;
-      const state = query.state;
-      const storedState = cookie.oauth_state?.value;
-
-      cookie.oauth_state.remove();
-
-      if (!code || !state || !storedState) {
-        set.redirect = `${env.FRONTEND_URL}/auth/login?error=invalid_oauth`;
-        return { message: "Redirecting with error" };
-      }
-
-      const result = await AuthService.handleOAuthCallback(
-        code,
-        String(storedState),
-        state
-      );
-
-      return result.match(
-        ({ sessionId, isNewUser }) => {
-          cookie.session.set({
-            value: sessionId,
-            ...SESSION_COOKIE_OPTIONS,
-          });
-
-          const redirectUrl = isNewUser
-            ? `${env.FRONTEND_URL}/welcome`
-            : `${env.FRONTEND_URL}/`;
-          set.redirect = redirectUrl;
-          return { message: "Redirecting to app" };
-        },
-        (error) => {
-          set.redirect = `${env.FRONTEND_URL}/auth/login?error=${error.type.toLowerCase()}`;
-          return { message: "Redirecting with error" };
+        if (!result) {
+          set.status = HttpStatus.SERVICE_UNAVAILABLE;
+          set.headers["Content-Type"] = "application/problem+json";
+          return serviceUnavailable("OAuth is not configured", { instance });
         }
-      );
-    },
-    {
-      query: AuthModel.oauthCallback,
-    }
+
+        const { url, state } = result;
+
+        cookie.oauth_state.set({
+          value: state,
+          ...OAUTH_STATE_COOKIE_OPTIONS,
+        });
+
+        set.status = HttpStatus.FOUND;
+        set.headers["Location"] = url;
+      })
+  )
+  .group("", (app) =>
+    app.use(rateLimit({ max: 10, window: 60 * 1000 })).get(
+      "/42/callback",
+      async ({ query, cookie, set }) => {
+        const code = query.code;
+        const state = query.state;
+        const storedState = cookie.oauth_state?.value;
+
+        cookie.oauth_state.remove();
+
+        if (!code || !state || !storedState) {
+          set.status = HttpStatus.FOUND;
+          set.headers["Location"] =
+            `${env.FRONTEND_URL}/auth/login?error=invalid_oauth`;
+          return;
+        }
+
+        const result = await AuthService.handleOAuthCallback(
+          code,
+          String(storedState),
+          state
+        );
+
+        return result.match(
+          ({ sessionId, isNewUser }) => {
+            cookie.session.set({
+              value: sessionId,
+              ...SESSION_COOKIE_OPTIONS,
+            });
+
+            const redirectUrl = isNewUser
+              ? `${env.FRONTEND_URL}/welcome`
+              : `${env.FRONTEND_URL}/`;
+            set.status = HttpStatus.FOUND;
+            set.headers["Location"] = redirectUrl;
+          },
+          (error) => {
+            set.status = HttpStatus.FOUND;
+            set.headers["Location"] =
+              `${env.FRONTEND_URL}/auth/login?error=${error.type.toLowerCase()}`;
+          }
+        );
+      },
+      {
+        query: AuthModel.oauthCallback,
+      }
+    )
   )
   .use(authGuard)
   .get("/me", ({ user }) => {
@@ -379,8 +389,8 @@ export const authController = new Elysia({ prefix: "/auth" })
       ...OAUTH_STATE_COOKIE_OPTIONS,
     });
 
-    set.redirect = url;
-    return { message: "Redirecting to 42 OAuth" };
+    set.status = HttpStatus.FOUND;
+    set.headers["Location"] = url;
   })
 
   .get(
@@ -393,8 +403,10 @@ export const authController = new Elysia({ prefix: "/auth" })
       cookie.oauth_state.remove();
 
       if (!code || !state || !storedState) {
-        set.redirect = `${env.FRONTEND_URL}/settings/security?error=invalid_oauth`;
-        return { message: "Redirecting with error" };
+        set.status = HttpStatus.FOUND;
+        set.headers["Location"] =
+          `${env.FRONTEND_URL}/settings/security?error=invalid_oauth`;
+        return;
       }
 
       const actualStoredState = String(storedState).replace("link:", "");
@@ -408,17 +420,42 @@ export const authController = new Elysia({ prefix: "/auth" })
 
       return result.match(
         () => {
-          set.redirect = `${env.FRONTEND_URL}/settings/security?success=42_linked`;
-          return { message: "Redirecting to settings" };
+          set.status = HttpStatus.FOUND;
+          set.headers["Location"] =
+            `${env.FRONTEND_URL}/settings/security?success=42_linked`;
         },
         (error) => {
-          set.redirect = `${env.FRONTEND_URL}/settings/security?error=${error.type.toLowerCase()}`;
-          return { message: "Redirecting with error" };
+          set.status = HttpStatus.FOUND;
+          set.headers["Location"] =
+            `${env.FRONTEND_URL}/settings/security?error=${error.type.toLowerCase()}`;
         }
       );
     },
     {
       query: AuthModel.oauthCallback,
+    }
+  )
+  .post(
+    "/42/unlink",
+    async ({ body, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
+      const result = await AuthService.unlinkOAuthAccount(
+        user.id,
+        body.password
+      );
+
+      return result.match(
+        () => ({ message: "42 account unlinked successfully" }),
+        (error) => {
+          const problem = mapOAuthUnlinkError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
+        }
+      );
+    },
+    {
+      body: AuthModel.unlinkOAuth,
     }
   )
   .post("/2fa/enable", async ({ user, request, set }) => {

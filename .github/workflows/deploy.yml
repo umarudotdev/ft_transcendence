@@ -195,21 +195,13 @@ jobs:
           API_URL=$API_URL
           EOF
 
-      - name: Debug and clean up kamal-proxy
+      - name: Remove conflicting web service from proxy
         env:
           EC2_HOST: ${{ vars.AWS_EC2_HOST }}
         run: |
-          echo "=== Listing all kamal-proxy services ==="
+          echo "=== Removing stale ft-transcendence-web-web service ==="
           ssh -i ~/.ssh/ft-transcendence.pem ubuntu@$EC2_HOST \
-            "docker exec kamal-proxy kamal-proxy list" || true
-          echo ""
-          echo "=== Removing ft-transcendence-web-web-web ==="
-          ssh -i ~/.ssh/ft-transcendence.pem ubuntu@$EC2_HOST \
-            "docker exec kamal-proxy kamal-proxy remove ft-transcendence-web-web-web" || true
-          echo ""
-          echo "=== Removing ft-transcendence-web ==="
-          ssh -i ~/.ssh/ft-transcendence.pem ubuntu@$EC2_HOST \
-            "docker exec kamal-proxy kamal-proxy remove ft-transcendence-web" || true
+            "docker exec kamal-proxy kamal-proxy remove ft-transcendence-web-web" || true
           echo ""
           echo "=== Listing services after cleanup ==="
           ssh -i ~/.ssh/ft-transcendence.pem ubuntu@$EC2_HOST \

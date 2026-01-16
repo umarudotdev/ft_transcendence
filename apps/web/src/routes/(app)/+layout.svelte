@@ -11,10 +11,10 @@
 <Sidebar.Provider>
 	<AppSidebar />
 	<Sidebar.Inset>
-		<header class="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
+		<header class="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-md3-outline-variant bg-md3-surface px-4">
 			<Sidebar.Trigger class="-ml-1"></Sidebar.Trigger>
-			<div class="h-4 w-px bg-border"></div>
-			<span class="flex-1 text-sm font-medium text-muted-foreground">ft_transcendence</span>
+			<div class="h-4 w-px bg-md3-outline-variant"></div>
+			<span class="flex-1 text-sm font-medium text-md3-on-surface-variant">ft_transcendence</span>
 			<CommandMenu />
 			<NotificationBell />
 			<ThemeToggle />

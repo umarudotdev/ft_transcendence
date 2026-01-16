@@ -42,20 +42,20 @@
   --md3-error-container: oklch(0.9102 0.1183 25);
   --md3-on-error-container: oklch(0.2193 0.1183 25);
 
-  /* Surface */
-  --md3-surface: oklch(0.9851 0.0013 281.45);
-  --md3-on-surface: oklch(0.2193 0.0134 281.45);
-  --md3-surface-variant: oklch(0.9102 0.0268 281.45);
-  --md3-on-surface-variant: oklch(0.3712 0.0268 281.45);
+  /* Surface - increased chroma for visible purple tint */
+  --md3-surface: oklch(0.98 0.012 281.45);
+  --md3-on-surface: oklch(0.22 0.02 281.45);
+  --md3-surface-variant: oklch(0.92 0.03 281.45);
+  --md3-on-surface-variant: oklch(0.4 0.03 281.45);
 
-  /* Surface containers */
-  --md3-surface-container-lowest: oklch(1 0 0);
-  --md3-surface-container-low: oklch(0.9664 0.0013 281.45);
-  --md3-surface-container: oklch(0.9477 0.0013 281.45);
-  --md3-surface-container-high: oklch(0.929 0.0013 281.45);
-  --md3-surface-container-highest: oklch(0.9102 0.0013 281.45);
-  --md3-surface-dim: oklch(0.8728 0.0013 281.45);
-  --md3-surface-bright: oklch(0.9851 0.0013 281.45);
+  /* Surface containers - purple-tinted hierarchy */
+  --md3-surface-container-lowest: oklch(0.99 0.008 281.45);
+  --md3-surface-container-low: oklch(0.96 0.015 281.45);
+  --md3-surface-container: oklch(0.94 0.018 281.45);
+  --md3-surface-container-high: oklch(0.92 0.02 281.45);
+  --md3-surface-container-highest: oklch(0.9 0.025 281.45);
+  --md3-surface-dim: oklch(0.87 0.015 281.45);
+  --md3-surface-bright: oklch(0.98 0.012 281.45);
 
   /* Outline */
   --md3-outline: oklch(0.5522 0.0268 281.45);
@@ -301,20 +301,20 @@
   --md3-error-container: oklch(0.3712 0.1576 25);
   --md3-on-error-container: oklch(0.9102 0.1183 25);
 
-  /* Surface */
-  --md3-surface: oklch(0.1579 0.0013 281.45);
-  --md3-on-surface: oklch(0.9102 0.0134 281.45);
-  --md3-surface-variant: oklch(0.3712 0.0268 281.45);
-  --md3-on-surface-variant: oklch(0.8169 0.0268 281.45);
+  /* Surface - increased chroma for visible purple tint */
+  --md3-surface: oklch(0.16 0.02 281.45);
+  --md3-on-surface: oklch(0.92 0.015 281.45);
+  --md3-surface-variant: oklch(0.35 0.035 281.45);
+  --md3-on-surface-variant: oklch(0.8 0.03 281.45);
 
-  /* Surface containers */
-  --md3-surface-container-lowest: oklch(0.1206 0.0013 281.45);
-  --md3-surface-container-low: oklch(0.2193 0.0013 281.45);
-  --md3-surface-container: oklch(0.2381 0.0013 281.45);
-  --md3-surface-container-high: oklch(0.2739 0.0013 281.45);
-  --md3-surface-container-highest: oklch(0.3267 0.0013 281.45);
-  --md3-surface-dim: oklch(0.1579 0.0013 281.45);
-  --md3-surface-bright: oklch(0.3525 0.0013 281.45);
+  /* Surface containers - purple-tinted hierarchy */
+  --md3-surface-container-lowest: oklch(0.12 0.015 281.45);
+  --md3-surface-container-low: oklch(0.2 0.022 281.45);
+  --md3-surface-container: oklch(0.24 0.025 281.45);
+  --md3-surface-container-high: oklch(0.28 0.028 281.45);
+  --md3-surface-container-highest: oklch(0.32 0.03 281.45);
+  --md3-surface-dim: oklch(0.16 0.02 281.45);
+  --md3-surface-bright: oklch(0.35 0.025 281.45);
 
   /* Outline */
   --md3-outline: oklch(0.6417 0.0268 281.45);
@@ -430,11 +430,12 @@
 /* ===== BASE STYLES ===== */
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-md3-outline-variant outline-ring/50;
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--md3-surface);
+    color: var(--md3-on-surface);
     font-family: var(--md3-font-plain);
     font-size: var(--md3-typescale-body-medium-size);
     line-height: var(--md3-typescale-body-medium-line-height);

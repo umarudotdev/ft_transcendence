@@ -1,0 +1,5 @@
+[test]
+# Only run API tests with bun test - web tests use vitest/playwright
+# Use `bun run test` to run all tests (API + web)
+root = "apps/api"
+preload = ["apps/api/src/test-setup.ts"]

@@ -25,8 +25,12 @@ const EnvSchema = Type.Object({
 type Env = Static<typeof EnvSchema>;
 
 function parseEnv(): Env {
+  // Provide default DATABASE_URL for tests that don't need real database
+  const isTest = process.env.NODE_ENV === "test";
   const raw: Record<string, unknown> = {
-    DATABASE_URL: process.env.DATABASE_URL,
+    DATABASE_URL:
+      process.env.DATABASE_URL ||
+      (isTest ? "postgres://test:test@localhost:5432/test" : undefined),
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT ? Number(process.env.PORT) : undefined,
     FRONTEND_URL: process.env.FRONTEND_URL,

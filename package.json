@@ -12,7 +12,7 @@
     "build": "bun run --filter './apps/*' build",
     "build:api": "bun run --filter '@ft/api' build",
     "build:web": "bun run --filter '@ft/web' build",
-    "test": "bun run --filter './apps/*' test",
+    "test": "bun run --filter '@ft/*' test",
     "test:api": "bun run --filter '@ft/api' test",
     "test:web": "bun run --filter '@ft/web' test",
     "lint": "bun x ultracite check",

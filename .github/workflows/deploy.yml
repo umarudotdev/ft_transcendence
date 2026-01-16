@@ -43,6 +43,9 @@ jobs:
       - name: Type check API
         run: cd apps/api && bun run tsc --noEmit
 
+      - name: Generate Paraglide files
+        run: cd apps/web && bunx @inlang/paraglide-js compile --project ./project.inlang --outdir ./src/lib/paraglide
+
       - name: Type check Web
         run: cd apps/web && bun run check
 

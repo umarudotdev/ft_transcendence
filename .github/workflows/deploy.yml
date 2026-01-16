@@ -93,7 +93,7 @@ jobs:
 
       - name: Deploy API
         env:
-          KAMAL_REGISTRY_PASSWORD: ${{ steps.ecr-login.outputs.docker_password_ecr }}
+          KAMAL_REGISTRY_PASSWORD: ${{ steps.ecr-login.outputs.docker_password_932249560389 }}
           AWS_EC2_HOST: ${{ vars.AWS_EC2_HOST }}
           DOMAIN: ${{ vars.DOMAIN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -150,7 +150,7 @@ jobs:
 
       - name: Deploy Web
         env:
-          KAMAL_REGISTRY_PASSWORD: ${{ steps.ecr-login.outputs.docker_password_ecr }}
+          KAMAL_REGISTRY_PASSWORD: ${{ steps.ecr-login.outputs.docker_password_932249560389 }}
           AWS_EC2_HOST: ${{ vars.AWS_EC2_HOST }}
           DOMAIN: ${{ vars.DOMAIN }}
           API_URL: ${{ secrets.API_URL }}

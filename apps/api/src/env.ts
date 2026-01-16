@@ -58,12 +58,16 @@ const EnvSchema = Type.Object({
 type Env = Static<typeof EnvSchema>;
 
 function parseEnv(): Env {
-  // Provide default DATABASE_URL for tests that don't need real database
+  // Provide defaults for tests that don't need real configuration
   const isTest = process.env.NODE_ENV === "test";
   const raw: Record<string, unknown> = {
     DATABASE_URL:
       process.env.DATABASE_URL ||
       (isTest ? "postgres://test:test@localhost:5432/test" : undefined),
+    // Provide test encryption key for unit tests
+    CHAT_ENCRYPTION_KEY:
+      process.env.CHAT_ENCRYPTION_KEY ||
+      (isTest ? "test-chat-encryption-key-32bytes!" : undefined),
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT ? Number(process.env.PORT) : undefined,
     FRONTEND_URL: process.env.FRONTEND_URL,
@@ -72,7 +76,6 @@ function parseEnv(): Env {
     INTRA_CLIENT_SECRET: process.env.INTRA_CLIENT_SECRET,
     INTRA_REDIRECT_URI: process.env.INTRA_REDIRECT_URI,
     TOTP_ENCRYPTION_KEY: process.env.TOTP_ENCRYPTION_KEY,
-    CHAT_ENCRYPTION_KEY: process.env.CHAT_ENCRYPTION_KEY,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     EMAIL_FROM: process.env.EMAIL_FROM,
     LOG_LEVEL: process.env.LOG_LEVEL,

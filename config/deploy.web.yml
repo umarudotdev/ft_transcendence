@@ -50,3 +50,5 @@ builder:
   dockerfile: apps/web/Dockerfile
   target: production
   context: .
+  cache:
+    type: gha

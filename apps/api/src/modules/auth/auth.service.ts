@@ -23,6 +23,7 @@ import {
 import {
   decryptSecret,
   encryptSecret,
+  generateQrCodeDataUrl,
   generateTotpSecret,
   secretToBase32,
   verifyTotpCode,
@@ -580,8 +581,10 @@ abstract class AuthService {
         const encryptedSecret = encryptSecret(secret);
         await authRepository.updateUserTotp(userId, encryptedSecret, false);
 
+        const qrCodeDataUrl = await generateQrCodeDataUrl(keyUri);
+
         return ok({
-          qrCodeUrl: keyUri,
+          qrCodeUrl: qrCodeDataUrl,
           secret: secretToBase32(secret),
         });
       })(),

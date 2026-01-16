@@ -1,6 +1,7 @@
 import { encodeBase32 } from "@oslojs/encoding";
 import { createTOTPKeyURI, verifyTOTP } from "@oslojs/otp";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import QRCode from "qrcode";
 
 import { env } from "../../env";
 
@@ -102,4 +103,15 @@ export function decryptSecret(encryptedSecret: string): Uint8Array {
  */
 export function secretToBase32(secret: Uint8Array): string {
   return encodeBase32(secret);
+}
+
+/**
+ * Generate a QR code data URL from the key URI.
+ */
+export async function generateQrCodeDataUrl(keyUri: string): Promise<string> {
+  return QRCode.toDataURL(keyUri, {
+    errorCorrectionLevel: "M",
+    width: 256,
+    margin: 2,
+  });
 }

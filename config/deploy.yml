@@ -47,7 +47,6 @@ env:
   secret:
     - DATABASE_URL
     - FRONTEND_URL
-    - CORS_ORIGINS
     - INTRA_CLIENT_ID
     - INTRA_CLIENT_SECRET
     - INTRA_REDIRECT_URI

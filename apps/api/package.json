@@ -9,6 +9,7 @@
     "test:watch": "bun test --watch",
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
+    "seed": "bun run src/db/seed.ts",
     "tsc": "tsc"
   },
   "dependencies": {
@@ -21,6 +22,7 @@
     "@sinclair/typebox": "^0.34.0",
     "arctic": "^3.7.0",
     "drizzle-orm": "^0.45.0",
+    "drizzle-seed": "^0.3.1",
     "elysia": "^1.4.21",
     "neverthrow": "^8.2.0",
     "oslo": "^1.2.1",

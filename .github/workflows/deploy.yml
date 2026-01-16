@@ -195,8 +195,12 @@ jobs:
           API_URL=$API_URL
           EOF
 
-      - name: Remove stale proxy config
-        run: kamal proxy remove -d web || true
+      - name: Reset proxy for web service
+        run: |
+          # Remove existing service from proxy
+          kamal proxy remove -d web || true
+          # Force stop any existing web containers
+          kamal app stop -d web || true
 
       - name: Deploy Web
         run: kamal deploy -d web

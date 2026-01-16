@@ -31,6 +31,18 @@ export const moderationKeys = {
   }) => [...moderationKeys.all, "audit-log", params] as const,
   userHistory: (userId: number) =>
     [...moderationKeys.all, "users", userId, "history"] as const,
+  // Admin panel keys
+  adminDashboard: () => [...moderationKeys.all, "admin", "dashboard"] as const,
+  adminUsers: (params?: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    role?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  }) => [...moderationKeys.all, "admin", "users", params] as const,
+  adminUser: (userId: number) =>
+    [...moderationKeys.all, "admin", "users", userId] as const,
 };
 
 export type ReportReason =
@@ -418,5 +430,200 @@ export function getSanctionColor(type: SanctionType): string {
       return "text-orange-600 bg-orange-100";
     case "ban":
       return "text-red-600 bg-red-100";
+  }
+}
+
+// =========================================================================
+// Admin Panel Types and Queries
+// =========================================================================
+
+export type UserRole = "user" | "moderator" | "admin";
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  displayName: string;
+  avatarUrl: string | null;
+  emailVerified: boolean;
+  twoFactorEnabled: boolean;
+  role: UserRole;
+  createdAt: Date;
+  activeSanctions: number;
+  totalReports: number;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  totalModerators: number;
+  totalAdmins: number;
+  pendingReports: number;
+  activeSanctions: number;
+  recentAuditLogs: number;
+}
+
+export interface UpdateRoleInput {
+  userId: number;
+  role: UserRole;
+  reason?: string;
+}
+
+export interface DeleteUserInput {
+  userId: number;
+  reason: string;
+}
+
+/**
+ * Query to get admin dashboard stats.
+ */
+export function createAdminDashboardQuery() {
+  return createQuery<AdminStats, ApiError>(() => ({
+    queryKey: moderationKeys.adminDashboard(),
+    queryFn: async () => {
+      const response = await api.api.moderation.admin.dashboard.get({
+        fetch: { credentials: "include" },
+      });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+
+      return (response.data as { stats: AdminStats }).stats;
+    },
+  }));
+}
+
+/**
+ * Query to get admin users list.
+ */
+export function createAdminUsersQuery(params?: {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  role?: UserRole;
+  sortBy?: "createdAt" | "displayName" | "email";
+  sortOrder?: "asc" | "desc";
+}) {
+  return createQuery<
+    { users: AdminUser[]; total: number; hasMore: boolean },
+    ApiError
+  >(() => ({
+    queryKey: moderationKeys.adminUsers(params),
+    queryFn: async () => {
+      const response = await api.api.moderation.admin.users.get({
+        query: params,
+        fetch: { credentials: "include" },
+      });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+
+      return response.data as {
+        users: AdminUser[];
+        total: number;
+        hasMore: boolean;
+      };
+    },
+  }));
+}
+
+/**
+ * Query to get a single admin user details.
+ */
+export function createAdminUserQuery(userId: number) {
+  return createQuery<AdminUser, ApiError>(() => ({
+    queryKey: moderationKeys.adminUser(userId),
+    queryFn: async () => {
+      const response = await api.api.moderation.admin
+        .users({ id: userId })
+        .get({
+          fetch: { credentials: "include" },
+        });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+
+      return (response.data as { user: AdminUser }).user;
+    },
+    enabled: userId > 0,
+  }));
+}
+
+/**
+ * Mutation to update a user's role.
+ */
+export function createUpdateRoleMutation() {
+  const queryClient = useQueryClient();
+
+  return createMutation<AdminUser, ApiError, UpdateRoleInput>(() => ({
+    mutationFn: async (input: UpdateRoleInput) => {
+      const response = await api.api.moderation.admin.users.role.patch(input, {
+        fetch: { credentials: "include" },
+      });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+
+      return (response.data as { user: AdminUser }).user;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: moderationKeys.adminUsers() });
+      queryClient.invalidateQueries({
+        queryKey: moderationKeys.adminDashboard(),
+      });
+    },
+  }));
+}
+
+/**
+ * Mutation to delete a user.
+ */
+export function createDeleteUserMutation() {
+  const queryClient = useQueryClient();
+
+  return createMutation<void, ApiError, DeleteUserInput>(() => ({
+    mutationFn: async (input: DeleteUserInput) => {
+      const response = await api.api.moderation.admin.users.delete(input, {
+        fetch: { credentials: "include" },
+      });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: moderationKeys.adminUsers() });
+      queryClient.invalidateQueries({
+        queryKey: moderationKeys.adminDashboard(),
+      });
+    },
+  }));
+}
+
+/**
+ * Get display text for user role.
+ */
+export function getRoleText(role: UserRole): string {
+  const roles: Record<UserRole, string> = {
+    user: "User",
+    moderator: "Moderator",
+    admin: "Admin",
+  };
+  return roles[role];
+}
+
+/**
+ * Get color classes for user role badge.
+ */
+export function getRoleColor(role: UserRole): string {
+  switch (role) {
+    case "user":
+      return "text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800";
+    case "moderator":
+      return "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900";
+    case "admin":
+      return "text-purple-600 bg-purple-100 dark:text-purple-300 dark:bg-purple-900";
   }
 }

@@ -58,6 +58,11 @@ export const AuthModel = {
     emailVerified: t.Boolean(),
     twoFactorEnabled: t.Boolean(),
     intraId: t.Nullable(t.Number()),
+    role: t.Union([
+      t.Literal("user"),
+      t.Literal("moderator"),
+      t.Literal("admin"),
+    ]),
     createdAt: t.Date(),
   }),
 

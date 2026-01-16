@@ -7,6 +7,8 @@ import type {
   UserRole,
 } from "../../db/schema";
 import type {
+  AdminStats,
+  AdminUser,
   AuditLogEntry,
   ModerationError,
   Report,
@@ -604,6 +606,238 @@ abstract class ModerationService {
       })(),
       (): never => {
         throw new Error("Unexpected error getting audit log");
+      }
+    );
+  }
+
+  // =========================================================================
+  // Admin Panel
+  // =========================================================================
+
+  /**
+   * Get list of users for admin panel.
+   */
+  static getAdminUsers(options: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    role?: UserRole;
+    sortBy?: "createdAt" | "displayName" | "email";
+    sortOrder?: "asc" | "desc";
+  }): ResultAsync<
+    { users: AdminUser[]; total: number; hasMore: boolean },
+    never
+  > {
+    return ResultAsync.fromPromise(
+      (async () => {
+        const { limit = 20, ...rest } = options;
+
+        const userList = await moderationRepository.getAdminUsers({
+          limit: limit + 1,
+          ...rest,
+        });
+
+        const total = await moderationRepository.getAdminUsersCount({
+          search: options.search,
+          role: options.role,
+        });
+
+        const hasMore = userList.length > limit;
+        const usersToReturn = hasMore ? userList.slice(0, limit) : userList;
+
+        // Get stats for each user
+        const usersWithStats: AdminUser[] = [];
+        for (const user of usersToReturn) {
+          const details = await moderationRepository.getUserWithDetails(
+            user.id
+          );
+          if (details) {
+            usersWithStats.push({
+              id: details.id,
+              email: details.email,
+              displayName: details.displayName,
+              avatarUrl: details.avatarUrl,
+              emailVerified: details.emailVerified,
+              twoFactorEnabled: details.twoFactorEnabled,
+              role: details.role,
+              createdAt: details.createdAt,
+              activeSanctions: details.activeSanctions,
+              totalReports: details.totalReports,
+            });
+          }
+        }
+
+        return { users: usersWithStats, total, hasMore };
+      })(),
+      (): never => {
+        throw new Error("Unexpected error getting admin users");
+      }
+    );
+  }
+
+  /**
+   * Get a single user's details for admin panel.
+   */
+  static getAdminUserDetails(
+    userId: number
+  ): ResultAsync<AdminUser, ModerationError> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        const details = await moderationRepository.getUserWithDetails(userId);
+
+        if (!details) {
+          return err({ type: "USER_NOT_FOUND" as const });
+        }
+
+        return ok({
+          id: details.id,
+          email: details.email,
+          displayName: details.displayName,
+          avatarUrl: details.avatarUrl,
+          emailVerified: details.emailVerified,
+          twoFactorEnabled: details.twoFactorEnabled,
+          role: details.role,
+          createdAt: details.createdAt,
+          activeSanctions: details.activeSanctions,
+          totalReports: details.totalReports,
+        });
+      })(),
+      () => ({ type: "USER_NOT_FOUND" as const })
+    ).andThen((result) => result);
+  }
+
+  /**
+   * Update a user's role (admin only).
+   */
+  static updateUserRole(
+    adminId: number,
+    targetUserId: number,
+    newRole: UserRole,
+    reason?: string
+  ): ResultAsync<AdminUser, ModerationError> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        // Cannot modify own role
+        if (adminId === targetUserId) {
+          return err({ type: "CANNOT_MODIFY_SELF" as const });
+        }
+
+        const targetUser =
+          await moderationRepository.getUserWithDetails(targetUserId);
+        if (!targetUser) {
+          return err({ type: "USER_NOT_FOUND" as const });
+        }
+
+        // Cannot modify another admin's role (unless you're a super admin, but we don't have that)
+        if (targetUser.role === "admin") {
+          return err({ type: "CANNOT_MODIFY_ADMIN" as const });
+        }
+
+        // Check if user already has a role record
+        const existingRole =
+          await moderationRepository.getUserRole(targetUserId);
+        if (existingRole) {
+          await moderationRepository.updateUserRole(
+            targetUserId,
+            newRole,
+            adminId
+          );
+        } else {
+          await moderationRepository.createUserRole(
+            targetUserId,
+            newRole,
+            adminId
+          );
+        }
+
+        // Log the action
+        await moderationRepository.createAuditLogEntry({
+          actorId: adminId,
+          action: "role_changed",
+          targetUserId,
+          details: JSON.stringify({
+            oldRole: targetUser.role,
+            newRole,
+            reason,
+          }),
+        });
+
+        // Return updated user
+        const updatedUser =
+          await moderationRepository.getUserWithDetails(targetUserId);
+
+        return ok({
+          id: updatedUser!.id,
+          email: updatedUser!.email,
+          displayName: updatedUser!.displayName,
+          avatarUrl: updatedUser!.avatarUrl,
+          emailVerified: updatedUser!.emailVerified,
+          twoFactorEnabled: updatedUser!.twoFactorEnabled,
+          role: updatedUser!.role,
+          createdAt: updatedUser!.createdAt,
+          activeSanctions: updatedUser!.activeSanctions,
+          totalReports: updatedUser!.totalReports,
+        });
+      })(),
+      () => ({ type: "USER_NOT_FOUND" as const })
+    ).andThen((result) => result);
+  }
+
+  /**
+   * Delete a user (admin only).
+   */
+  static deleteUser(
+    adminId: number,
+    targetUserId: number,
+    reason: string
+  ): ResultAsync<void, ModerationError> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        // Cannot delete self
+        if (adminId === targetUserId) {
+          return err({ type: "CANNOT_MODIFY_SELF" as const });
+        }
+
+        const targetUser =
+          await moderationRepository.getUserWithDetails(targetUserId);
+        if (!targetUser) {
+          return err({ type: "USER_NOT_FOUND" as const });
+        }
+
+        // Cannot delete another admin
+        if (targetUser.role === "admin") {
+          return err({ type: "CANNOT_MODIFY_ADMIN" as const });
+        }
+
+        // Log the action before deletion
+        await moderationRepository.createAuditLogEntry({
+          actorId: adminId,
+          action: "user_deleted",
+          targetUserId,
+          details: JSON.stringify({
+            email: targetUser.email,
+            displayName: targetUser.displayName,
+            reason,
+          }),
+        });
+
+        // Delete the user
+        await moderationRepository.deleteUser(targetUserId);
+
+        return ok(undefined);
+      })(),
+      () => ({ type: "USER_NOT_FOUND" as const })
+    ).andThen((result) => result);
+  }
+
+  /**
+   * Get admin dashboard stats.
+   */
+  static getAdminStats(): ResultAsync<AdminStats, never> {
+    return ResultAsync.fromPromise(
+      moderationRepository.getAdminStats(),
+      (): never => {
+        throw new Error("Unexpected error getting admin stats");
       }
     );
   }

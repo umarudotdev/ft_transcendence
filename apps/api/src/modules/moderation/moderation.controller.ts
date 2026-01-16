@@ -301,4 +301,185 @@ export const moderationController = new Elysia({ prefix: "/moderation" })
     {
       params: ModerationModel.userIdParam,
     }
+  )
+
+  // =========================================================================
+  // Admin Panel endpoints
+  // =========================================================================
+
+  // Get admin dashboard stats
+  .get("/admin/dashboard", async ({ user, request, set }) => {
+    const instance = new URL(request.url).pathname;
+
+    // Check admin permissions
+    const hasPermission = await ModerationService.hasAdminPermissions(user.id);
+    if (hasPermission.isErr() || !hasPermission.value) {
+      const problem = forbidden("Insufficient permissions", { instance });
+      set.status = problem.status;
+      set.headers["Content-Type"] = "application/problem+json";
+      return problem;
+    }
+
+    const result = await ModerationService.getAdminStats();
+
+    return result.match(
+      (stats) => ({ stats }),
+      () => ({
+        stats: {
+          totalUsers: 0,
+          totalModerators: 0,
+          totalAdmins: 0,
+          pendingReports: 0,
+          activeSanctions: 0,
+          recentAuditLogs: 0,
+        },
+      })
+    );
+  })
+
+  // Get users list for admin panel
+  .get(
+    "/admin/users",
+    async ({ user, query, request, set }) => {
+      const instance = new URL(request.url).pathname;
+
+      // Check admin permissions
+      const hasPermission = await ModerationService.hasAdminPermissions(
+        user.id
+      );
+      if (hasPermission.isErr() || !hasPermission.value) {
+        const problem = forbidden("Insufficient permissions", { instance });
+        set.status = problem.status;
+        set.headers["Content-Type"] = "application/problem+json";
+        return problem;
+      }
+
+      const result = await ModerationService.getAdminUsers({
+        limit: query.limit,
+        offset: query.offset,
+        search: query.search,
+        role: query.role,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder,
+      });
+
+      return result.match(
+        (data) => data,
+        () => ({ users: [], total: 0, hasMore: false })
+      );
+    },
+    {
+      query: ModerationModel.adminUsersQuery,
+    }
+  )
+
+  // Get single user details for admin panel
+  .get(
+    "/admin/users/:id",
+    async ({ user, params, request, set }) => {
+      const instance = new URL(request.url).pathname;
+
+      // Check admin permissions
+      const hasPermission = await ModerationService.hasAdminPermissions(
+        user.id
+      );
+      if (hasPermission.isErr() || !hasPermission.value) {
+        const problem = forbidden("Insufficient permissions", { instance });
+        set.status = problem.status;
+        set.headers["Content-Type"] = "application/problem+json";
+        return problem;
+      }
+
+      const result = await ModerationService.getAdminUserDetails(params.id);
+
+      return result.match(
+        (adminUser) => ({ user: adminUser }),
+        (error) => {
+          const problem = mapModerationError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
+        }
+      );
+    },
+    {
+      params: ModerationModel.userIdParam,
+    }
+  )
+
+  // Update user role
+  .patch(
+    "/admin/users/role",
+    async ({ user, body, request, set }) => {
+      const instance = new URL(request.url).pathname;
+
+      // Check admin permissions
+      const hasPermission = await ModerationService.hasAdminPermissions(
+        user.id
+      );
+      if (hasPermission.isErr() || !hasPermission.value) {
+        const problem = forbidden("Insufficient permissions", { instance });
+        set.status = problem.status;
+        set.headers["Content-Type"] = "application/problem+json";
+        return problem;
+      }
+
+      const result = await ModerationService.updateUserRole(
+        user.id,
+        body.userId,
+        body.role,
+        body.reason
+      );
+
+      return result.match(
+        (adminUser) => ({ user: adminUser }),
+        (error) => {
+          const problem = mapModerationError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
+        }
+      );
+    },
+    {
+      body: ModerationModel.adminUpdateRole,
+    }
+  )
+
+  // Delete user
+  .delete(
+    "/admin/users",
+    async ({ user, body, request, set }) => {
+      const instance = new URL(request.url).pathname;
+
+      // Check admin permissions
+      const hasPermission = await ModerationService.hasAdminPermissions(
+        user.id
+      );
+      if (hasPermission.isErr() || !hasPermission.value) {
+        const problem = forbidden("Insufficient permissions", { instance });
+        set.status = problem.status;
+        set.headers["Content-Type"] = "application/problem+json";
+        return problem;
+      }
+
+      const result = await ModerationService.deleteUser(
+        user.id,
+        body.userId,
+        body.reason
+      );
+
+      return result.match(
+        () => ({ message: "User deleted successfully" }),
+        (error) => {
+          const problem = mapModerationError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
+        }
+      );
+    },
+    {
+      body: ModerationModel.adminDeleteUser,
+    }
   );

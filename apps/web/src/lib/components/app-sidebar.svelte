@@ -14,6 +14,7 @@
 	import TrophyIcon from "@lucide/svelte/icons/trophy";
 	import MedalIcon from "@lucide/svelte/icons/medal";
 	import BellIcon from "@lucide/svelte/icons/bell";
+	import ShieldIcon from "@lucide/svelte/icons/shield";
 
 	const meQuery = createMeQuery();
 	const logoutMutation = createLogoutMutation();
@@ -35,12 +36,32 @@
 	];
 
 	const isSettingsActive = $derived(currentPath.startsWith("/settings"));
+	const isAdminActive = $derived(currentPath.startsWith("/admin"));
+	const isAdmin = $derived(
+		meQuery.data?.role === "admin" || meQuery.data?.role === "moderator"
+	);
 	let settingsOpen = $state(false);
+	let adminOpen = $state(false);
+
+	const adminItems = [
+		{ href: "/admin", label: "Dashboard" },
+		{ href: "/admin/users", label: "Users" },
+		{ href: "/admin/reports", label: "Reports" },
+		{ href: "/admin/sanctions", label: "Sanctions" },
+		{ href: "/admin/audit", label: "Audit Log" },
+	];
 
 	// Keep settings open if we're on a settings page
 	$effect(() => {
 		if (isSettingsActive) {
 			settingsOpen = true;
+		}
+	});
+
+	// Keep admin menu open if we're on an admin page
+	$effect(() => {
+		if (isAdminActive) {
+			adminOpen = true;
 		}
 	});
 
@@ -132,6 +153,35 @@
 							{/snippet}
 						</Sidebar.MenuButton>
 					</Sidebar.MenuItem>
+
+					{#if isAdmin}
+						<Collapsible.Root bind:open={adminOpen} class="group/collapsible">
+							<Sidebar.MenuItem>
+								<Collapsible.Trigger class="w-full">
+									<Sidebar.MenuButton isActive={isAdminActive} tooltipContent="Admin Panel">
+										<ShieldIcon class="size-4" />
+										<span>Admin</span>
+										<ChevronDownIcon class="ml-auto size-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+									</Sidebar.MenuButton>
+								</Collapsible.Trigger>
+								<Collapsible.Content>
+									<Sidebar.MenuSub>
+										{#each adminItems as item}
+											<Sidebar.MenuSubItem>
+												<Sidebar.MenuSubButton isActive={currentPath === item.href}>
+													{#snippet child({ props })}
+														<a href={item.href} {...props}>
+															<span>{item.label}</span>
+														</a>
+													{/snippet}
+												</Sidebar.MenuSubButton>
+											</Sidebar.MenuSubItem>
+										{/each}
+									</Sidebar.MenuSub>
+								</Collapsible.Content>
+							</Sidebar.MenuItem>
+						</Collapsible.Root>
+					{/if}
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>
 		</Sidebar.Group>

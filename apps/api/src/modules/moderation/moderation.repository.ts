@@ -1,4 +1,15 @@
-import { and, count, desc, eq, gt, isNull, lt, or } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  ilike,
+  isNull,
+  lt,
+  or,
+} from "drizzle-orm";
 
 import { db } from "../../db";
 import {
@@ -346,5 +357,208 @@ export const moderationRepository = {
         displayName: true,
       },
     });
+  },
+
+  // =========================================================================
+  // Admin Panel
+  // =========================================================================
+
+  async getAdminUsers(options: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    role?: UserRole;
+    sortBy?: "createdAt" | "displayName" | "email";
+    sortOrder?: "asc" | "desc";
+  }) {
+    const {
+      limit = 20,
+      offset = 0,
+      search,
+      role,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = options;
+
+    // Build search conditions
+    const conditions: ReturnType<typeof eq>[] = [];
+
+    // If role filter is specified, we need to join with userRoles
+    // For users without a role record, they are considered "user" role
+
+    const sortColumn = {
+      createdAt: users.createdAt,
+      displayName: users.displayName,
+      email: users.email,
+    }[sortBy];
+
+    const orderFn = sortOrder === "asc" ? asc : desc;
+
+    // Get users with their roles
+    const query = db
+      .select({
+        id: users.id,
+        email: users.email,
+        displayName: users.displayName,
+        avatarUrl: users.avatarUrl,
+        emailVerified: users.emailVerified,
+        twoFactorEnabled: users.twoFactorEnabled,
+        createdAt: users.createdAt,
+        role: userRoles.role,
+      })
+      .from(users)
+      .leftJoin(userRoles, eq(users.id, userRoles.userId));
+
+    // Add search filter
+    if (search) {
+      conditions.push(
+        or(
+          ilike(users.displayName, `%${search}%`),
+          ilike(users.email, `%${search}%`)
+        ) as ReturnType<typeof eq>
+      );
+    }
+
+    // Add role filter
+    if (role) {
+      if (role === "user") {
+        // Users with no role record or role = 'user'
+        conditions.push(
+          or(isNull(userRoles.role), eq(userRoles.role, "user")) as ReturnType<
+            typeof eq
+          >
+        );
+      } else {
+        conditions.push(eq(userRoles.role, role));
+      }
+    }
+
+    const userList = await query
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(orderFn(sortColumn))
+      .limit(limit)
+      .offset(offset);
+
+    return userList.map((u) => ({
+      ...u,
+      role: (u.role ?? "user") as UserRole,
+    }));
+  },
+
+  async getAdminUsersCount(options: { search?: string; role?: UserRole }) {
+    const { search, role } = options;
+
+    const conditions: ReturnType<typeof eq>[] = [];
+
+    const query = db
+      .select({ count: count() })
+      .from(users)
+      .leftJoin(userRoles, eq(users.id, userRoles.userId));
+
+    if (search) {
+      conditions.push(
+        or(
+          ilike(users.displayName, `%${search}%`),
+          ilike(users.email, `%${search}%`)
+        ) as ReturnType<typeof eq>
+      );
+    }
+
+    if (role) {
+      if (role === "user") {
+        conditions.push(
+          or(isNull(userRoles.role), eq(userRoles.role, "user")) as ReturnType<
+            typeof eq
+          >
+        );
+      } else {
+        conditions.push(eq(userRoles.role, role));
+      }
+    }
+
+    const [result] = await query.where(
+      conditions.length > 0 ? and(...conditions) : undefined
+    );
+
+    return result?.count ?? 0;
+  },
+
+  async getUserWithDetails(userId: number) {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) return null;
+
+    const role = await this.getUserRole(userId);
+
+    // Count active sanctions
+    const [sanctionsResult] = await db
+      .select({ count: count() })
+      .from(sanctions)
+      .where(and(eq(sanctions.userId, userId), eq(sanctions.isActive, true)));
+
+    // Count reports against this user
+    const [reportsResult] = await db
+      .select({ count: count() })
+      .from(reports)
+      .where(eq(reports.reportedUserId, userId));
+
+    return {
+      ...user,
+      role: (role?.role ?? "user") as UserRole,
+      activeSanctions: sanctionsResult?.count ?? 0,
+      totalReports: reportsResult?.count ?? 0,
+    };
+  },
+
+  async deleteUser(userId: number) {
+    // Cascade deletion is handled by the database schema
+    await db.delete(users).where(eq(users.id, userId));
+  },
+
+  async getAdminStats() {
+    // Total users
+    const [usersResult] = await db.select({ count: count() }).from(users);
+
+    // Moderators count
+    const [modsResult] = await db
+      .select({ count: count() })
+      .from(userRoles)
+      .where(eq(userRoles.role, "moderator"));
+
+    // Admins count
+    const [adminsResult] = await db
+      .select({ count: count() })
+      .from(userRoles)
+      .where(eq(userRoles.role, "admin"));
+
+    // Pending reports
+    const [pendingReportsResult] = await db
+      .select({ count: count() })
+      .from(reports)
+      .where(eq(reports.status, "pending"));
+
+    // Active sanctions
+    const [activeSanctionsResult] = await db
+      .select({ count: count() })
+      .from(sanctions)
+      .where(eq(sanctions.isActive, true));
+
+    // Recent audit logs (last 24 hours)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [recentAuditResult] = await db
+      .select({ count: count() })
+      .from(moderationAuditLog)
+      .where(gt(moderationAuditLog.createdAt, oneDayAgo));
+
+    return {
+      totalUsers: usersResult?.count ?? 0,
+      totalModerators: modsResult?.count ?? 0,
+      totalAdmins: adminsResult?.count ?? 0,
+      pendingReports: pendingReportsResult?.count ?? 0,
+      activeSanctions: activeSanctionsResult?.count ?? 0,
+      recentAuditLogs: recentAuditResult?.count ?? 0,
+    };
   },
 };

@@ -14,6 +14,7 @@ import type {
 } from "./auth.model";
 
 import { EmailService } from "../email/email.service";
+import { moderationRepository } from "../moderation/moderation.repository";
 import { authRepository } from "./auth.repository";
 import { fortyTwo, type IntraProfile, OAUTH_SCOPES } from "./oauth";
 import {
@@ -35,7 +36,7 @@ const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 const EMAIL_VERIFICATION_DURATION_MS = 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_DURATION_MS = 60 * 60 * 1000;
 
-function toSafeUser(user: {
+async function toSafeUser(user: {
   id: number;
   email: string;
   displayName: string;
@@ -44,7 +45,10 @@ function toSafeUser(user: {
   twoFactorEnabled: boolean;
   intraId: number | null;
   createdAt: Date;
-}): SafeUser {
+}): Promise<SafeUser> {
+  const userRole = await moderationRepository.getUserRole(user.id);
+  const role = (userRole?.role ?? "user") as "user" | "moderator" | "admin";
+
   return {
     id: user.id,
     email: user.email,
@@ -53,6 +57,7 @@ function toSafeUser(user: {
     emailVerified: user.emailVerified,
     twoFactorEnabled: user.twoFactorEnabled,
     intraId: user.intraId,
+    role,
     createdAt: user.createdAt,
   };
 }
@@ -104,7 +109,10 @@ abstract class AuthService {
           console.error("Failed to send verification email:", error)
         );
 
-        return ok({ user: toSafeUser(user), verificationToken: token.id });
+        return ok({
+          user: await toSafeUser(user),
+          verificationToken: token.id,
+        });
       })(),
       () => ({ type: "EMAIL_EXISTS" as const })
     ).andThen((result) => result);
@@ -161,7 +169,7 @@ abstract class AuthService {
 
         return ok({
           sessionId: session.id,
-          user: toSafeUser(user),
+          user: await toSafeUser(user),
           requires2fa: false,
         });
       })(),
@@ -193,7 +201,7 @@ abstract class AuthService {
 
         return ok({
           sessionId: session.id,
-          user: toSafeUser(user),
+          user: await toSafeUser(user),
         });
       })(),
       () => ({ type: "INVALID_CODE" as const })
@@ -216,7 +224,7 @@ abstract class AuthService {
           return err({ type: "EXPIRED" as const });
         }
 
-        return ok(toSafeUser(session.user));
+        return ok(await toSafeUser(session.user));
       })(),
       () => ({ type: "NOT_FOUND" as const })
     ).andThen((result) => result);
@@ -494,7 +502,7 @@ abstract class AuthService {
 
         return ok({
           sessionId: session.id,
-          user: toSafeUser(user),
+          user: await toSafeUser(user),
           isNewUser,
         });
       })(),

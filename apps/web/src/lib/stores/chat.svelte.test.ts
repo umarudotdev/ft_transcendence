@@ -1,4 +1,3 @@
-import { installMockWebSocket } from "$lib/test/mocks/websocket";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createChatStore, type WSServerMessage } from "./chat.svelte";
@@ -17,19 +16,114 @@ function mockSessionCookie(sessionId: string | null) {
   });
 }
 
+/**
+ * Mock WebSocket class for testing
+ */
+class MockWebSocket {
+  static readonly CONNECTING = 0;
+  static readonly OPEN = 1;
+  static readonly CLOSING = 2;
+  static readonly CLOSED = 3;
+
+  static instances: MockWebSocket[] = [];
+
+  readyState: number = MockWebSocket.CONNECTING;
+  url: string;
+  sentMessages: string[] = [];
+
+  onopen: ((event: Event) => void) | null = null;
+  onclose: ((event: CloseEvent) => void) | null = null;
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onerror: ((event: Event) => void) | null = null;
+
+  constructor(url: string) {
+    this.url = url;
+    MockWebSocket.instances.push(this);
+  }
+
+  send(data: string): void {
+    if (this.readyState !== MockWebSocket.OPEN) {
+      throw new Error("WebSocket is not open");
+    }
+    this.sentMessages.push(data);
+  }
+
+  close(code = 1000, reason = ""): void {
+    if (
+      this.readyState === MockWebSocket.CLOSED ||
+      this.readyState === MockWebSocket.CLOSING
+    ) {
+      return;
+    }
+    this.readyState = MockWebSocket.CLOSING;
+    this._simulateClose(code, reason);
+  }
+
+  simulateOpen(): void {
+    this.readyState = MockWebSocket.OPEN;
+    if (this.onopen) {
+      this.onopen(new Event("open"));
+    }
+  }
+
+  simulateMessage(data: unknown): void {
+    const message = typeof data === "string" ? data : JSON.stringify(data);
+    if (this.onmessage) {
+      this.onmessage(new MessageEvent("message", { data: message }));
+    }
+  }
+
+  private _simulateClose(code = 1000, reason = ""): void {
+    this.readyState = MockWebSocket.CLOSED;
+    if (this.onclose) {
+      this.onclose(
+        new CloseEvent("close", {
+          code,
+          reason,
+          wasClean: code === 1000,
+        })
+      );
+    }
+  }
+
+  simulateServerClose(code = 1000, reason = ""): void {
+    this._simulateClose(code, reason);
+  }
+
+  simulateError(): void {
+    this.readyState = MockWebSocket.CLOSING;
+    if (this.onerror) {
+      this.onerror(new Event("error"));
+    }
+    this._simulateClose(1006, "Connection error");
+  }
+
+  getLastSentMessage<T = unknown>(): T | undefined {
+    const last = this.sentMessages[this.sentMessages.length - 1];
+    return last ? (JSON.parse(last) as T) : undefined;
+  }
+
+  static reset(): void {
+    MockWebSocket.instances = [];
+  }
+
+  static getInstance(): MockWebSocket | null {
+    return MockWebSocket.instances[MockWebSocket.instances.length - 1] ?? null;
+  }
+}
+
 describe("Chat Store", () => {
-  let wsHelper: ReturnType<typeof installMockWebSocket>;
   let store: ReturnType<typeof createChatStore>;
 
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks();
+    MockWebSocket.reset();
 
-    // Install mock WebSocket
-    wsHelper = installMockWebSocket();
-
-    // Create a fresh store for each test
-    store = createChatStore();
+    // Create a fresh store for each test with mock WebSocket
+    store = createChatStore({
+      WebSocketImpl: MockWebSocket as unknown as typeof WebSocket,
+    });
     store.setQueryClient(mockQueryClient as never);
 
     // Set up default session cookie
@@ -37,7 +131,6 @@ describe("Chat Store", () => {
   });
 
   afterEach(() => {
-    wsHelper.restore();
     store.disconnect();
   });
 
@@ -56,7 +149,7 @@ describe("Chat Store", () => {
 
     it("transitions to connected state when WebSocket opens", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       expect(store.connectionState).toBe("connected");
@@ -65,7 +158,7 @@ describe("Chat Store", () => {
 
     it("transitions to disconnected state when WebSocket closes", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
       ws?.simulateServerClose();
 
@@ -84,7 +177,7 @@ describe("Chat Store", () => {
 
     it("transitions to error state on WebSocket error", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateError();
 
       // After error, it should try to reconnect, so state goes through disconnected
@@ -95,22 +188,23 @@ describe("Chat Store", () => {
 
     it("does not connect if already connecting", () => {
       store.connect();
+      const instanceCount = MockWebSocket.instances.length;
       store.connect();
 
       // WebSocket constructor should only be called once
-      expect(wsHelper.getInstance()).toBeDefined();
+      expect(MockWebSocket.instances.length).toBe(instanceCount);
     });
 
     it("does not connect if already connected", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
-      const firstWs = ws;
+      const instanceCount = MockWebSocket.instances.length;
       store.connect();
 
-      // Should still be the same WebSocket
-      expect(wsHelper.getInstance()).toBe(firstWs);
+      // Should still be the same WebSocket count
+      expect(MockWebSocket.instances.length).toBe(instanceCount);
     });
   });
 
@@ -119,7 +213,7 @@ describe("Chat Store", () => {
       vi.useFakeTimers();
 
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
       ws?.simulateServerClose();
 
@@ -136,19 +230,19 @@ describe("Chat Store", () => {
       vi.useFakeTimers();
 
       store.connect();
-      let ws = wsHelper.getInstance();
+      let ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       // First disconnect
       ws?.simulateServerClose();
       vi.advanceTimersByTime(1000); // 1000 * 2^0
-      ws = wsHelper.getInstance();
+      ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       // Second disconnect
       ws?.simulateServerClose();
       vi.advanceTimersByTime(2000); // 1000 * 2^1
-      ws = wsHelper.getInstance();
+      ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       // Third disconnect
@@ -164,25 +258,29 @@ describe("Chat Store", () => {
       vi.useFakeTimers();
 
       store.connect();
-      let ws = wsHelper.getInstance();
+      let ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
+      ws?.simulateServerClose();
 
-      // Simulate 5 disconnections (max attempts)
+      // The max is 5 reconnect attempts. Each failed close (without successful open)
+      // increments the counter. After 5 failed attempts, no more reconnects happen.
+      // Since we had a successful open above, the counter is reset to 0.
+      // Now simulate 5 failed reconnection attempts (close without opening)
       for (let i = 0; i < 5; i++) {
-        ws?.simulateServerClose();
         const delay = Math.min(1000 * 2 ** i, 30000);
         vi.advanceTimersByTime(delay);
-        ws = wsHelper.getInstance();
-        if (i < 4) {
-          ws?.simulateOpen();
-        }
+        ws = MockWebSocket.getInstance();
+        // Simulate immediate failure (close without ever opening)
+        ws?.simulateServerClose();
       }
 
-      // After max attempts, should stop reconnecting
-      ws?.simulateServerClose();
-      vi.advanceTimersByTime(60000);
+      const instanceCountBefore = MockWebSocket.instances.length;
 
-      expect(store.connectionState).toBe("disconnected");
+      // Wait a long time - no more reconnects should happen
+      vi.advanceTimersByTime(120000);
+
+      // No new WebSocket instances should be created
+      expect(MockWebSocket.instances.length).toBe(instanceCountBefore);
 
       vi.useRealTimers();
     });
@@ -191,13 +289,13 @@ describe("Chat Store", () => {
       vi.useFakeTimers();
 
       store.connect();
-      let ws = wsHelper.getInstance();
+      let ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       // Disconnect and reconnect
       ws?.simulateServerClose();
       vi.advanceTimersByTime(1000);
-      ws = wsHelper.getInstance();
+      ws = MockWebSocket.getInstance();
       ws?.simulateOpen(); // This should reset the counter
 
       // Disconnect again - should use first delay (1000ms)
@@ -214,7 +312,7 @@ describe("Chat Store", () => {
       vi.useFakeTimers();
 
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
       ws?.simulateServerClose();
 
@@ -232,7 +330,7 @@ describe("Chat Store", () => {
   describe("Message Handling", () => {
     it("handles new_message and invalidates queries", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       const message: WSServerMessage = {
@@ -248,8 +346,9 @@ describe("Chat Store", () => {
 
       ws?.simulateMessage(message);
 
+      // chatKeys.messages(channelId) includes an optional 'before' parameter that becomes undefined
       expect(mockInvalidateQueries).toHaveBeenCalledWith({
-        queryKey: ["chat", "messages", 123],
+        queryKey: ["chat", "messages", 123, undefined],
       });
       expect(mockInvalidateQueries).toHaveBeenCalledWith({
         queryKey: ["chat", "conversations"],
@@ -258,7 +357,7 @@ describe("Chat Store", () => {
 
     it("handles message_sent and invalidates queries", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       const message: WSServerMessage = {
@@ -275,13 +374,13 @@ describe("Chat Store", () => {
       ws?.simulateMessage(message);
 
       expect(mockInvalidateQueries).toHaveBeenCalledWith({
-        queryKey: ["chat", "messages", 456],
+        queryKey: ["chat", "messages", 456, undefined],
       });
     });
 
     it("handles typing_update and updates typing users", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       const message: WSServerMessage = {
@@ -298,7 +397,7 @@ describe("Chat Store", () => {
 
     it("handles read_receipt and invalidates conversations", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       const message: WSServerMessage = {
@@ -317,7 +416,7 @@ describe("Chat Store", () => {
 
     it("handles error message without throwing", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       const message: WSServerMessage = {
@@ -331,7 +430,7 @@ describe("Chat Store", () => {
 
     it("ignores malformed messages", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       // Should not throw
@@ -342,7 +441,7 @@ describe("Chat Store", () => {
   describe("Message Handler Subscriptions", () => {
     it("notifies registered handlers of messages", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       const handler = vi.fn();
@@ -366,7 +465,7 @@ describe("Chat Store", () => {
 
     it("unsubscribes handler when cleanup function is called", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       const handler = vi.fn();
@@ -392,7 +491,7 @@ describe("Chat Store", () => {
 
     it("supports multiple handlers", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       const handler1 = vi.fn();
@@ -416,7 +515,7 @@ describe("Chat Store", () => {
   describe("Sending Messages", () => {
     it("sends messages when connected", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       store.sendMessage(123, "Hello, world!");
@@ -438,12 +537,12 @@ describe("Chat Store", () => {
       store.sendMessage(123, "Hello");
 
       // No WebSocket should exist
-      expect(wsHelper.getInstance()).toBeNull();
+      expect(MockWebSocket.getInstance()).toBeNull();
     });
 
     it("sends typing_start indicator", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       store.startTyping(456);
@@ -460,7 +559,7 @@ describe("Chat Store", () => {
 
     it("sends typing_stop indicator", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       store.stopTyping(456);
@@ -477,7 +576,7 @@ describe("Chat Store", () => {
 
     it("sends mark_read indicator", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       store.markRead(789);
@@ -501,7 +600,7 @@ describe("Chat Store", () => {
 
     it("returns typing users for known channel", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       ws?.simulateMessage({
@@ -515,7 +614,7 @@ describe("Chat Store", () => {
 
     it("updates typing users when new update arrives", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       ws?.simulateMessage({
@@ -535,7 +634,7 @@ describe("Chat Store", () => {
 
     it("clears typing users when empty array received", () => {
       store.connect();
-      const ws = wsHelper.getInstance();
+      const ws = MockWebSocket.getInstance();
       ws?.simulateOpen();
 
       ws?.simulateMessage({

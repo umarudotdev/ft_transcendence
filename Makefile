@@ -134,16 +134,20 @@ check: lint typecheck ## Run all checks (lint + typecheck)
 ### Testing
 
 .PHONY: test
-test: ## Run all tests
+test: ## Run unit tests (API + Web)
 	bun run test
 
 .PHONY: test.api
-test.api: ## Run API tests
+test.api: ## Run API unit tests
 	bun run test:api
 
 .PHONY: test.web
-test.web: ## Run web tests
+test.web: ## Run web unit tests
 	bun run test:web
+
+.PHONY: test.e2e
+test.e2e: ## Run E2E tests (requires: make up.d)
+	cd apps/web && bun run test:e2e
 
 ### Shell Access
 

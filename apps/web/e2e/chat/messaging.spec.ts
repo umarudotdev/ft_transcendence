@@ -1,5 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 
+// Helper to check if server is available
+async function checkServerAvailable(page: Page): Promise<boolean> {
+  try {
+    const response = await page.goto("/chat", { timeout: 5000 });
+    return response !== null && response.status() !== 404;
+  } catch {
+    return false;
+  }
+}
+
 // Helper to login a test user
 async function _loginTestUser(
   page: Page,
@@ -22,9 +32,11 @@ async function _loginTestUser(
 }
 
 test.describe("Chat Page", () => {
-  test.beforeEach(async () => {
-    // Note: These tests require test users to exist in the database
-    // They will be skipped if login fails
+  test.beforeEach(async ({ page }) => {
+    const available = await checkServerAvailable(page);
+    if (!available) {
+      test.skip(true, "Server not available - skipping chat E2E tests");
+    }
   });
 
   test("shows chat interface when authenticated", async ({ page }) => {
@@ -74,6 +86,12 @@ test.describe("WebSocket Connection", () => {
   test("establishes WebSocket connection when chat page loads", async ({
     page,
   }) => {
+    const available = await checkServerAvailable(page);
+    if (!available) {
+      test.skip(true, "Server not available");
+      return;
+    }
+
     // Set up WebSocket monitoring
     const wsConnections: string[] = [];
     page.on("websocket", (ws) => {
@@ -99,6 +117,12 @@ test.describe("WebSocket Connection", () => {
 
 test.describe("New Conversation", () => {
   test("shows new conversation button", async ({ page }) => {
+    const available = await checkServerAvailable(page);
+    if (!available) {
+      test.skip(true, "Server not available");
+      return;
+    }
+
     await page.goto("/chat");
 
     const isLoginPage = page.url().includes("login");
@@ -125,6 +149,12 @@ test.describe("Message Display", () => {
   test("shows message input when conversation is selected", async ({
     page,
   }) => {
+    const available = await checkServerAvailable(page);
+    if (!available) {
+      test.skip(true, "Server not available");
+      return;
+    }
+
     await page.goto("/chat");
 
     const isLoginPage = page.url().includes("login");
@@ -159,6 +189,12 @@ test.describe("Message Display", () => {
 
 test.describe("Reconnection Behavior", () => {
   test("shows connection status indicator", async ({ page }) => {
+    const available = await checkServerAvailable(page);
+    if (!available) {
+      test.skip(true, "Server not available");
+      return;
+    }
+
     await page.goto("/chat");
 
     const isLoginPage = page.url().includes("login");

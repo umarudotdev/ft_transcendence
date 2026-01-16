@@ -74,9 +74,18 @@ function getWsUrl(sessionId: string): string {
 }
 
 /**
+ * Options for creating a chat store
+ */
+export interface ChatStoreOptions {
+  /** Custom WebSocket constructor for testing */
+  WebSocketImpl?: typeof WebSocket;
+}
+
+/**
  * Create a chat WebSocket store using Svelte 5 runes
  */
-export function createChatStore() {
+export function createChatStore(options: ChatStoreOptions = {}) {
+  const WebSocketClass = options.WebSocketImpl ?? WebSocket;
   let ws: WebSocket | null = $state(null);
   let connectionState: ConnectionState = $state("disconnected");
   let typingByChannel: Map<number, number[]> = $state(new Map());
@@ -107,7 +116,7 @@ export function createChatStore() {
     const url = getWsUrl(sessionId);
 
     try {
-      ws = new WebSocket(url);
+      ws = new WebSocketClass(url);
 
       ws.onopen = () => {
         connectionState = "connected";

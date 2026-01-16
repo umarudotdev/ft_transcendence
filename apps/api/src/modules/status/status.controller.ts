@@ -1,14 +1,8 @@
 import { sql } from "drizzle-orm";
 import { Elysia } from "elysia";
 
+import { getShuttingDown } from "../../common/shutdown/state";
 import { db } from "../../db";
-
-// Track if server is shutting down (set by shutdown manager)
-let isShuttingDown = false;
-
-export function setShuttingDown(value: boolean): void {
-  isShuttingDown = value;
-}
 
 /**
  * Check database connectivity with a simple query
@@ -62,7 +56,7 @@ export const statusController = new Elysia({
    * Returns 503 if shutting down or database is unhealthy.
    */
   .get("/ready", async ({ set }) => {
-    if (isShuttingDown) {
+    if (getShuttingDown()) {
       set.status = 503;
       return {
         ready: false,

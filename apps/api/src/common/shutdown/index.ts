@@ -1,6 +1,6 @@
 import { env } from "../../env";
-import { setShuttingDown } from "../../modules/status/status.controller";
 import { logger } from "../logger";
+import { setShuttingDown } from "./state";
 
 type CleanupHandler = () => Promise<void> | void;
 

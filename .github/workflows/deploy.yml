@@ -93,7 +93,6 @@ jobs:
 
       - name: Create Kamal secrets file
         env:
-          KAMAL_REGISTRY_PASSWORD: ${{ steps.ecr-login.outputs.docker_password_932249560389 }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
           INTRA_CLIENT_ID: ${{ secrets.INTRA_CLIENT_ID }}
@@ -107,6 +106,7 @@ jobs:
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
         run: |
           mkdir -p .kamal
+          KAMAL_REGISTRY_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)
           cat > .kamal/secrets << EOF
           KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD
           DATABASE_URL=$DATABASE_URL
@@ -166,10 +166,10 @@ jobs:
 
       - name: Create Kamal secrets file
         env:
-          KAMAL_REGISTRY_PASSWORD: ${{ steps.ecr-login.outputs.docker_password_932249560389 }}
           API_URL: ${{ secrets.API_URL }}
         run: |
           mkdir -p .kamal
+          KAMAL_REGISTRY_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)
           cat > .kamal/secrets << EOF
           KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD
           API_URL=$API_URL

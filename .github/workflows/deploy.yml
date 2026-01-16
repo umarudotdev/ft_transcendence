@@ -91,11 +91,9 @@ jobs:
           chmod 600 ~/.ssh/ft-transcendence.pem
           ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
 
-      - name: Deploy API
+      - name: Create Kamal secrets file
         env:
           KAMAL_REGISTRY_PASSWORD: ${{ steps.ecr-login.outputs.docker_password_932249560389 }}
-          AWS_EC2_HOST: ${{ vars.AWS_EC2_HOST }}
-          DOMAIN: ${{ vars.DOMAIN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
           INTRA_CLIENT_ID: ${{ secrets.INTRA_CLIENT_ID }}
@@ -107,6 +105,24 @@ jobs:
           EMAIL_FROM: ${{ vars.EMAIL_FROM }}
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        run: |
+          mkdir -p .kamal
+          cat > .kamal/secrets << EOF
+          KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD
+          DATABASE_URL=$DATABASE_URL
+          FRONTEND_URL=$FRONTEND_URL
+          INTRA_CLIENT_ID=$INTRA_CLIENT_ID
+          INTRA_CLIENT_SECRET=$INTRA_CLIENT_SECRET
+          INTRA_REDIRECT_URI=$INTRA_REDIRECT_URI
+          TOTP_ENCRYPTION_KEY=$TOTP_ENCRYPTION_KEY
+          CHAT_ENCRYPTION_KEY=$CHAT_ENCRYPTION_KEY
+          RESEND_API_KEY=$RESEND_API_KEY
+          EMAIL_FROM=$EMAIL_FROM
+          POSTGRES_USER=$POSTGRES_USER
+          POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+          EOF
+
+      - name: Deploy API
         run: kamal deploy
 
   deploy-web:
@@ -148,10 +164,16 @@ jobs:
           chmod 600 ~/.ssh/ft-transcendence.pem
           ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
 
-      - name: Deploy Web
+      - name: Create Kamal secrets file
         env:
           KAMAL_REGISTRY_PASSWORD: ${{ steps.ecr-login.outputs.docker_password_932249560389 }}
-          AWS_EC2_HOST: ${{ vars.AWS_EC2_HOST }}
-          DOMAIN: ${{ vars.DOMAIN }}
           API_URL: ${{ secrets.API_URL }}
+        run: |
+          mkdir -p .kamal
+          cat > .kamal/secrets << EOF
+          KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD
+          API_URL=$API_URL
+          EOF
+
+      - name: Deploy Web
         run: kamal deploy -d web

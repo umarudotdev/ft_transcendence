@@ -195,11 +195,17 @@ jobs:
           API_URL=$API_URL
           EOF
 
-      - name: Reset proxy for web service
+      - name: Clean up existing web service
+        env:
+          EC2_HOST: ${{ vars.AWS_EC2_HOST }}
         run: |
-          # Remove existing service from proxy
-          kamal proxy remove -d web || true
-          # Force stop any existing web containers
+          # Remove existing service directly from kamal-proxy
+          ssh -i ~/.ssh/ft-transcendence.pem ubuntu@$EC2_HOST \
+            "docker exec kamal-proxy kamal-proxy remove ft-transcendence-web-web-web 2>/dev/null || true"
+          # Also try without destination suffix
+          ssh -i ~/.ssh/ft-transcendence.pem ubuntu@$EC2_HOST \
+            "docker exec kamal-proxy kamal-proxy remove ft-transcendence-web 2>/dev/null || true"
+          # Stop any existing containers
           kamal app stop -d web || true
 
       - name: Deploy Web

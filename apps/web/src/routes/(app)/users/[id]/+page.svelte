@@ -18,8 +18,10 @@
     createUserStatsQuery,
     type FriendshipStatus,
   } from "$lib/queries/users";
+  import { createDMMutation } from "$lib/queries/chat";
   import { toast } from "svelte-sonner";
   import CheckIcon from "@lucide/svelte/icons/check";
+  import MessageSquareIcon from "@lucide/svelte/icons/message-square";
 
   // Get user ID from URL
   const userId = $derived(Number.parseInt($page.params.id ?? "0", 10));
@@ -33,6 +35,7 @@
   const sendRequestMutation = createSendFriendRequestMutation();
   const removeFriendMutation = createRemoveFriendMutation();
   const blockUserMutation = createBlockUserMutation();
+  const dmMutation = createDMMutation();
 
   // Match history state
   let matchFilter = $state("all");
@@ -92,6 +95,16 @@
       toast.success("User blocked");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to block user";
+      toast.error(message);
+    }
+  }
+
+  async function handleMessage() {
+    try {
+      const result = await dmMutation.mutateAsync(userId);
+      goto(`/chat/${result.channelId}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to start conversation";
       toast.error(message);
     }
   }
@@ -246,6 +259,17 @@
                 {:else}
                   <Button variant={friendButton.variant} disabled={friendButton.disabled}>
                     {friendButton.label}
+                  </Button>
+                {/if}
+
+                {#if friendshipStatus !== "blocked" && friendshipStatus !== "blocked_by"}
+                  <Button
+                    variant="outline"
+                    onclick={handleMessage}
+                    disabled={dmMutation.isPending}
+                  >
+                    <MessageSquareIcon class="mr-2 size-4" />
+                    Message
                   </Button>
                 {/if}
 

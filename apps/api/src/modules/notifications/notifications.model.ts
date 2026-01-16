@@ -34,6 +34,7 @@ export const NotificationsModel = {
     achievements: t.Boolean(),
     rankChanges: t.Boolean(),
     systemMessages: t.Boolean(),
+    chatMessages: t.Boolean(),
     emailNotifications: t.Boolean(),
   }),
 
@@ -43,6 +44,7 @@ export const NotificationsModel = {
     achievements: t.Optional(t.Boolean()),
     rankChanges: t.Optional(t.Boolean()),
     systemMessages: t.Optional(t.Boolean()),
+    chatMessages: t.Optional(t.Boolean()),
     emailNotifications: t.Optional(t.Boolean()),
   }),
 

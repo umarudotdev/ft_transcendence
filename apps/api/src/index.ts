@@ -6,6 +6,7 @@ import { Elysia } from "elysia";
 import { errorHandler } from "./common/plugins/error-handler";
 import { env } from "./env";
 import { authController } from "./modules/auth/auth.controller";
+import { chatController } from "./modules/chat/chat.controller";
 import { gamificationController } from "./modules/gamification/gamification.controller";
 import { moderationController } from "./modules/moderation/moderation.controller";
 import { notificationsController } from "./modules/notifications/notifications.controller";
@@ -50,6 +51,7 @@ const app = new Elysia()
         tags: [
           { name: "auth", description: "Authentication endpoints" },
           { name: "users", description: "User management endpoints" },
+          { name: "chat", description: "Real-time chat endpoints" },
           { name: "status", description: "Status and health endpoints" },
         ],
       },
@@ -70,6 +72,7 @@ const app = new Elysia()
       .use(gamificationController)
       .use(notificationsController)
       .use(moderationController)
+      .use(chatController)
   )
   .listen(env.PORT);
 

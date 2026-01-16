@@ -1,0 +1,1 @@
+ALTER TABLE "notification_preferences" ADD COLUMN "chat_messages" boolean DEFAULT true NOT NULL;

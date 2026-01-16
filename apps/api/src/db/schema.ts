@@ -145,6 +145,11 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   auditLogsReceived: many(moderationAuditLog, {
     relationName: "targetUserAuditLogs",
   }),
+
+  // Chat relations
+  channelMemberships: many(channelMembers),
+  sentMessages: many(messages),
+  createdChannels: many(channels),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
@@ -648,6 +653,7 @@ export const notificationTypeEnum = [
   "achievement",
   "rank_change",
   "system",
+  "chat_message",
 ] as const;
 export type NotificationType = (typeof notificationTypeEnum)[number];
 
@@ -689,6 +695,7 @@ export const notificationPreferences = pgTable(
     achievements: boolean("achievements").default(true).notNull(),
     rankChanges: boolean("rank_changes").default(true).notNull(),
     systemMessages: boolean("system_messages").default(true).notNull(),
+    chatMessages: boolean("chat_messages").default(true).notNull(),
     emailNotifications: boolean("email_notifications").default(false).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -941,3 +948,124 @@ export type Sanction = typeof sanctions.$inferSelect;
 export type NewSanction = typeof sanctions.$inferInsert;
 export type ModerationAuditLogEntry = typeof moderationAuditLog.$inferSelect;
 export type NewModerationAuditLogEntry = typeof moderationAuditLog.$inferInsert;
+
+// =============================================================================
+// CHAT SYSTEM
+// =============================================================================
+
+export const channelTypeEnum = ["dm", "public", "private"] as const;
+export type ChannelType = (typeof channelTypeEnum)[number];
+
+export const channelRoleEnum = ["owner", "admin", "member"] as const;
+export type ChannelRole = (typeof channelRoleEnum)[number];
+
+export const channels = pgTable(
+  "channels",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name"),
+    type: text("type").notNull().default("dm"),
+    createdBy: integer("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("channels_type_idx").on(table.type),
+    index("channels_created_by_idx").on(table.createdBy),
+  ]
+);
+
+export const channelMembers = pgTable(
+  "channel_members",
+  {
+    id: serial("id").primaryKey(),
+    channelId: integer("channel_id")
+      .notNull()
+      .references(() => channels.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("member"),
+    lastReadAt: timestamp("last_read_at", { withTimezone: true }),
+    joinedAt: timestamp("joined_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("channel_members_channel_id_idx").on(table.channelId),
+    index("channel_members_user_id_idx").on(table.userId),
+    index("channel_members_unique_idx").on(table.channelId, table.userId),
+  ]
+);
+
+export const messages = pgTable(
+  "messages",
+  {
+    id: serial("id").primaryKey(),
+    channelId: integer("channel_id")
+      .notNull()
+      .references(() => channels.id, { onDelete: "cascade" }),
+    senderId: integer("sender_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    editedAt: timestamp("edited_at", { withTimezone: true }),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("messages_channel_id_idx").on(table.channelId),
+    index("messages_sender_id_idx").on(table.senderId),
+    index("messages_channel_created_at_idx").on(
+      table.channelId,
+      table.createdAt
+    ),
+  ]
+);
+
+// Chat relations
+export const channelsRelations = relations(channels, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [channels.createdBy],
+    references: [users.id],
+  }),
+  members: many(channelMembers),
+  messages: many(messages),
+}));
+
+export const channelMembersRelations = relations(channelMembers, ({ one }) => ({
+  channel: one(channels, {
+    fields: [channelMembers.channelId],
+    references: [channels.id],
+  }),
+  user: one(users, {
+    fields: [channelMembers.userId],
+    references: [users.id],
+  }),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  channel: one(channels, {
+    fields: [messages.channelId],
+    references: [channels.id],
+  }),
+  sender: one(users, {
+    fields: [messages.senderId],
+    references: [users.id],
+  }),
+}));
+
+export type Channel = typeof channels.$inferSelect;
+export type NewChannel = typeof channels.$inferInsert;
+export type ChannelMember = typeof channelMembers.$inferSelect;
+export type NewChannelMember = typeof channelMembers.$inferInsert;
+export type Message = typeof messages.$inferSelect;
+export type NewMessage = typeof messages.$inferInsert;

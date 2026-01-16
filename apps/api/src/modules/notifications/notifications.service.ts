@@ -141,6 +141,8 @@ abstract class NotificationsService {
         return prefs.rankChanges;
       case "system":
         return prefs.systemMessages;
+      case "chat_message":
+        return prefs.chatMessages;
       default:
         return true;
     }
@@ -306,6 +308,7 @@ abstract class NotificationsService {
           achievements: prefs.achievements,
           rankChanges: prefs.rankChanges,
           systemMessages: prefs.systemMessages,
+          chatMessages: prefs.chatMessages,
           emailNotifications: prefs.emailNotifications,
         };
       })(),
@@ -341,6 +344,7 @@ abstract class NotificationsService {
           achievements: updated.achievements,
           rankChanges: updated.rankChanges,
           systemMessages: updated.systemMessages,
+          chatMessages: updated.chatMessages,
           emailNotifications: updated.emailNotifications,
         };
       })(),
@@ -429,6 +433,27 @@ abstract class NotificationsService {
       title,
       message,
       data
+    );
+  }
+
+  static notifyChatMessage(
+    userId: number,
+    channelId: number,
+    senderDisplayName: string,
+    messagePreview: string
+  ): ResultAsync<Notification, never> {
+    // Truncate message preview to 50 characters
+    const preview =
+      messagePreview.length > 50
+        ? `${messagePreview.slice(0, 47)}...`
+        : messagePreview;
+
+    return NotificationsService.createNotification(
+      userId,
+      "chat_message",
+      `New message from ${senderDisplayName}`,
+      preview,
+      { channelId, senderDisplayName }
     );
   }
 }

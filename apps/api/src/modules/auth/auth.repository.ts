@@ -43,7 +43,8 @@ export const authRepository = {
         displayName: data.displayName,
         intraId: data.intraId,
         avatarUrl: data.avatarUrl,
-        emailVerified: data.intraId !== undefined,
+        // TODO: Revert to `data.intraId !== undefined` once Resend is approved
+        emailVerified: true,
       })
       .returning();
 

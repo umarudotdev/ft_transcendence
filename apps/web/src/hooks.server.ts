@@ -22,6 +22,79 @@ function isApiRoute(pathname: string): boolean {
 }
 
 /**
+ * API proxy handler - forwards /api/* requests to the API server
+ */
+const handleApiProxy: Handle = async ({ event, resolve }) => {
+  if (!isApiRoute(event.url.pathname)) {
+    return resolve(event);
+  }
+
+  const apiUrl = `${env.API_URL}${event.url.pathname}${event.url.search}`;
+
+  // Headers to exclude from request forwarding
+  const excludedRequestHeaders = new Set([
+    "host",
+    "connection",
+    "keep-alive",
+    "transfer-encoding",
+    "te",
+    "trailer",
+    "upgrade",
+    "accept-encoding", // Let fetch handle compression
+  ]);
+
+  // Headers to exclude from response forwarding
+  const excludedResponseHeaders = new Set([
+    "connection",
+    "keep-alive",
+    "transfer-encoding",
+    "te",
+    "trailer",
+    "upgrade",
+    "content-encoding", // fetch auto-decompresses, so don't forward this
+    "content-length", // Length changes after decompression
+  ]);
+
+  const headers = new Headers();
+  for (const [key, value] of event.request.headers.entries()) {
+    if (!excludedRequestHeaders.has(key.toLowerCase())) {
+      headers.set(key, value);
+    }
+  }
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: event.request.method,
+      headers,
+      body:
+        event.request.method !== "GET" && event.request.method !== "HEAD"
+          ? await event.request.arrayBuffer()
+          : undefined,
+      redirect: "manual", // Don't follow redirects, pass them to client
+    });
+
+    const responseHeaders = new Headers();
+    for (const [key, value] of response.headers.entries()) {
+      if (!excludedResponseHeaders.has(key.toLowerCase())) {
+        responseHeaders.set(key, value);
+      }
+    }
+
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: responseHeaders,
+    });
+  } catch (error) {
+    console.error("API proxy error:", error);
+    return new Response(JSON.stringify({ error: "Proxy error" }), {
+      status: 502,
+      headers: { "content-type": "application/json" },
+    });
+  }
+};
+
+/**
  * Authentication handler - redirects unauthenticated users to login
  */
 const handleAuth: Handle = async ({ event, resolve }) => {
@@ -84,4 +157,8 @@ const handleParaglide: Handle = ({ event, resolve }) => {
   });
 };
 
-export const handle: Handle = sequence(handleAuth, handleParaglide);
+export const handle: Handle = sequence(
+  handleApiProxy,
+  handleAuth,
+  handleParaglide
+);

@@ -26,6 +26,7 @@
     "oslo": "^1.2.1",
     "postgres": "^3.4.7",
     "qrcode": "^1.5.4",
+    "resend": "^6.7.0",
     "sharp": "^0.34.5"
   },
   "devDependencies": {

@@ -1,0 +1,74 @@
+# Kamal deployment configuration for ft_transcendence API (AWS)
+# Documentation: https://kamal-deploy.org/docs/configuration/overview/
+
+service: ft-transcendence-api
+
+# Docker image (AWS ECR)
+image: ft-transcendence-api
+
+# SSH configuration
+ssh:
+  user: ubuntu
+  keys:
+    - ~/.ssh/ft-transcendence.pem
+
+# Servers to deploy to (EC2 instances)
+servers:
+  web:
+    hosts:
+      - ec2-44-200-135-124.compute-1.amazonaws.com
+
+# Proxy (Traefik) configuration
+proxy:
+  ssl: true
+  host: api.transcendence.umaru.dev
+  app_port: 3000
+  healthcheck:
+    interval: 3
+    path: /api/status
+    timeout: 3
+
+# AWS ECR registry
+registry:
+  server: 932249560389.dkr.ecr.us-east-1.amazonaws.com
+  username: AWS
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+# Environment variables
+env:
+  clear:
+    NODE_ENV: production
+    PORT: "3000"
+  secret:
+    - DATABASE_URL
+    - FRONTEND_URL
+    - INTRA_CLIENT_ID
+    - INTRA_CLIENT_SECRET
+    - INTRA_REDIRECT_URI
+    - TOTP_ENCRYPTION_KEY
+    - CHAT_ENCRYPTION_KEY
+    - RESEND_API_KEY
+    - EMAIL_FROM
+
+# Accessories
+accessories:
+  db:
+    image: postgres:16-alpine
+    host: ec2-44-200-135-124.compute-1.amazonaws.com
+    port: "5432:5432"
+    env:
+      secret:
+        - POSTGRES_USER
+        - POSTGRES_PASSWORD
+      clear:
+        POSTGRES_DB: ft_transcendence
+    directories:
+      - data:/var/lib/postgresql/data
+
+# Build configuration
+builder:
+  arch: amd64
+  dockerfile: apps/api/Dockerfile
+  target: production
+  context: .

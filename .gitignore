@@ -36,3 +36,9 @@ docs/.vitepress/cache
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# Kamal deployment secrets
+.kamal/secrets
+
+# AWS setup output
+.aws-setup-output

@@ -13,6 +13,7 @@ import type {
   TokenError,
 } from "./auth.model";
 
+import { EmailService } from "../email/email.service";
 import { authRepository } from "./auth.repository";
 import { fortyTwo, type IntraProfile, OAUTH_SCOPES } from "./oauth";
 import {
@@ -92,6 +93,15 @@ abstract class AuthService {
         const token = await authRepository.createEmailVerificationToken(
           user.id,
           expiresAt
+        );
+
+        // Send verification email (fire and forget - don't fail registration if email fails)
+        EmailService.sendVerificationEmail(
+          user.email,
+          token.id,
+          user.displayName
+        ).catch((error) =>
+          console.error("Failed to send verification email:", error)
         );
 
         return ok({ user: toSafeUser(user), verificationToken: token.id });
@@ -255,11 +265,26 @@ abstract class AuthService {
   ): ResultAsync<{ verificationToken: string }, never> {
     return ResultAsync.fromPromise(
       (async () => {
+        const user = await authRepository.findUserById(userId);
+        if (!user) {
+          throw new Error("User not found");
+        }
+
         const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_DURATION_MS);
         const token = await authRepository.createEmailVerificationToken(
           userId,
           expiresAt
         );
+
+        // Send verification email
+        EmailService.sendVerificationEmail(
+          user.email,
+          token.id,
+          user.displayName
+        ).catch((error) =>
+          console.error("Failed to send verification email:", error)
+        );
+
         return { verificationToken: token.id };
       })(),
 

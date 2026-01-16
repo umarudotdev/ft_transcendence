@@ -15,7 +15,9 @@
 	bind:value
 	data-slot="input-otp"
 	class={cn(
-		"flex items-center gap-2 has-disabled:opacity-50 [&_input]:disabled:cursor-not-allowed",
+		// MD3 OTP Input container
+		"flex items-center gap-2",
+		"has-disabled:opacity-38 [&_input]:disabled:cursor-not-allowed",
 		className
 	)}
 	{...restProps}

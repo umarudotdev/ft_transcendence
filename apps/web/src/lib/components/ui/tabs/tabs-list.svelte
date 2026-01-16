@@ -13,7 +13,10 @@
 	bind:ref
 	data-slot="tabs-list"
 	class={cn(
-		"bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]",
+		// MD3 Tab bar styles
+		"inline-flex h-12 w-fit items-center justify-center gap-0",
+		"bg-md3-surface text-md3-on-surface-variant",
+		"border-b border-md3-surface-variant",
 		className
 	)}
 	{...restProps}

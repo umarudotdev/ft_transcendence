@@ -3,26 +3,90 @@
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from "svelte/elements";
 	import { type VariantProps, tv } from "tailwind-variants";
 
+	/**
+	 * MD3 Button Variants
+	 *
+	 * Based on Material Design 3 button specifications:
+	 * - Filled: High emphasis, primary actions
+	 * - Tonal: Medium emphasis, secondary actions
+	 * - Elevated: Medium emphasis with elevation
+	 * - Outlined: Medium-low emphasis, alternative actions
+	 * - Text: Low emphasis, tertiary actions
+	 *
+	 * @see https://m3.material.io/components/buttons/overview
+	 */
 	export const buttonVariants = tv({
-		base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+		base: [
+			// Base styles
+			"md3-state-layer relative inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap",
+			// Typography (MD3 label-large)
+			"text-[14px] font-medium leading-5 tracking-[0.1px]",
+			// Shape (MD3 full rounded for buttons)
+			"rounded-full",
+			// Transition (MD3 motion)
+			"transition-all duration-[var(--md3-duration-short4)] ease-[var(--md3-easing-standard)]",
+			// Focus state
+			"outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+			// Disabled state
+			"disabled:pointer-events-none disabled:opacity-38",
+			"aria-disabled:pointer-events-none aria-disabled:opacity-38",
+			// Icon sizing
+			"[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-[18px]",
+		],
 		variants: {
 			variant: {
-				default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs",
-				destructive:
-					"bg-destructive hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 text-white shadow-xs",
-				outline:
-					"bg-background hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 border shadow-xs",
-				secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow-xs",
-				ghost: "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+				// Filled button (default) - Primary actions
+				default: [
+					"bg-primary text-primary-foreground",
+					"hover:shadow-md",
+					"active:shadow-sm",
+				],
+				// Filled Tonal button - Secondary actions
+				tonal: [
+					"bg-md3-secondary-container text-md3-on-secondary-container",
+					"hover:shadow-sm",
+				],
+				// Elevated button - Medium emphasis
+				elevated: [
+					"bg-md3-surface-container-low text-primary",
+					"shadow-sm",
+					"hover:shadow-md",
+				],
+				// Outlined button - Alternative actions
+				outline: [
+					"border border-md3-outline bg-transparent text-primary",
+					"hover:bg-md3-primary/8",
+					"dark:border-md3-outline dark:hover:bg-md3-primary/12",
+				],
+				// Text button - Tertiary actions
+				ghost: [
+					"text-primary",
+					"hover:bg-md3-primary/8",
+					"dark:hover:bg-md3-primary/12",
+				],
+				// Link style
 				link: "text-primary underline-offset-4 hover:underline",
+				// Destructive (error)
+				destructive: [
+					"bg-md3-error text-md3-on-error",
+					"hover:shadow-md hover:bg-md3-error/90",
+					"focus-visible:ring-md3-error/20 dark:focus-visible:ring-md3-error/40",
+				],
+				// Secondary (legacy alias for tonal)
+				secondary: [
+					"bg-md3-secondary-container text-md3-on-secondary-container",
+					"hover:shadow-sm",
+				],
 			},
 			size: {
-				default: "h-9 px-4 py-2 has-[>svg]:px-3",
-				sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
-				lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-				icon: "size-9",
+				// Standard button heights per MD3
+				default: "h-10 px-6 has-[>svg]:px-4",
+				sm: "h-8 gap-1.5 px-4 text-[12px] has-[>svg]:px-3",
+				lg: "h-12 px-8 text-[16px] has-[>svg]:px-6",
+				// Icon buttons
+				icon: "size-10",
 				"icon-sm": "size-8",
-				"icon-lg": "size-10",
+				"icon-lg": "size-12",
 			},
 		},
 		defaultVariants: {

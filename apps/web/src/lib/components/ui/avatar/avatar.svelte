@@ -14,6 +14,11 @@
 	bind:ref
 	bind:loadingStatus
 	data-slot="avatar"
-	class={cn("relative flex size-8 shrink-0 overflow-hidden rounded-full", className)}
+	class={cn(
+		// MD3 Avatar styles
+		"relative flex size-10 shrink-0 overflow-hidden rounded-full",
+		"bg-md3-surface-container-highest",
+		className
+	)}
 	{...restProps}
 />

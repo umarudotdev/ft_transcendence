@@ -10,10 +10,16 @@
 	}: WithElementRef<HTMLAttributes<HTMLDivElement>> = $props();
 </script>
 
-<div bind:this={ref} data-slot="input-otp-separator" role="separator" {...restProps}>
+<div
+	bind:this={ref}
+	data-slot="input-otp-separator"
+	role="separator"
+	class="text-md3-on-surface-variant px-1"
+	{...restProps}
+>
 	{#if children}
 		{@render children?.()}
 	{:else}
-		<MinusIcon />
+		<MinusIcon class="size-5" />
 	{/if}
 </div>

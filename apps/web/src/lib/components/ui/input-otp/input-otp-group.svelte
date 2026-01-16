@@ -13,7 +13,11 @@
 <div
 	bind:this={ref}
 	data-slot="input-otp-group"
-	class={cn("flex items-center", className)}
+	class={cn(
+		// MD3 OTP Group - removes gap between slots for connected appearance
+		"flex items-center",
+		className
+	)}
 	{...restProps}
 >
 	{@render children?.()}

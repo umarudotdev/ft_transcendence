@@ -18,6 +18,34 @@
 		"data-slot": dataSlot = "input",
 		...restProps
 	}: Props = $props();
+
+	// MD3 Input base styles
+	const inputBase = [
+		// Layout
+		"flex h-14 w-full min-w-0 px-4 py-4",
+		// Shape
+		"rounded-[var(--md3-shape-extra-small)]",
+		// Colors
+		"bg-md3-surface-container-highest text-md3-on-surface",
+		"border border-md3-outline",
+		// Typography
+		"md3-body-large",
+		// Placeholder
+		"placeholder:text-md3-on-surface-variant",
+		// Selection
+		"selection:bg-primary selection:text-primary-foreground",
+		// Transition
+		"transition-all duration-[var(--md3-duration-short2)] ease-[var(--md3-easing-standard)]",
+		// Focus
+		"outline-none focus-visible:border-md3-primary focus-visible:border-2",
+		"focus-visible:ring-0",
+		// Invalid
+		"aria-invalid:border-md3-error aria-invalid:border-2",
+		// Disabled
+		"disabled:cursor-not-allowed disabled:opacity-38",
+		// Dark mode
+		"dark:bg-md3-surface-container-high",
+	];
 </script>
 
 {#if type === "file"}
@@ -25,9 +53,8 @@
 		bind:this={ref}
 		data-slot={dataSlot}
 		class={cn(
-			"selection:bg-primary dark:bg-input/30 selection:text-primary-foreground border-input ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 pt-1.5 text-sm font-medium shadow-xs transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50",
-			"focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-			"aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+			inputBase,
+			"pt-1.5 text-sm font-medium",
 			className
 		)}
 		type="file"
@@ -40,9 +67,7 @@
 		bind:this={ref}
 		data-slot={dataSlot}
 		class={cn(
-			"border-input bg-background selection:bg-primary dark:bg-input/30 selection:text-primary-foreground ring-offset-background placeholder:text-muted-foreground flex h-9 w-full min-w-0 rounded-md border px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-			"focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-			"aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+			inputBase,
 			className
 		)}
 		{type}

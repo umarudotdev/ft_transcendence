@@ -1,13 +1,34 @@
 <script lang="ts" module>
 	import { type VariantProps, tv } from "tailwind-variants";
 
+	/**
+	 * MD3 Alert Variants
+	 *
+	 * Based on Material Design 3 banner/snackbar patterns.
+	 */
 	export const alertVariants = tv({
-		base: "relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 rounded-lg border px-4 py-3 text-sm has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-3 [&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current",
+		base: [
+			// Layout
+			"relative grid w-full grid-cols-[0_1fr] items-start gap-y-0.5 px-4 py-3",
+			// Shape
+			"rounded-[var(--md3-shape-medium)]",
+			// Typography
+			"md3-body-medium",
+			// Icon grid
+			"has-[>svg]:grid-cols-[calc(var(--spacing)*4)_1fr] has-[>svg]:gap-x-3",
+			"[&>svg]:size-4 [&>svg]:translate-y-0.5 [&>svg]:text-current",
+		],
 		variants: {
 			variant: {
-				default: "bg-card text-card-foreground",
-				destructive:
-					"text-destructive bg-card *:data-[slot=alert-description]:text-destructive/90 [&>svg]:text-current",
+				default: [
+					"bg-md3-surface-container text-md3-on-surface",
+					"border border-md3-outline-variant",
+				],
+				destructive: [
+					"bg-md3-error-container text-md3-on-error-container",
+					"*:data-[slot=alert-description]:text-md3-on-error-container/90",
+					"[&>svg]:text-md3-error",
+				],
 			},
 		},
 		defaultVariants: {

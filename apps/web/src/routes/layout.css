@@ -1,133 +1,374 @@
 @import "tailwindcss";
-
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Material Design 3 Design Tokens
+ * Generated from seed color: #6750A4
+ *
+ * This file contains:
+ * - MD3 Color System (40+ semantic color tokens)
+ * - MD3 Typography Scale (Roboto)
+ * - MD3 Elevation System (Shadows)
+ * - MD3 Motion System (Easing & Duration)
+ * - MD3 Shape System (Corner Radii)
+ */
+
 :root {
-  --background: oklch(0.9232 0.0026 48.7171);
-  --foreground: oklch(0.2795 0.0368 260.031);
-  --card: oklch(0.9699 0.0013 106.4238);
-  --card-foreground: oklch(0.2795 0.0368 260.031);
-  --popover: oklch(0.9699 0.0013 106.4238);
-  --popover-foreground: oklch(0.2795 0.0368 260.031);
-  --primary: oklch(0.5854 0.2041 277.1173);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.8687 0.0043 56.366);
-  --secondary-foreground: oklch(0.4461 0.0263 256.8018);
-  --muted: oklch(0.9232 0.0026 48.7171);
-  --muted-foreground: oklch(0.551 0.0234 264.3637);
-  --accent: oklch(0.9376 0.026 321.9388);
-  --accent-foreground: oklch(0.3729 0.0306 259.7328);
-  --destructive: oklch(0.6368 0.2078 25.3313);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.8687 0.0043 56.366);
-  --input: oklch(0.8687 0.0043 56.366);
-  --ring: oklch(0.5854 0.2041 277.1173);
-  --chart-1: oklch(0.5854 0.2041 277.1173);
-  --chart-2: oklch(0.5106 0.2301 276.9656);
-  --chart-3: oklch(0.4568 0.2146 277.0229);
-  --chart-4: oklch(0.3984 0.1773 277.3662);
-  --chart-5: oklch(0.3588 0.1354 278.6973);
-  --sidebar: oklch(0.8687 0.0043 56.366);
-  --sidebar-foreground: oklch(0.2795 0.0368 260.031);
-  --sidebar-primary: oklch(0.5854 0.2041 277.1173);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.9376 0.026 321.9388);
-  --sidebar-accent-foreground: oklch(0.3729 0.0306 259.7328);
-  --sidebar-border: oklch(0.8687 0.0043 56.366);
-  --sidebar-ring: oklch(0.5854 0.2041 277.1173);
-  --font-sans: Plus Jakarta Sans, sans-serif;
-  --font-serif: Lora, serif;
-  --font-mono: Roboto Mono, monospace;
-  --radius: 1.25rem;
-  --shadow-x: 2px;
-  --shadow-y: 2px;
-  --shadow-blur: 10px;
-  --shadow-spread: 4px;
-  --shadow-opacity: 0.18;
-  --shadow-color: hsl(240 4% 60%);
-  --shadow-2xs: 2px 2px 10px 4px hsl(240 4% 60% / 0.09);
-  --shadow-xs: 2px 2px 10px 4px hsl(240 4% 60% / 0.09);
-  --shadow-sm:
-    2px 2px 10px 4px hsl(240 4% 60% / 0.18),
-    2px 1px 2px 3px hsl(240 4% 60% / 0.18);
-  --shadow:
-    2px 2px 10px 4px hsl(240 4% 60% / 0.18),
-    2px 1px 2px 3px hsl(240 4% 60% / 0.18);
-  --shadow-md:
-    2px 2px 10px 4px hsl(240 4% 60% / 0.18),
-    2px 2px 4px 3px hsl(240 4% 60% / 0.18);
-  --shadow-lg:
-    2px 2px 10px 4px hsl(240 4% 60% / 0.18),
-    2px 4px 6px 3px hsl(240 4% 60% / 0.18);
-  --shadow-xl:
-    2px 2px 10px 4px hsl(240 4% 60% / 0.18),
-    2px 8px 10px 3px hsl(240 4% 60% / 0.18);
-  --shadow-2xl: 2px 2px 10px 4px hsl(240 4% 60% / 0.45);
-  --tracking-normal: 0em;
+  /* ===== MD3 COLOR SYSTEM - LIGHT THEME ===== */
+
+  /* Primary */
+  --md3-primary: oklch(0.4966 0.1501 281.45);
+  --md3-on-primary: oklch(1 0 0);
+  --md3-primary-container: oklch(0.9102 0.0658 281.45);
+  --md3-on-primary-container: oklch(0.2193 0.0752 281.45);
+
+  /* Secondary */
+  --md3-secondary: oklch(0.4922 0.0537 281.45);
+  --md3-on-secondary: oklch(1 0 0);
+  --md3-secondary-container: oklch(0.9102 0.0268 281.45);
+  --md3-on-secondary-container: oklch(0.2193 0.0268 281.45);
+
+  /* Tertiary */
+  --md3-tertiary: oklch(0.5019 0.0763 341.45);
+  --md3-on-tertiary: oklch(1 0 0);
+  --md3-tertiary-container: oklch(0.9102 0.0381 341.45);
+  --md3-on-tertiary-container: oklch(0.2193 0.0381 341.45);
+
+  /* Error */
+  --md3-error: oklch(0.5044 0.2365 25);
+  --md3-on-error: oklch(1 0 0);
+  --md3-error-container: oklch(0.9102 0.1183 25);
+  --md3-on-error-container: oklch(0.2193 0.1183 25);
+
+  /* Surface */
+  --md3-surface: oklch(0.9851 0.0013 281.45);
+  --md3-on-surface: oklch(0.2193 0.0134 281.45);
+  --md3-surface-variant: oklch(0.9102 0.0268 281.45);
+  --md3-on-surface-variant: oklch(0.3712 0.0268 281.45);
+
+  /* Surface containers */
+  --md3-surface-container-lowest: oklch(1 0 0);
+  --md3-surface-container-low: oklch(0.9664 0.0013 281.45);
+  --md3-surface-container: oklch(0.9477 0.0013 281.45);
+  --md3-surface-container-high: oklch(0.929 0.0013 281.45);
+  --md3-surface-container-highest: oklch(0.9102 0.0013 281.45);
+  --md3-surface-dim: oklch(0.8728 0.0013 281.45);
+  --md3-surface-bright: oklch(0.9851 0.0013 281.45);
+
+  /* Outline */
+  --md3-outline: oklch(0.5522 0.0268 281.45);
+  --md3-outline-variant: oklch(0.8169 0.0268 281.45);
+
+  /* Inverse */
+  --md3-inverse-surface: oklch(0.3098 0.0134 281.45);
+  --md3-inverse-on-surface: oklch(0.957 0.0013 281.45);
+  --md3-inverse-primary: oklch(0.7852 0.1001 281.45);
+
+  /* Shadow & Scrim */
+  --md3-shadow: oklch(0 0 0);
+  --md3-scrim: oklch(0 0 0);
+
+  /* Background (legacy alias) */
+  --md3-background: var(--md3-surface);
+  --md3-on-background: var(--md3-on-surface);
+
+  /* ===== MD3 TYPOGRAPHY ===== */
+  --md3-font-brand: "Roboto", sans-serif;
+  --md3-font-plain: "Roboto", sans-serif;
+  --md3-font-code: "Roboto Mono", monospace;
+
+  /* Display */
+  --md3-typescale-display-large-size: 57px;
+  --md3-typescale-display-large-line-height: 64px;
+  --md3-typescale-display-large-weight: 400;
+  --md3-typescale-display-large-tracking: -0.25px;
+
+  --md3-typescale-display-medium-size: 45px;
+  --md3-typescale-display-medium-line-height: 52px;
+  --md3-typescale-display-medium-weight: 400;
+  --md3-typescale-display-medium-tracking: 0;
+
+  --md3-typescale-display-small-size: 36px;
+  --md3-typescale-display-small-line-height: 44px;
+  --md3-typescale-display-small-weight: 400;
+  --md3-typescale-display-small-tracking: 0;
+
+  /* Headline */
+  --md3-typescale-headline-large-size: 32px;
+  --md3-typescale-headline-large-line-height: 40px;
+  --md3-typescale-headline-large-weight: 400;
+  --md3-typescale-headline-large-tracking: 0;
+
+  --md3-typescale-headline-medium-size: 28px;
+  --md3-typescale-headline-medium-line-height: 36px;
+  --md3-typescale-headline-medium-weight: 400;
+  --md3-typescale-headline-medium-tracking: 0;
+
+  --md3-typescale-headline-small-size: 24px;
+  --md3-typescale-headline-small-line-height: 32px;
+  --md3-typescale-headline-small-weight: 400;
+  --md3-typescale-headline-small-tracking: 0;
+
+  /* Title */
+  --md3-typescale-title-large-size: 22px;
+  --md3-typescale-title-large-line-height: 28px;
+  --md3-typescale-title-large-weight: 400;
+  --md3-typescale-title-large-tracking: 0;
+
+  --md3-typescale-title-medium-size: 16px;
+  --md3-typescale-title-medium-line-height: 24px;
+  --md3-typescale-title-medium-weight: 500;
+  --md3-typescale-title-medium-tracking: 0.15px;
+
+  --md3-typescale-title-small-size: 14px;
+  --md3-typescale-title-small-line-height: 20px;
+  --md3-typescale-title-small-weight: 500;
+  --md3-typescale-title-small-tracking: 0.1px;
+
+  /* Body */
+  --md3-typescale-body-large-size: 16px;
+  --md3-typescale-body-large-line-height: 24px;
+  --md3-typescale-body-large-weight: 400;
+  --md3-typescale-body-large-tracking: 0.5px;
+
+  --md3-typescale-body-medium-size: 14px;
+  --md3-typescale-body-medium-line-height: 20px;
+  --md3-typescale-body-medium-weight: 400;
+  --md3-typescale-body-medium-tracking: 0.25px;
+
+  --md3-typescale-body-small-size: 12px;
+  --md3-typescale-body-small-line-height: 16px;
+  --md3-typescale-body-small-weight: 400;
+  --md3-typescale-body-small-tracking: 0.4px;
+
+  /* Label */
+  --md3-typescale-label-large-size: 14px;
+  --md3-typescale-label-large-line-height: 20px;
+  --md3-typescale-label-large-weight: 500;
+  --md3-typescale-label-large-tracking: 0.1px;
+
+  --md3-typescale-label-medium-size: 12px;
+  --md3-typescale-label-medium-line-height: 16px;
+  --md3-typescale-label-medium-weight: 500;
+  --md3-typescale-label-medium-tracking: 0.5px;
+
+  --md3-typescale-label-small-size: 11px;
+  --md3-typescale-label-small-line-height: 16px;
+  --md3-typescale-label-small-weight: 500;
+  --md3-typescale-label-small-tracking: 0.5px;
+
+  /* ===== MD3 ELEVATION ===== */
+  --md3-elevation-level0: none;
+  --md3-elevation-level1:
+    0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --md3-elevation-level2:
+    0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --md3-elevation-level3:
+    0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px 0px rgba(0, 0, 0, 0.3);
+  --md3-elevation-level4:
+    0px 6px 10px 4px rgba(0, 0, 0, 0.15), 0px 2px 3px 0px rgba(0, 0, 0, 0.3);
+  --md3-elevation-level5:
+    0px 8px 12px 6px rgba(0, 0, 0, 0.15), 0px 4px 4px 0px rgba(0, 0, 0, 0.3);
+
+  /* ===== MD3 MOTION ===== */
+  /* Easing curves */
+  --md3-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md3-easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+  --md3-easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --md3-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md3-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md3-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --md3-easing-legacy: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Duration tokens */
+  --md3-duration-short1: 50ms;
+  --md3-duration-short2: 100ms;
+  --md3-duration-short3: 150ms;
+  --md3-duration-short4: 200ms;
+  --md3-duration-medium1: 250ms;
+  --md3-duration-medium2: 300ms;
+  --md3-duration-medium3: 350ms;
+  --md3-duration-medium4: 400ms;
+  --md3-duration-long1: 450ms;
+  --md3-duration-long2: 500ms;
+  --md3-duration-long3: 550ms;
+  --md3-duration-long4: 600ms;
+  --md3-duration-extra-long1: 700ms;
+  --md3-duration-extra-long2: 800ms;
+  --md3-duration-extra-long3: 900ms;
+  --md3-duration-extra-long4: 1000ms;
+
+  /* ===== MD3 SHAPE ===== */
+  --md3-shape-none: 0px;
+  --md3-shape-extra-small: 4px;
+  --md3-shape-small: 8px;
+  --md3-shape-medium: 12px;
+  --md3-shape-large: 16px;
+  --md3-shape-extra-large: 28px;
+  --md3-shape-full: 9999px;
+
+  /* ===== STATE LAYER ===== */
+  --md3-state-hover: 0.08;
+  --md3-state-focus: 0.1;
+  --md3-state-pressed: 0.1;
+  --md3-state-dragged: 0.16;
+
+  /* ===== BACKWARD COMPATIBILITY ALIASES ===== */
+  /* Map old tokens to new MD3 tokens */
+  --background: var(--md3-surface);
+  --foreground: var(--md3-on-surface);
+  --card: var(--md3-surface-container-low);
+  --card-foreground: var(--md3-on-surface);
+  --popover: var(--md3-surface-container);
+  --popover-foreground: var(--md3-on-surface);
+  --primary: var(--md3-primary);
+  --primary-foreground: var(--md3-on-primary);
+  --secondary: var(--md3-secondary-container);
+  --secondary-foreground: var(--md3-on-secondary-container);
+  --muted: var(--md3-surface-variant);
+  --muted-foreground: var(--md3-on-surface-variant);
+  --accent: var(--md3-tertiary-container);
+  --accent-foreground: var(--md3-on-tertiary-container);
+  --destructive: var(--md3-error);
+  --destructive-foreground: var(--md3-on-error);
+  --border: var(--md3-outline-variant);
+  --input: var(--md3-outline-variant);
+  --ring: var(--md3-primary);
+
+  /* Chart colors */
+  --chart-1: var(--md3-primary);
+  --chart-2: var(--md3-secondary);
+  --chart-3: var(--md3-tertiary);
+  --chart-4: var(--md3-primary-container);
+  --chart-5: var(--md3-secondary-container);
+
+  /* Sidebar */
+  --sidebar: var(--md3-surface-container-low);
+  --sidebar-foreground: var(--md3-on-surface);
+  --sidebar-primary: var(--md3-primary);
+  --sidebar-primary-foreground: var(--md3-on-primary);
+  --sidebar-accent: var(--md3-secondary-container);
+  --sidebar-accent-foreground: var(--md3-on-secondary-container);
+  --sidebar-border: var(--md3-outline-variant);
+  --sidebar-ring: var(--md3-primary);
+
+  /* Typography */
+  --font-sans: var(--md3-font-plain);
+  --font-serif: "Lora", serif;
+  --font-mono: var(--md3-font-code);
+
+  /* Shape */
+  --radius: var(--md3-shape-medium);
+
+  /* Shadows (mapped to MD3 elevation) */
+  --shadow-2xs: var(--md3-elevation-level0);
+  --shadow-xs: var(--md3-elevation-level1);
+  --shadow-sm: var(--md3-elevation-level1);
+  --shadow: var(--md3-elevation-level2);
+  --shadow-md: var(--md3-elevation-level2);
+  --shadow-lg: var(--md3-elevation-level3);
+  --shadow-xl: var(--md3-elevation-level4);
+  --shadow-2xl: var(--md3-elevation-level5);
+
   --spacing: 0.25rem;
 }
 
+/* ===== DARK THEME ===== */
 .dark {
-  --background: oklch(0.2244 0.0074 67.437);
-  --foreground: oklch(0.9288 0.0126 255.5078);
-  --card: oklch(0.2801 0.008 59.3379);
-  --card-foreground: oklch(0.9288 0.0126 255.5078);
-  --popover: oklch(0.2801 0.008 59.3379);
-  --popover-foreground: oklch(0.9288 0.0126 255.5078);
-  --primary: oklch(0.6801 0.1583 276.9349);
-  --primary-foreground: oklch(0.2244 0.0074 67.437);
-  --secondary: oklch(0.3359 0.0077 59.4197);
-  --secondary-foreground: oklch(0.8717 0.0093 258.3382);
-  --muted: oklch(0.2287 0.0074 67.4469);
-  --muted-foreground: oklch(0.7137 0.0192 261.3246);
-  --accent: oklch(0.3896 0.0074 59.4734);
-  --accent-foreground: oklch(0.8717 0.0093 258.3382);
-  --destructive: oklch(0.6368 0.2078 25.3313);
-  --destructive-foreground: oklch(0.2244 0.0074 67.437);
-  --border: oklch(0.3359 0.0077 59.4197);
-  --input: oklch(0.3359 0.0077 59.4197);
-  --ring: oklch(0.6801 0.1583 276.9349);
-  --chart-1: oklch(0.6801 0.1583 276.9349);
-  --chart-2: oklch(0.5854 0.2041 277.1173);
-  --chart-3: oklch(0.5106 0.2301 276.9656);
-  --chart-4: oklch(0.4568 0.2146 277.0229);
-  --chart-5: oklch(0.3984 0.1773 277.3662);
-  --sidebar: oklch(0.3359 0.0077 59.4197);
-  --sidebar-foreground: oklch(0.9288 0.0126 255.5078);
-  --sidebar-primary: oklch(0.6801 0.1583 276.9349);
-  --sidebar-primary-foreground: oklch(0.2244 0.0074 67.437);
-  --sidebar-accent: oklch(0.3896 0.0074 59.4734);
-  --sidebar-accent-foreground: oklch(0.8717 0.0093 258.3382);
-  --sidebar-border: oklch(0.3359 0.0077 59.4197);
-  --sidebar-ring: oklch(0.6801 0.1583 276.9349);
-  --font-sans: Plus Jakarta Sans, sans-serif;
-  --font-serif: Lora, serif;
-  --font-mono: Roboto Mono, monospace;
-  --radius: 1.25rem;
-  --shadow-x: 2px;
-  --shadow-y: 2px;
-  --shadow-blur: 10px;
-  --shadow-spread: 4px;
-  --shadow-opacity: 0.18;
-  --shadow-color: hsl(0 0% 0%);
-  --shadow-2xs: 2px 2px 10px 4px hsl(0 0% 0% / 0.09);
-  --shadow-xs: 2px 2px 10px 4px hsl(0 0% 0% / 0.09);
-  --shadow-sm:
-    2px 2px 10px 4px hsl(0 0% 0% / 0.18), 2px 1px 2px 3px hsl(0 0% 0% / 0.18);
-  --shadow:
-    2px 2px 10px 4px hsl(0 0% 0% / 0.18), 2px 1px 2px 3px hsl(0 0% 0% / 0.18);
-  --shadow-md:
-    2px 2px 10px 4px hsl(0 0% 0% / 0.18), 2px 2px 4px 3px hsl(0 0% 0% / 0.18);
-  --shadow-lg:
-    2px 2px 10px 4px hsl(0 0% 0% / 0.18), 2px 4px 6px 3px hsl(0 0% 0% / 0.18);
-  --shadow-xl:
-    2px 2px 10px 4px hsl(0 0% 0% / 0.18), 2px 8px 10px 3px hsl(0 0% 0% / 0.18);
-  --shadow-2xl: 2px 2px 10px 4px hsl(0 0% 0% / 0.45);
+  /* Primary */
+  --md3-primary: oklch(0.7852 0.1001 281.45);
+  --md3-on-primary: oklch(0.3098 0.1001 281.45);
+  --md3-primary-container: oklch(0.3712 0.1001 281.45);
+  --md3-on-primary-container: oklch(0.9102 0.0658 281.45);
+
+  /* Secondary */
+  --md3-secondary: oklch(0.7852 0.0537 281.45);
+  --md3-on-secondary: oklch(0.3098 0.0537 281.45);
+  --md3-secondary-container: oklch(0.3712 0.0537 281.45);
+  --md3-on-secondary-container: oklch(0.9102 0.0268 281.45);
+
+  /* Tertiary */
+  --md3-tertiary: oklch(0.7852 0.0763 341.45);
+  --md3-on-tertiary: oklch(0.3098 0.0763 341.45);
+  --md3-tertiary-container: oklch(0.3712 0.0763 341.45);
+  --md3-on-tertiary-container: oklch(0.9102 0.0381 341.45);
+
+  /* Error */
+  --md3-error: oklch(0.7852 0.1576 25);
+  --md3-on-error: oklch(0.3098 0.1576 25);
+  --md3-error-container: oklch(0.3712 0.1576 25);
+  --md3-on-error-container: oklch(0.9102 0.1183 25);
+
+  /* Surface */
+  --md3-surface: oklch(0.1579 0.0013 281.45);
+  --md3-on-surface: oklch(0.9102 0.0134 281.45);
+  --md3-surface-variant: oklch(0.3712 0.0268 281.45);
+  --md3-on-surface-variant: oklch(0.8169 0.0268 281.45);
+
+  /* Surface containers */
+  --md3-surface-container-lowest: oklch(0.1206 0.0013 281.45);
+  --md3-surface-container-low: oklch(0.2193 0.0013 281.45);
+  --md3-surface-container: oklch(0.2381 0.0013 281.45);
+  --md3-surface-container-high: oklch(0.2739 0.0013 281.45);
+  --md3-surface-container-highest: oklch(0.3267 0.0013 281.45);
+  --md3-surface-dim: oklch(0.1579 0.0013 281.45);
+  --md3-surface-bright: oklch(0.3525 0.0013 281.45);
+
+  /* Outline */
+  --md3-outline: oklch(0.6417 0.0268 281.45);
+  --md3-outline-variant: oklch(0.3712 0.0268 281.45);
+
+  /* Inverse */
+  --md3-inverse-surface: oklch(0.9102 0.0134 281.45);
+  --md3-inverse-on-surface: oklch(0.3098 0.0134 281.45);
+  --md3-inverse-primary: oklch(0.4966 0.1501 281.45);
 }
 
+/* ===== TAILWIND THEME MAPPING ===== */
 @theme inline {
+  /* MD3 Colors */
+  --color-md3-primary: var(--md3-primary);
+  --color-md3-on-primary: var(--md3-on-primary);
+  --color-md3-primary-container: var(--md3-primary-container);
+  --color-md3-on-primary-container: var(--md3-on-primary-container);
+
+  --color-md3-secondary: var(--md3-secondary);
+  --color-md3-on-secondary: var(--md3-on-secondary);
+  --color-md3-secondary-container: var(--md3-secondary-container);
+  --color-md3-on-secondary-container: var(--md3-on-secondary-container);
+
+  --color-md3-tertiary: var(--md3-tertiary);
+  --color-md3-on-tertiary: var(--md3-on-tertiary);
+  --color-md3-tertiary-container: var(--md3-tertiary-container);
+  --color-md3-on-tertiary-container: var(--md3-on-tertiary-container);
+
+  --color-md3-error: var(--md3-error);
+  --color-md3-on-error: var(--md3-on-error);
+  --color-md3-error-container: var(--md3-error-container);
+  --color-md3-on-error-container: var(--md3-on-error-container);
+
+  --color-md3-surface: var(--md3-surface);
+  --color-md3-on-surface: var(--md3-on-surface);
+  --color-md3-surface-variant: var(--md3-surface-variant);
+  --color-md3-on-surface-variant: var(--md3-on-surface-variant);
+  --color-md3-surface-container-lowest: var(--md3-surface-container-lowest);
+  --color-md3-surface-container-low: var(--md3-surface-container-low);
+  --color-md3-surface-container: var(--md3-surface-container);
+  --color-md3-surface-container-high: var(--md3-surface-container-high);
+  --color-md3-surface-container-highest: var(--md3-surface-container-highest);
+  --color-md3-surface-dim: var(--md3-surface-dim);
+  --color-md3-surface-bright: var(--md3-surface-bright);
+
+  --color-md3-outline: var(--md3-outline);
+  --color-md3-outline-variant: var(--md3-outline-variant);
+
+  --color-md3-inverse-surface: var(--md3-inverse-surface);
+  --color-md3-inverse-on-surface: var(--md3-inverse-on-surface);
+  --color-md3-inverse-primary: var(--md3-inverse-primary);
+
+  /* Legacy colors (backward compatibility) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -161,15 +402,21 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
+  /* Typography */
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  /* Shape */
+  --radius-none: var(--md3-shape-none);
+  --radius-xs: var(--md3-shape-extra-small);
+  --radius-sm: var(--md3-shape-small);
+  --radius-md: var(--md3-shape-medium);
+  --radius-lg: var(--md3-shape-large);
+  --radius-xl: var(--md3-shape-extra-large);
+  --radius-full: var(--md3-shape-full);
 
+  /* Shadows */
   --shadow-2xs: var(--shadow-2xs);
   --shadow-xs: var(--shadow-xs);
   --shadow-sm: var(--shadow-sm);
@@ -180,6 +427,7 @@
   --shadow-2xl: var(--shadow-2xl);
 }
 
+/* ===== BASE STYLES ===== */
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -187,5 +435,182 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--md3-font-plain);
+    font-size: var(--md3-typescale-body-medium-size);
+    line-height: var(--md3-typescale-body-medium-line-height);
+    letter-spacing: var(--md3-typescale-body-medium-tracking);
+  }
+}
+
+/* ===== MD3 UTILITY CLASSES ===== */
+@layer utilities {
+  /* State layer for interactive elements */
+  .md3-state-layer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .md3-state-layer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity var(--md3-duration-short2) var(--md3-easing-standard);
+    pointer-events: none;
+  }
+
+  .md3-state-layer:hover::before {
+    opacity: var(--md3-state-hover);
+  }
+
+  .md3-state-layer:focus-visible::before {
+    opacity: var(--md3-state-focus);
+  }
+
+  .md3-state-layer:active::before {
+    opacity: var(--md3-state-pressed);
+  }
+
+  /* MD3 Typography utilities */
+  .md3-display-large {
+    font-size: var(--md3-typescale-display-large-size);
+    line-height: var(--md3-typescale-display-large-line-height);
+    font-weight: var(--md3-typescale-display-large-weight);
+    letter-spacing: var(--md3-typescale-display-large-tracking);
+  }
+
+  .md3-display-medium {
+    font-size: var(--md3-typescale-display-medium-size);
+    line-height: var(--md3-typescale-display-medium-line-height);
+    font-weight: var(--md3-typescale-display-medium-weight);
+    letter-spacing: var(--md3-typescale-display-medium-tracking);
+  }
+
+  .md3-display-small {
+    font-size: var(--md3-typescale-display-small-size);
+    line-height: var(--md3-typescale-display-small-line-height);
+    font-weight: var(--md3-typescale-display-small-weight);
+    letter-spacing: var(--md3-typescale-display-small-tracking);
+  }
+
+  .md3-headline-large {
+    font-size: var(--md3-typescale-headline-large-size);
+    line-height: var(--md3-typescale-headline-large-line-height);
+    font-weight: var(--md3-typescale-headline-large-weight);
+    letter-spacing: var(--md3-typescale-headline-large-tracking);
+  }
+
+  .md3-headline-medium {
+    font-size: var(--md3-typescale-headline-medium-size);
+    line-height: var(--md3-typescale-headline-medium-line-height);
+    font-weight: var(--md3-typescale-headline-medium-weight);
+    letter-spacing: var(--md3-typescale-headline-medium-tracking);
+  }
+
+  .md3-headline-small {
+    font-size: var(--md3-typescale-headline-small-size);
+    line-height: var(--md3-typescale-headline-small-line-height);
+    font-weight: var(--md3-typescale-headline-small-weight);
+    letter-spacing: var(--md3-typescale-headline-small-tracking);
+  }
+
+  .md3-title-large {
+    font-size: var(--md3-typescale-title-large-size);
+    line-height: var(--md3-typescale-title-large-line-height);
+    font-weight: var(--md3-typescale-title-large-weight);
+    letter-spacing: var(--md3-typescale-title-large-tracking);
+  }
+
+  .md3-title-medium {
+    font-size: var(--md3-typescale-title-medium-size);
+    line-height: var(--md3-typescale-title-medium-line-height);
+    font-weight: var(--md3-typescale-title-medium-weight);
+    letter-spacing: var(--md3-typescale-title-medium-tracking);
+  }
+
+  .md3-title-small {
+    font-size: var(--md3-typescale-title-small-size);
+    line-height: var(--md3-typescale-title-small-line-height);
+    font-weight: var(--md3-typescale-title-small-weight);
+    letter-spacing: var(--md3-typescale-title-small-tracking);
+  }
+
+  .md3-body-large {
+    font-size: var(--md3-typescale-body-large-size);
+    line-height: var(--md3-typescale-body-large-line-height);
+    font-weight: var(--md3-typescale-body-large-weight);
+    letter-spacing: var(--md3-typescale-body-large-tracking);
+  }
+
+  .md3-body-medium {
+    font-size: var(--md3-typescale-body-medium-size);
+    line-height: var(--md3-typescale-body-medium-line-height);
+    font-weight: var(--md3-typescale-body-medium-weight);
+    letter-spacing: var(--md3-typescale-body-medium-tracking);
+  }
+
+  .md3-body-small {
+    font-size: var(--md3-typescale-body-small-size);
+    line-height: var(--md3-typescale-body-small-line-height);
+    font-weight: var(--md3-typescale-body-small-weight);
+    letter-spacing: var(--md3-typescale-body-small-tracking);
+  }
+
+  .md3-label-large {
+    font-size: var(--md3-typescale-label-large-size);
+    line-height: var(--md3-typescale-label-large-line-height);
+    font-weight: var(--md3-typescale-label-large-weight);
+    letter-spacing: var(--md3-typescale-label-large-tracking);
+  }
+
+  .md3-label-medium {
+    font-size: var(--md3-typescale-label-medium-size);
+    line-height: var(--md3-typescale-label-medium-line-height);
+    font-weight: var(--md3-typescale-label-medium-weight);
+    letter-spacing: var(--md3-typescale-label-medium-tracking);
+  }
+
+  .md3-label-small {
+    font-size: var(--md3-typescale-label-small-size);
+    line-height: var(--md3-typescale-label-small-line-height);
+    font-weight: var(--md3-typescale-label-small-weight);
+    letter-spacing: var(--md3-typescale-label-small-tracking);
+  }
+
+  /* MD3 Elevation utilities */
+  .md3-elevation-0 {
+    box-shadow: var(--md3-elevation-level0);
+  }
+
+  .md3-elevation-1 {
+    box-shadow: var(--md3-elevation-level1);
+  }
+
+  .md3-elevation-2 {
+    box-shadow: var(--md3-elevation-level2);
+  }
+
+  .md3-elevation-3 {
+    box-shadow: var(--md3-elevation-level3);
+  }
+
+  .md3-elevation-4 {
+    box-shadow: var(--md3-elevation-level4);
+  }
+
+  .md3-elevation-5 {
+    box-shadow: var(--md3-elevation-level5);
+  }
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

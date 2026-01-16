@@ -13,7 +13,27 @@
 	bind:ref
 	data-slot="tabs-trigger"
 	class={cn(
-		"data-[state=active]:bg-background dark:data-[state=active]:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring dark:data-[state=active]:border-input dark:data-[state=active]:bg-input/30 text-foreground dark:text-muted-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+		// MD3 Tab trigger styles
+		"relative inline-flex h-full flex-1 items-center justify-center gap-1.5 px-4",
+		// Typography
+		"md3-title-small text-md3-on-surface-variant",
+		// Active state
+		"data-[state=active]:text-md3-primary",
+		// Active indicator (bottom border)
+		"after:absolute after:bottom-0 after:left-1/2 after:h-[3px] after:w-0 after:-translate-x-1/2",
+		"after:rounded-t-full after:bg-md3-primary after:transition-all",
+		"after:duration-[var(--md3-duration-short4)] after:ease-[var(--md3-easing-standard)]",
+		"data-[state=active]:after:w-full",
+		// Hover state layer
+		"hover:bg-md3-on-surface/8",
+		// Transition
+		"transition-colors duration-[var(--md3-duration-short2)] ease-[var(--md3-easing-standard)]",
+		// Focus
+		"outline-none focus-visible:bg-md3-on-surface/12",
+		// Disabled
+		"disabled:pointer-events-none disabled:opacity-38",
+		// Icons
+		"[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 		className
 	)}
 	{...restProps}

@@ -3,7 +3,7 @@
 	import { goto } from "$app/navigation";
 	import * as Card from "$lib/components/ui/card";
 	import { Button } from "$lib/components/ui/button";
-	import { Input } from "$lib/components/ui/input";
+	import * as InputOTP from "$lib/components/ui/input-otp";
 	import { Label } from "$lib/components/ui/label";
 	import { Alert, AlertDescription } from "$lib/components/ui/alert";
 	import { Skeleton } from "$lib/components/ui/skeleton";
@@ -78,14 +78,6 @@
 		);
 	}
 
-	function formatCodeInput(value: string): string {
-		return value.replace(/\D/g, "").slice(0, 6);
-	}
-
-	function handleCodeInput(e: Event) {
-		const target = e.target as HTMLInputElement;
-		verificationCode = formatCodeInput(target.value);
-	}
 </script>
 
 <svelte:head>
@@ -161,20 +153,30 @@
 								</Alert>
 							{/if}
 
-							<div class="space-y-2">
+							<div class="space-y-3">
 								<Label for="disable-code">Enter your authenticator code</Label>
-								<Input
-									type="text"
-									id="disable-code"
-									value={verificationCode}
-									oninput={handleCodeInput}
-									inputmode="numeric"
-									autocomplete="one-time-code"
+								<InputOTP.Root
 									maxlength={6}
-									placeholder="000000"
-									class="text-center text-2xl tracking-widest"
-								/>
-								<p class="text-sm text-muted-foreground">
+									bind:value={verificationCode}
+									onComplete={() => {
+										// Auto-submit when complete
+									}}
+								>
+									{#snippet children({ cells })}
+										<InputOTP.Group>
+											{#each cells.slice(0, 3) as cell (cell)}
+												<InputOTP.Slot {cell} />
+											{/each}
+										</InputOTP.Group>
+										<InputOTP.Separator />
+										<InputOTP.Group>
+											{#each cells.slice(3, 6) as cell (cell)}
+												<InputOTP.Slot {cell} />
+											{/each}
+										</InputOTP.Group>
+									{/snippet}
+								</InputOTP.Root>
+								<p class="text-sm text-md3-on-surface-variant">
 									Enter the 6-digit code from your authenticator app
 								</p>
 							</div>
@@ -271,20 +273,30 @@
 								</Alert>
 							{/if}
 
-							<div class="space-y-2">
+							<div class="space-y-3">
 								<Label for="verify-code">Enter verification code</Label>
-								<Input
-									type="text"
-									id="verify-code"
-									value={verificationCode}
-									oninput={handleCodeInput}
-									inputmode="numeric"
-									autocomplete="one-time-code"
+								<InputOTP.Root
 									maxlength={6}
-									placeholder="000000"
-									class="text-center text-2xl tracking-widest"
-								/>
-								<p class="text-sm text-muted-foreground">
+									bind:value={verificationCode}
+									onComplete={() => {
+										// Auto-submit when complete
+									}}
+								>
+									{#snippet children({ cells })}
+										<InputOTP.Group>
+											{#each cells.slice(0, 3) as cell (cell)}
+												<InputOTP.Slot {cell} />
+											{/each}
+										</InputOTP.Group>
+										<InputOTP.Separator />
+										<InputOTP.Group>
+											{#each cells.slice(3, 6) as cell (cell)}
+												<InputOTP.Slot {cell} />
+											{/each}
+										</InputOTP.Group>
+									{/snippet}
+								</InputOTP.Root>
+								<p class="text-sm text-md3-on-surface-variant">
 									Enter the 6-digit code from your authenticator app to verify setup
 								</p>
 							</div>

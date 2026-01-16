@@ -4,6 +4,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import * as InputOTP from '$lib/components/ui/input-otp';
 	import { Label } from '$lib/components/ui/label';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert';
 	import {
@@ -140,25 +141,36 @@
 			{/if}
 
 			{#if requires2fa}
-				<form onsubmit={handleVerify2fa} class="space-y-4">
-					<div class="space-y-2">
+				<form onsubmit={handleVerify2fa} class="space-y-6">
+					<div class="space-y-3">
 						<Label for="code">Authentication Code</Label>
-						<Input
-							id="code"
-							type="text"
-							bind:value={code}
-							required
-							pattern="[0-9]{6}"
+						<InputOTP.Root
 							maxlength={6}
-							placeholder="000000"
-							class="text-center text-2xl tracking-widest"
-						/>
-						<p class="text-sm text-muted-foreground">
+							bind:value={code}
+							onComplete={() => {
+								// Auto-submit when complete
+							}}
+						>
+							{#snippet children({ cells })}
+								<InputOTP.Group>
+									{#each cells.slice(0, 3) as cell (cell)}
+										<InputOTP.Slot {cell} />
+									{/each}
+								</InputOTP.Group>
+								<InputOTP.Separator />
+								<InputOTP.Group>
+									{#each cells.slice(3, 6) as cell (cell)}
+										<InputOTP.Slot {cell} />
+									{/each}
+								</InputOTP.Group>
+							{/snippet}
+						</InputOTP.Root>
+						<p class="text-sm text-md3-on-surface-variant">
 							Enter the 6-digit code from your authenticator app
 						</p>
 					</div>
 
-					<Button type="submit" class="w-full" disabled={verify2faMutation.isPending}>
+					<Button type="submit" class="w-full" disabled={code.length !== 6 || verify2faMutation.isPending}>
 						{verify2faMutation.isPending ? 'Verifying...' : 'Verify'}
 					</Button>
 

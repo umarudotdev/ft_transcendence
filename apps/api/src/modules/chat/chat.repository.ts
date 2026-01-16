@@ -10,6 +10,7 @@ import {
   messages,
   users,
 } from "../../db/schema";
+import { decryptMessage, encryptMessage, isEncrypted } from "./chat.crypto";
 
 export const chatRepository = {
   /**
@@ -193,6 +194,13 @@ export const chatRepository = {
         }
       }
 
+      // Decrypt last message content if encrypted
+      const decryptedContent = lastMessage
+        ? isEncrypted(lastMessage.content)
+          ? decryptMessage(lastMessage.content)
+          : lastMessage.content
+        : undefined;
+
       conversations.push({
         channelId: channel.id,
         type: channel.type as "dm" | "public" | "private",
@@ -201,7 +209,7 @@ export const chatRepository = {
         lastMessage: lastMessage
           ? {
               id: lastMessage.id,
-              content: lastMessage.content,
+              content: decryptedContent as string,
               senderId: lastMessage.senderId,
               senderName: lastMessage.sender.displayName,
               createdAt: lastMessage.createdAt,
@@ -219,19 +227,22 @@ export const chatRepository = {
   },
 
   /**
-   * Create a new message
+   * Create a new message (content is encrypted at rest)
    */
   async createMessage(data: {
     channelId: number;
     senderId: number;
     content: string;
   }) {
+    // Encrypt the message content before storing
+    const encryptedContent = encryptMessage(data.content);
+
     const [message] = await db
       .insert(messages)
       .values({
         channelId: data.channelId,
         senderId: data.senderId,
-        content: data.content,
+        content: encryptedContent,
       })
       .returning();
 
@@ -241,11 +252,15 @@ export const chatRepository = {
       .set({ updatedAt: new Date() })
       .where(eq(channels.id, data.channelId));
 
-    return message;
+    // Return with decrypted content for immediate use
+    return {
+      ...message,
+      content: data.content,
+    };
   },
 
   /**
-   * Get messages for a channel with pagination
+   * Get messages for a channel with pagination (decrypts content)
    */
   async getMessages(
     channelId: number,
@@ -277,15 +292,20 @@ export const chatRepository = {
       },
     });
 
-    // Return in chronological order
-    return messageList.reverse();
+    // Decrypt content and return in chronological order
+    return messageList.reverse().map((msg) => ({
+      ...msg,
+      content: isEncrypted(msg.content)
+        ? decryptMessage(msg.content)
+        : msg.content,
+    }));
   },
 
   /**
-   * Get the last message in a channel
+   * Get the last message in a channel (decrypts content)
    */
   async getLastMessage(channelId: number) {
-    return db.query.messages.findFirst({
+    const msg = await db.query.messages.findFirst({
       where: and(eq(messages.channelId, channelId), isNull(messages.deletedAt)),
       orderBy: [desc(messages.createdAt)],
       with: {
@@ -297,6 +317,15 @@ export const chatRepository = {
         },
       },
     });
+
+    if (!msg) return null;
+
+    return {
+      ...msg,
+      content: isEncrypted(msg.content)
+        ? decryptMessage(msg.content)
+        : msg.content,
+    };
   },
 
   /**
@@ -389,10 +418,10 @@ export const chatRepository = {
   },
 
   /**
-   * Get a message by ID with sender info
+   * Get a message by ID with sender info (decrypts content)
    */
   async getMessageById(messageId: number) {
-    return db.query.messages.findFirst({
+    const msg = await db.query.messages.findFirst({
       where: eq(messages.id, messageId),
       with: {
         sender: {
@@ -404,5 +433,14 @@ export const chatRepository = {
         },
       },
     });
+
+    if (!msg) return null;
+
+    return {
+      ...msg,
+      content: isEncrypted(msg.content)
+        ? decryptMessage(msg.content)
+        : msg.content,
+    };
   },
 };

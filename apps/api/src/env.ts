@@ -20,6 +20,7 @@ const EnvSchema = Type.Object({
   INTRA_REDIRECT_URI: Type.Optional(Type.String()),
 
   TOTP_ENCRYPTION_KEY: Type.Optional(Type.String({ minLength: 32 })),
+  CHAT_ENCRYPTION_KEY: Type.Optional(Type.String({ minLength: 32 })),
 });
 
 type Env = Static<typeof EnvSchema>;
@@ -38,6 +39,7 @@ function parseEnv(): Env {
     INTRA_CLIENT_SECRET: process.env.INTRA_CLIENT_SECRET,
     INTRA_REDIRECT_URI: process.env.INTRA_REDIRECT_URI,
     TOTP_ENCRYPTION_KEY: process.env.TOTP_ENCRYPTION_KEY,
+    CHAT_ENCRYPTION_KEY: process.env.CHAT_ENCRYPTION_KEY,
   };
 
   for (const key of Object.keys(raw)) {
@@ -77,6 +79,17 @@ function parseEnv(): Env {
   if (!env.TOTP_ENCRYPTION_KEY && env.NODE_ENV === "development") {
     console.warn(
       "⚠️  TOTP_ENCRYPTION_KEY not set - using insecure development key"
+    );
+  }
+
+  if (!env.CHAT_ENCRYPTION_KEY && env.NODE_ENV === "production") {
+    console.error("❌ CHAT_ENCRYPTION_KEY is required in production");
+    process.exit(1);
+  }
+
+  if (!env.CHAT_ENCRYPTION_KEY && env.NODE_ENV === "development") {
+    console.warn(
+      "⚠️  CHAT_ENCRYPTION_KEY not set - using insecure development key"
     );
   }
 

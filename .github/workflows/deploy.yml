@@ -132,6 +132,14 @@ jobs:
           POSTGRES_PASSWORD=$POSTGRES_PASSWORD
           EOF
 
+      - name: Clean Docker state on host
+        env:
+          EC2_HOST: ${{ vars.AWS_EC2_HOST }}
+        run: |
+          echo "=== Cleaning Docker storage on EC2 host ==="
+          ssh -i ~/.ssh/ft-transcendence.pem ubuntu@$EC2_HOST \
+            "docker system prune -af" || true
+
       - name: Deploy API
         run: kamal deploy
 

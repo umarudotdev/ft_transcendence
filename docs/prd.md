@@ -8,7 +8,8 @@
 
 ## Executive Summary
 
-Real-time Pong platform for 42 students with multiplayer gameplay, chat, and 2FA. Target: **14 points** using modern TypeScript stack.
+Real-time Pong platform for 42 students with multiplayer gameplay, chat, and
+2FA. Target: **14 points** using modern TypeScript stack.
 
 ## Success Metrics
 
@@ -75,7 +76,8 @@ Real-time Pong platform for 42 students with multiplayer gameplay, chat, and 2FA
 | Win Condition | First to 11            |
 | Tick Rate     | 60/second              |
 
-**Network:** WebSocket at 60Hz. Client sends input, server broadcasts authoritative state.
+**Network:** WebSocket at 60Hz. Client sends input, server broadcasts
+authoritative state.
 
 ---
 
@@ -121,17 +123,21 @@ Real-time Pong platform for 42 students with multiplayer gameplay, chat, and 2FA
 
 **Performance:** 60 ticks/s game loop, <50ms WebSocket RTT, <100ms DB queries
 
-**Security:** HTTPS only, HttpOnly cookies, TypeBox validation, CSRF protection, rate limiting (100 req/min on auth)
+**Security:** HTTPS only, HttpOnly cookies, TypeBox validation, CSRF protection,
+rate limiting (100 req/min on auth)
 
-**Compatibility:** Latest modern browsers (Chrome, Firefox, Safari, Edge), 1280×720 minimum resolution
+**Compatibility:** Latest modern browsers (Chrome, Firefox, Safari, Edge),
+1280×720 minimum resolution
 
-**Deployment:** Single `docker compose up --build`, auto-migrations, `/api/health` endpoint
+**Deployment:** Single `docker compose up --build`, auto-migrations,
+`/api/health` endpoint
 
 ---
 
 ## Out of Scope
 
-Mobile app, tournaments, power-ups, voice chat, leaderboards, email auth, admin dashboard, chat rooms, game replays, i18n
+Mobile app, tournaments, power-ups, voice chat, leaderboards, email auth, admin
+dashboard, chat rooms, game replays, i18n
 
 ---
 

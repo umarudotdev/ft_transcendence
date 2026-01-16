@@ -6,15 +6,21 @@ Accepted
 
 ## Context and Problem Statement
 
-The ft_transcendence subject emphasizes User Management (Major Module - 2pts) and Security. Users must log in via 42 Intra OAuth, and Two-Factor Authentication is required for a Minor Module. During evaluation, we must explain exactly how sessions are stored, cookies are signed, and passwords are hashed.
+The ft_transcendence subject emphasizes User Management (Major Module - 2pts)
+and Security. Users must log in via 42 Intra OAuth, and Two-Factor
+Authentication is required for a Minor Module. During evaluation, we must
+explain exactly how sessions are stored, cookies are signed, and passwords are
+hashed.
 
-How should we implement authentication to satisfy security requirements while maintaining full transparency of the implementation for the evaluation defense?
+How should we implement authentication to satisfy security requirements while
+maintaining full transparency of the implementation for the evaluation defense?
 
 ## Decision Drivers
 
 - Must support 42 Intra OAuth integration
 - Must implement TOTP-based 2FA for module compliance
-- Must be able to explain all authentication logic during defense (no black box libraries)
+- Must be able to explain all authentication logic during defense (no black box
+  libraries)
 - Need ability to revoke sessions immediately (logout, ban, password change)
 - Security must follow OWASP best practices
 
@@ -26,20 +32,27 @@ How should we implement authentication to satisfy security requirements while ma
 
 ## Decision Outcome
 
-Chosen option: "Database sessions with Arctic + Oslo", because it provides immediate session revocation, full transparency of authentication logic for defense, and leverages focused libraries for OAuth and TOTP without imposing opinionated schemas.
+Chosen option: "Database sessions with Arctic + Oslo", because it provides
+immediate session revocation, full transparency of authentication logic for
+defense, and leverages focused libraries for OAuth and TOTP without imposing
+opinionated schemas.
 
 ### Consequences
 
 #### Positive
 
-- Defense Ready: We control the database schema explicitly; can show evaluator exact SQL queries for session validation
-- Security: HttpOnly cookies prevent XSS token theft; CSRF protection via Elysia origin checks
-- Flexibility: Can add custom fields to sessions (e.g., is_admin) without fighting library abstractions
+- Defense Ready: We control the database schema explicitly; can show evaluator
+  exact SQL queries for session validation
+- Security: HttpOnly cookies prevent XSS token theft; CSRF protection via Elysia
+  origin checks
+- Flexibility: Can add custom fields to sessions (e.g., is_admin) without
+  fighting library abstractions
 
 #### Negative
 
 - Boilerplate: Must write Drizzle schema and cookie handling logic manually
-- Responsibility: Must implement session cleanup (expired session deletion) via cron job or periodic check
+- Responsibility: Must implement session cleanup (expired session deletion) via
+  cron job or periodic check
 
 ### Confirmation
 
@@ -82,7 +95,8 @@ The decision will be confirmed by:
 
 ### Session Architecture
 
-- **Storage**: PostgreSQL `session` table with `session_id`, `user_id`, `expires_at`
+- **Storage**: PostgreSQL `session` table with `session_id`, `user_id`,
+  `expires_at`
 - **Transport**: Session ID in Secure, HttpOnly, SameSite=Lax cookie
 - **Validation**: Database lookup on each authenticated request
 

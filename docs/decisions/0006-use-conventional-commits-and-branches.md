@@ -6,7 +6,8 @@ Accepted
 
 ## Context and Problem Statement
 
-With multiple contributors working on ft_transcendence, we need consistent Git practices for:
+With multiple contributors working on ft_transcendence, we need consistent Git
+practices for:
 
 - Clear, scannable commit history
 - Automated changelog generation potential
@@ -31,7 +32,9 @@ How should we standardize our Git workflow?
 
 ## Decision Outcome
 
-Chosen option: "Conventional Commits with Conventional Branch naming", because it provides machine-readable commit history, clear communication of intent, and integrates well with tooling like Commitlint.
+Chosen option: "Conventional Commits with Conventional Branch naming", because
+it provides machine-readable commit history, clear communication of intent, and
+integrates well with tooling like Commitlint.
 
 ### Consequences
 
@@ -110,7 +113,8 @@ The decision will be confirmed by:
 | `ci`       | CI configuration                                |
 | `chore`    | Other changes that don't modify src or test     |
 
-**Scope** (optional): Module or area affected (e.g., `api`, `web`, `auth`, `game`, `chat`)
+**Scope** (optional): Module or area affected (e.g., `api`, `web`, `auth`,
+`game`, `chat`)
 
 **Breaking Changes:** Add `!` before the colon
 

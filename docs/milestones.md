@@ -2,7 +2,8 @@
 
 ## Milestone 1: Setup
 
-**Goal:** Docker builds in one command, frontend and backend communicate with type safety.
+**Goal:** Docker builds in one command, frontend and backend communicate with
+type safety.
 
 - [x] Initialize monorepo with Bun workspaces
 - [ ] Create ElysiaJS backend with health endpoint

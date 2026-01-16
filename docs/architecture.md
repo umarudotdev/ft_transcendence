@@ -2,7 +2,8 @@
 
 Technical patterns and protocols for ft_transcendence.
 
-> **Rationale:** See [ADRs](./decisions/0001-use-bun-elysia-sveltekit-stack) for decision records.
+> **Rationale:** See [ADRs](./decisions/0001-use-bun-elysia-sveltekit-stack) for
+> decision records.
 
 ---
 

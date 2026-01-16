@@ -1,10 +1,12 @@
 # Development Guide
 
-This guide walks through implementing a feature following the best practices established in this codebase.
+This guide walks through implementing a feature following the best practices
+established in this codebase.
 
 ## Architecture Overview
 
-This project uses **Vertical Slice Architecture** - code is organized by feature module, not by technical layer:
+This project uses **Vertical Slice Architecture** - code is organized by feature
+module, not by technical layer:
 
 ```
 apps/api/src/modules/[feature]/
@@ -39,12 +41,12 @@ Define your tables in the shared schema file.
 
 ```typescript
 import {
+  integer,
+  pgEnum,
   pgTable,
   serial,
   text,
-  integer,
   timestamp,
-  pgEnum,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { users } from "./schema";
@@ -88,7 +90,8 @@ bun run generate   # Creates migration file in drizzle/
 bun run migrate    # Applies migration to database
 ```
 
-**Important:** Never modify the database directly. All changes go through migrations.
+**Important:** Never modify the database directly. All changes go through
+migrations.
 
 ---
 
@@ -133,7 +136,7 @@ export const tournamentsRepository = {
 
   async updateStatus(
     id: number,
-    status: "pending" | "in_progress" | "completed"
+    status: "pending" | "in_progress" | "completed",
   ) {
     const [updated] = await db
       .update(tournaments)
@@ -183,7 +186,7 @@ export const tournamentsService = {
 
   async createTournament(
     userId: number,
-    data: { name: string; maxPlayers?: number }
+    data: { name: string; maxPlayers?: number },
   ) {
     // Business validation
     if (data.maxPlayers && (data.maxPlayers < 2 || data.maxPlayers > 16)) {
@@ -231,7 +234,7 @@ export const tournamentsService = {
     }
 
     const alreadyJoined = tournament.participants.some(
-      (p) => p.userId === userId
+      (p) => p.userId === userId,
     );
     if (alreadyJoined) {
       throw new Error("Already joined this tournament");
@@ -255,7 +258,8 @@ export const tournamentsService = {
 
 ## 4. Controller Layer
 
-The controller handles HTTP concerns: routing, validation, and response formatting.
+The controller handles HTTP concerns: routing, validation, and response
+formatting.
 
 **File:** `apps/api/src/modules/tournaments/tournaments.controller.ts`
 
@@ -269,7 +273,6 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
     const tournaments = await tournamentsService.listTournaments();
     return { tournaments };
   })
-
   // Get single tournament by ID
   .get(
     "/:id",
@@ -285,9 +288,8 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       params: t.Object({
         id: t.Numeric(), // Converts string param to number
       }),
-    }
+    },
   )
-
   // Create a new tournament
   .post(
     "/",
@@ -298,7 +300,7 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       try {
         const tournament = await tournamentsService.createTournament(
           userId,
-          body
+          body,
         );
         return { tournament };
       } catch (e) {
@@ -310,9 +312,8 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
         name: t.String({ minLength: 3, maxLength: 50 }),
         maxPlayers: t.Optional(t.Integer({ minimum: 2, maximum: 16 })),
       }),
-    }
+    },
   )
-
   // Start a tournament
   .post(
     "/:id/start",
@@ -322,7 +323,7 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       try {
         const tournament = await tournamentsService.startTournament(
           userId,
-          params.id
+          params.id,
         );
         return { tournament };
       } catch (e) {
@@ -340,9 +341,8 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       params: t.Object({
         id: t.Numeric(),
       }),
-    }
+    },
   )
-
   // Join a tournament
   .post(
     "/:id/join",
@@ -352,7 +352,7 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       try {
         const tournament = await tournamentsService.joinTournament(
           userId,
-          params.id
+          params.id,
         );
         return { tournament };
       } catch (e) {
@@ -363,9 +363,8 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       params: t.Object({
         id: t.Numeric(),
       }),
-    }
+    },
   )
-
   // Delete a tournament
   .delete(
     "/:id",
@@ -383,7 +382,7 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
       params: t.Object({
         id: t.Numeric(),
       }),
-    }
+    },
   );
 ```
 
@@ -437,8 +436,7 @@ const app = new Elysia()
       .use(usersController)
       .use(gameController)
       .use(chatController)
-      .use(tournamentsController)
-  )
+      .use(tournamentsController))
   .listen(4000);
 
 export type App = typeof app;
@@ -458,10 +456,9 @@ The API client is already configured in `apps/web/src/lib/api.ts`:
 import { treaty } from "@elysiajs/eden";
 import type { App } from "../../../api/src/index";
 
-const baseUrl =
-  typeof window !== "undefined"
-    ? window.location.origin
-    : "http://localhost:4000";
+const baseUrl = typeof window !== "undefined"
+  ? window.location.origin
+  : "http://localhost:4000";
 
 export const api = treaty<App>(baseUrl);
 ```
@@ -623,7 +620,8 @@ await api.api.tournaments({ id: 123 }).delete();
 
 ## 7. Server-Side Data Loading (SSR)
 
-For better SEO and initial load performance, use SvelteKit's server-side loading.
+For better SEO and initial load performance, use SvelteKit's server-side
+loading.
 
 **File:** `apps/web/src/routes/tournaments/+page.server.ts`
 
@@ -674,7 +672,7 @@ For complex client-side state that needs to be shared across components.
 **File:** `apps/web/src/lib/stores/tournaments.ts`
 
 ```typescript
-import { writable, derived } from "svelte/store";
+import { derived, writable } from "svelte/store";
 import { api } from "$lib/api";
 
 interface Tournament {
@@ -729,8 +727,9 @@ function createTournamentsStore() {
 export const tournaments = createTournamentsStore();
 
 // Derived store for filtering
-export const pendingTournaments = derived(tournaments, ($tournaments) =>
-  $tournaments.filter((t) => t.status === "pending")
+export const pendingTournaments = derived(
+  tournaments,
+  ($tournaments) => $tournaments.filter((t) => t.status === "pending"),
 );
 ```
 
@@ -841,7 +840,7 @@ Protect routes that require authentication.
 import { Elysia } from "elysia";
 import { db } from "../../db";
 import { sessions, users } from "../../db/schema";
-import { eq, and, gt } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 
 export const authGuard = new Elysia({ name: "auth-guard" }).derive(
   async ({ cookie, error }) => {
@@ -854,7 +853,7 @@ export const authGuard = new Elysia({ name: "auth-guard" }).derive(
     const session = await db.query.sessions.findFirst({
       where: and(
         eq(sessions.id, sessionId),
-        gt(sessions.expiresAt, new Date())
+        gt(sessions.expiresAt, new Date()),
       ),
       with: { user: true },
     });
@@ -867,7 +866,7 @@ export const authGuard = new Elysia({ name: "auth-guard" }).derive(
       user: session.user,
       session,
     };
-  }
+  },
 );
 ```
 
@@ -881,7 +880,6 @@ export const tournamentsController = new Elysia({ prefix: "/tournaments" })
   .get("/", async () => {
     return { tournaments: await tournamentsService.listTournaments() };
   })
-
   // Protected routes - use guard
   .use(authGuard)
   .post("/", async ({ body, user }) => {

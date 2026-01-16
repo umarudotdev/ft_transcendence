@@ -6,7 +6,9 @@ Accepted
 
 ## Context and Problem Statement
 
-The team needs a branching strategy that supports continuous delivery while remaining simple enough for a small team. The workflow must integrate with our Conventional Commits and branch naming conventions.
+The team needs a branching strategy that supports continuous delivery while
+remaining simple enough for a small team. The workflow must integrate with our
+Conventional Commits and branch naming conventions.
 
 How should we structure our Git branching and collaboration workflow?
 
@@ -27,7 +29,9 @@ How should we structure our Git branching and collaboration workflow?
 
 ## Decision Outcome
 
-Chosen option: "GitHub Flow", because it provides the right balance of simplicity and safety for a small team with continuous deployment, while still requiring code review via pull requests.
+Chosen option: "GitHub Flow", because it provides the right balance of
+simplicity and safety for a small team with continuous deployment, while still
+requiring code review via pull requests.
 
 ### Consequences
 
@@ -139,10 +143,12 @@ feat(game): add match history tracking
 
 ```markdown
 ## Summary
+
 - Added match result storage after game completion
 - Created API endpoint for retrieving match history
 
 ## Test Plan
+
 - [ ] Unit tests for match service
 - [ ] Manual test: complete game and verify history
 ```
@@ -176,7 +182,8 @@ Replays each commit on top of master, preserving individual commits.
 
 ### Keeping Branches Up to Date
 
-When master has new commits, rebase your branch (never merge master into your branch):
+When master has new commits, rebase your branch (never merge master into your
+branch):
 
 ```bash
 # Update local master
@@ -191,7 +198,8 @@ git rebase master
 git push --force-with-lease
 ```
 
-Use `--force-with-lease` instead of `--force` to prevent overwriting others' work.
+Use `--force-with-lease` instead of `--force` to prevent overwriting others'
+work.
 
 ### Handling Hotfixes
 

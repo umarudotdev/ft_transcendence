@@ -6,13 +6,15 @@ Accepted
 
 ## Context and Problem Statement
 
-The ft_transcendence backend needs a consistent approach to error handling within the service layer. Currently, errors can be handled via:
+The ft_transcendence backend needs a consistent approach to error handling
+within the service layer. Currently, errors can be handled via:
 
 - Throwing exceptions (implicit control flow)
 - Returning null/undefined (loses error context)
 - Ad-hoc error objects (inconsistent structure)
 
-How should services communicate errors to controllers in a type-safe, composable way that integrates with our RFC 9457 API error responses?
+How should services communicate errors to controllers in a type-safe, composable
+way that integrates with our RFC 9457 API error responses?
 
 ## Decision Drivers
 
@@ -31,18 +33,23 @@ How should services communicate errors to controllers in a type-safe, composable
 
 ## Decision Outcome
 
-Chosen option: "neverthrow with Railway Oriented Programming", because it provides type-safe, composable error handling that makes all failure modes explicit while keeping code readable.
+Chosen option: "neverthrow with Railway Oriented Programming", because it
+provides type-safe, composable error handling that makes all failure modes
+explicit while keeping code readable.
 
 ### Consequences
 
 #### Positive
 
-- **Type-safe**: All error types are known at compile time via discriminated unions
-- **Composable**: Chain operations with `.andThen()` without nested try-catch blocks
+- **Type-safe**: All error types are known at compile time via discriminated
+  unions
+- **Composable**: Chain operations with `.andThen()` without nested try-catch
+  blocks
 - **Explicit**: Errors are values—impossible to forget to handle them
 - **Readable**: Linear pipeline flow instead of branching control flow
 - **Async-friendly**: `ResultAsync` works seamlessly with promises
-- **Integrates with RFC 9457**: Error types map cleanly to Problem Details responses
+- **Integrates with RFC 9457**: Error types map cleanly to Problem Details
+  responses
 
 #### Negative
 
@@ -135,19 +142,19 @@ Define discriminated unions for domain errors:
 ```typescript
 // Domain error types
 type AuthError =
-  | { type: 'invalid_credentials' }
-  | { type: 'account_locked'; until: Date }
-  | { type: 'email_not_verified' }
+  | { type: "invalid_credentials" }
+  | { type: "account_locked"; until: Date }
+  | { type: "email_not_verified" };
 
 type UserError =
-  | { type: 'not_found'; userId: string }
-  | { type: 'username_taken'; username: string }
+  | { type: "not_found"; userId: string }
+  | { type: "username_taken"; username: string };
 
 // Service returns explicit error types
 function authenticate(
   email: string,
-  password: string
-): ResultAsync<User, AuthError>
+  password: string,
+): ResultAsync<User, AuthError>;
 ```
 
 ### Integration with RFC 9457
@@ -156,21 +163,25 @@ Controllers map Result errors to Problem Details:
 
 ```typescript
 // In controller
-const result = await authService.authenticate(email, password)
+const result = await authService.authenticate(email, password);
 
 return result.match(
   (user) => ({ user: userToDto(user) }),
   (error) => {
     switch (error.type) {
-      case 'invalid_credentials':
-        return problemDetails(401, 'unauthorized', 'Invalid email or password')
-      case 'account_locked':
-        return problemDetails(403, 'forbidden', `Account locked until ${error.until}`)
-      case 'email_not_verified':
-        return problemDetails(403, 'forbidden', 'Please verify your email')
+      case "invalid_credentials":
+        return problemDetails(401, "unauthorized", "Invalid email or password");
+      case "account_locked":
+        return problemDetails(
+          403,
+          "forbidden",
+          `Account locked until ${error.until}`,
+        );
+      case "email_not_verified":
+        return problemDetails(403, "forbidden", "Please verify your email");
     }
-  }
-)
+  },
+);
 ```
 
 ### When to Use Exceptions vs Results

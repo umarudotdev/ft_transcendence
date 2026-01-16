@@ -1,12 +1,15 @@
 # Deployment with Kamal on AWS
 
-This guide covers deploying ft_transcendence to AWS using [Kamal](https://kamal-deploy.org/), a deployment tool from 37signals that uses Docker containers.
+This guide covers deploying ft_transcendence to AWS using
+[Kamal](https://kamal-deploy.org/), a deployment tool from 37signals that uses
+Docker containers.
 
 ## Prerequisites
 
 - AWS account with appropriate permissions
 - [AWS CLI](https://aws.amazon.com/cli/) installed and configured
-- [Kamal CLI](https://kamal-deploy.org/docs/installation/) installed: `gem install kamal`
+- [Kamal CLI](https://kamal-deploy.org/docs/installation/) installed:
+  `gem install kamal`
 - Docker installed on your local machine
 
 ## Architecture Overview
@@ -404,7 +407,8 @@ The project includes automated deployment via GitHub Actions.
 
 ### Setup
 
-1. **Add Repository Variables** (Settings → Secrets and variables → Actions → Variables):
+1. **Add Repository Variables** (Settings → Secrets and variables → Actions →
+   Variables):
 
    | Variable         | Example                                           |
    | ---------------- | ------------------------------------------------- |
@@ -413,7 +417,8 @@ The project includes automated deployment via GitHub Actions.
    | `AWS_EC2_HOST`   | `ec2-xx-xx-xx-xx.eu-west-1.compute.amazonaws.com` |
    | `DOMAIN`         | `yourdomain.com`                                  |
 
-2. **Add Repository Secrets** (Settings → Secrets and variables → Actions → Secrets):
+2. **Add Repository Secrets** (Settings → Secrets and variables → Actions →
+   Secrets):
 
    | Secret                  | Description                               |
    | ----------------------- | ----------------------------------------- |
@@ -431,7 +436,8 @@ The project includes automated deployment via GitHub Actions.
    | `INTRA_CLIENT_SECRET`   | 42 OAuth client secret (optional)         |
    | `INTRA_REDIRECT_URI`    | 42 OAuth redirect URI (optional)          |
 
-3. **Create Production Environment** (Settings → Environments → New environment):
+3. **Create Production Environment** (Settings → Environments → New
+   environment):
    - Name: `production`
    - Add protection rules if desired (required reviewers, wait timer)
 

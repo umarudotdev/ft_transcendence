@@ -6,13 +6,15 @@ Accepted
 
 ## Context and Problem Statement
 
-The ft_transcendence API needs a consistent error response format. Currently, error handling is ad-hoc, making it difficult for the frontend to:
+The ft_transcendence API needs a consistent error response format. Currently,
+error handling is ad-hoc, making it difficult for the frontend to:
 
 - Distinguish between error types programmatically
 - Display appropriate localized error messages
 - Handle specific errors differently (e.g., validation vs. authentication)
 
-How should we structure API error responses to provide consistent, machine-readable error information?
+How should we structure API error responses to provide consistent,
+machine-readable error information?
 
 ## Decision Drivers
 
@@ -30,7 +32,9 @@ How should we structure API error responses to provide consistent, machine-reada
 
 ## Decision Outcome
 
-Chosen option: "RFC 9457 Problem Details", because it provides a standardized, extensible format that is well-documented and supported by tooling across the industry.
+Chosen option: "RFC 9457 Problem Details", because it provides a standardized,
+extensible format that is well-documented and supported by tooling across the
+industry.
 
 ### Consequences
 

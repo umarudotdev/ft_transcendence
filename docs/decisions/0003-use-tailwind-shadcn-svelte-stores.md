@@ -6,9 +6,13 @@ Accepted
 
 ## Context and Problem Statement
 
-The ft_transcendence frontend requires a responsive, accessible UI that handles real-time data (game state, chat). We must satisfy evaluation modules for custom design systems and accessibility while maintaining performance for smooth game rendering.
+The ft_transcendence frontend requires a responsive, accessible UI that handles
+real-time data (game state, chat). We must satisfy evaluation modules for custom
+design systems and accessibility while maintaining performance for smooth game
+rendering.
 
-How should we approach styling, component architecture, and state management to balance development velocity, accessibility compliance, and runtime performance?
+How should we approach styling, component architecture, and state management to
+balance development velocity, accessibility compliance, and runtime performance?
 
 ## Decision Drivers
 
@@ -34,21 +38,29 @@ How should we approach styling, component architecture, and state management to 
 
 ## Decision Outcome
 
-Chosen option: "Tailwind CSS with Shadcn-Svelte" for styling and "Native Svelte Stores" for state management, because this combination provides accessible components out of the box, allows component customization that satisfies the design system module requirement, and leverages Svelte's built-in reactivity without external dependencies.
+Chosen option: "Tailwind CSS with Shadcn-Svelte" for styling and "Native Svelte
+Stores" for state management, because this combination provides accessible
+components out of the box, allows component customization that satisfies the
+design system module requirement, and leverages Svelte's built-in reactivity
+without external dependencies.
 
 ### Consequences
 
 #### Positive
 
-- Velocity: Pre-built accessible components (modals, dropdowns) without building from scratch
-- Code Ownership: Shadcn pattern copies components into source, allowing direct modification
-- Bundle Size: Svelte's compiler + Tailwind's tree-shaking produces minimal JavaScript
+- Velocity: Pre-built accessible components (modals, dropdowns) without building
+  from scratch
+- Code Ownership: Shadcn pattern copies components into source, allowing direct
+  modification
+- Bundle Size: Svelte's compiler + Tailwind's tree-shaking produces minimal
+  JavaScript
 - Accessibility: Bits UI primitives provide WAI-ARIA compliance by default
 
 #### Negative
 
 - CSS Class Length: HTML templates can become cluttered with utility classes
-- Learning Curve: Team members unfamiliar with Tailwind must learn utility class names
+- Learning Curve: Team members unfamiliar with Tailwind must learn utility class
+  names
 
 ### Confirmation
 
@@ -64,7 +76,8 @@ The decision will be confirmed by:
 
 - Good, because scoped styles prevent conflicts
 - Good, because familiar CSS syntax
-- Bad, because requires building all components from scratch including accessibility
+- Bad, because requires building all components from scratch including
+  accessibility
 - Bad, because context switching between .svelte and .css files
 - Bad, because no design system baseline to customize
 
@@ -103,7 +116,8 @@ The decision will be confirmed by:
 
 ### Component Architecture
 
-Components are organized in `src/lib/components/ui/` following the Shadcn pattern:
+Components are organized in `src/lib/components/ui/` following the Shadcn
+pattern:
 
 - Base components copied from Shadcn-Svelte
 - Customizations applied directly to source files
@@ -111,9 +125,11 @@ Components are organized in `src/lib/components/ui/` following the Shadcn patter
 
 ### State Management Patterns
 
-- **Global State**: Svelte Stores for app-wide state (active game session, WebSocket status)
+- **Global State**: Svelte Stores for app-wide state (active game session,
+  WebSocket status)
 - **Server State**: SvelteKit `load` functions and form actions
-- **Real-Time State**: WebSocket messages write directly to stores, auto-updating UI
+- **Real-Time State**: WebSocket messages write directly to stores,
+  auto-updating UI
 
 ### Form Handling
 

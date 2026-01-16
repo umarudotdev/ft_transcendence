@@ -2,6 +2,7 @@ import { generateState, OAuth2RequestError } from "arctic";
 import { err, ok, ResultAsync } from "neverthrow";
 
 import type {
+  DeleteAccountError,
   LoginError,
   OAuthError,
   OAuthUnlinkError,
@@ -705,6 +706,48 @@ abstract class AuthService {
         return ok(undefined);
       })(),
       () => ({ type: "INVALID_CODE" as const })
+    ).andThen((result) => result);
+  }
+
+  static deleteAccount(
+    userId: number,
+    password: string
+  ): ResultAsync<void, DeleteAccountError> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        const user = await authRepository.findUserById(userId);
+
+        if (!user) {
+          return err({ type: "INVALID_PASSWORD" as const });
+        }
+
+        // OAuth-only accounts cannot delete themselves (no password to verify)
+        if (!user.passwordHash) {
+          return err({ type: "OAUTH_ONLY_ACCOUNT" as const });
+        }
+
+        const isValid = await verifyPassword(password, user.passwordHash);
+        if (!isValid) {
+          return err({ type: "INVALID_PASSWORD" as const });
+        }
+
+        // Delete all sessions first
+        await authRepository.deleteAllUserSessions(userId);
+
+        // Create audit log entry before deletion
+        await moderationRepository.createAuditLogEntry({
+          actorId: userId,
+          action: "SELF_DELETE_ACCOUNT",
+          targetUserId: userId,
+          details: `User ${user.email} deleted their own account`,
+        });
+
+        // Delete the user (cascade deletion handles related records)
+        await moderationRepository.deleteUser(userId);
+
+        return ok(undefined);
+      })(),
+      () => ({ type: "INVALID_PASSWORD" as const })
     ).andThen((result) => result);
   }
 }

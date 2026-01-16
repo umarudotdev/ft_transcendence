@@ -10,6 +10,7 @@
 	import { Skeleton } from "$lib/components/ui/skeleton";
 	import {
 		createChangePasswordMutation,
+		createDeleteAccountMutation,
 		createMeQuery,
 		createUnlink42Mutation,
 		redirectToLink42,
@@ -23,10 +24,12 @@
 	import CheckCircleIcon from "@lucide/svelte/icons/check-circle";
 	import CircleIcon from "@lucide/svelte/icons/circle";
 	import AlertTriangleIcon from "@lucide/svelte/icons/alert-triangle";
+	import TrashIcon from "@lucide/svelte/icons/trash-2";
 
 	const meQuery = createMeQuery();
 	const changePasswordMutation = createChangePasswordMutation();
 	const unlink42Mutation = createUnlink42Mutation();
+	const deleteAccountMutation = createDeleteAccountMutation();
 
 	let currentPassword = $state("");
 	let newPassword = $state("");
@@ -37,6 +40,11 @@
 	let unlinkDialogOpen = $state(false);
 	let unlinkPassword = $state("");
 	let unlinkSuccessMessage = $state("");
+
+	// Delete Account state
+	let deleteDialogOpen = $state(false);
+	let deletePassword = $state("");
+	let deleteConfirmText = $state("");
 
 	const passwordRequirements = $derived({
 		minLength: newPassword.length >= 8,
@@ -94,6 +102,27 @@
 					unlinkSuccessMessage = "42 account unlinked successfully.";
 					unlinkPassword = "";
 					unlinkDialogOpen = false;
+				},
+			}
+		);
+	}
+
+	const canDeleteAccount = $derived(
+		deletePassword.length > 0 && deleteConfirmText === "DELETE"
+	);
+
+	function handleDeleteAccount(e: Event) {
+		e.preventDefault();
+
+		if (!canDeleteAccount) {
+			return;
+		}
+
+		deleteAccountMutation.mutate(
+			{ password: deletePassword },
+			{
+				onSuccess: () => {
+					goto("/auth/login?message=Your account has been deleted.");
 				},
 			}
 		);
@@ -404,6 +433,98 @@
 						<LogOutIcon class="mr-2 size-4" />
 						Sign Out All Devices
 					</Button>
+				</Card.Content>
+			</Card.Root>
+
+			<!-- Delete Account -->
+			<Card.Root class="border-destructive">
+				<Card.Header>
+					<Card.Title class="flex items-center gap-2 text-destructive">
+						<TrashIcon class="size-5" />
+						Delete Account
+					</Card.Title>
+					<Card.Description>Permanently delete your account and all associated data</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					{#if user.intraId && !user.email}
+						<Alert variant="destructive">
+							<AlertTriangleIcon class="size-4" />
+							<AlertDescription>
+								OAuth-only accounts cannot be deleted through this interface. Please contact support for assistance.
+							</AlertDescription>
+						</Alert>
+					{:else}
+						<p class="mb-4 text-sm text-muted-foreground">
+							This action is irreversible. All your data, including match history, achievements, and messages will be permanently deleted.
+						</p>
+						<Dialog.Root bind:open={deleteDialogOpen}>
+							<Dialog.Trigger>
+								{#snippet child({ props })}
+									<Button variant="destructive" {...props}>
+										<TrashIcon class="mr-2 size-4" />
+										Delete My Account
+									</Button>
+								{/snippet}
+							</Dialog.Trigger>
+							<Dialog.Content class="sm:max-w-md">
+								<Dialog.Header>
+									<Dialog.Title class="text-destructive">Delete Account</Dialog.Title>
+									<Dialog.Description>
+										This action cannot be undone. All your data will be permanently deleted.
+									</Dialog.Description>
+								</Dialog.Header>
+								<form onsubmit={handleDeleteAccount} class="space-y-4">
+									{#if deleteAccountMutation.error}
+										<Alert variant="destructive">
+											<AlertTriangleIcon class="size-4" />
+											<AlertDescription>{deleteAccountMutation.error.message}</AlertDescription>
+										</Alert>
+									{/if}
+
+									<div class="space-y-2">
+										<Label for="delete-password">Password</Label>
+										<Input
+											type="password"
+											id="delete-password"
+											bind:value={deletePassword}
+											placeholder="Enter your password"
+											required
+											autocomplete="current-password"
+										/>
+									</div>
+
+									<div class="space-y-2">
+										<Label for="delete-confirm">Type DELETE to confirm</Label>
+										<Input
+											type="text"
+											id="delete-confirm"
+											bind:value={deleteConfirmText}
+											placeholder="DELETE"
+											required
+											autocomplete="off"
+										/>
+									</div>
+
+									<Dialog.Footer>
+										<Button type="button" variant="outline" onclick={() => {
+											deleteDialogOpen = false;
+											deletePassword = "";
+											deleteConfirmText = "";
+										}}>
+											Cancel
+										</Button>
+										<Button
+											type="submit"
+											variant="destructive"
+											disabled={!canDeleteAccount || deleteAccountMutation.isPending}
+										>
+											{deleteAccountMutation.isPending ? "Deleting..." : "Delete Account"}
+										</Button>
+									</Dialog.Footer>
+								</form>
+							</Dialog.Content>
+						</Dialog.Root>
+					{/if}
 				</Card.Content>
 			</Card.Root>
 		</div>

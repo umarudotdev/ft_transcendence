@@ -412,3 +412,32 @@ export function createUnlink42Mutation() {
     },
   }));
 }
+
+export interface DeleteAccountInput {
+  password: string;
+}
+
+/**
+ * Mutation to delete the user's account.
+ */
+export function createDeleteAccountMutation() {
+  const queryClient = useQueryClient();
+
+  return createMutation<unknown, ApiError, DeleteAccountInput>(() => ({
+    mutationFn: async (input: DeleteAccountInput) => {
+      const response = await api.api.auth.account.delete(input, {
+        fetch: { credentials: "include" },
+      });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.me() });
+      queryClient.clear();
+    },
+  }));
+}

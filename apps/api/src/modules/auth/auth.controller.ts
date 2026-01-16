@@ -10,6 +10,7 @@ import { rateLimit } from "../../common/plugins/rate-limit";
 import { env } from "../../env";
 import {
   AuthModel,
+  mapDeleteAccountError,
   mapLoginError,
   mapOAuthUnlinkError,
   mapPasswordError,
@@ -514,5 +515,28 @@ export const authController = new Elysia({ prefix: "/auth" })
     },
     {
       body: AuthModel.totpCode,
+    }
+  )
+  .delete(
+    "/account",
+    async ({ body, user, cookie, request, set }) => {
+      const instance = new URL(request.url).pathname;
+      const result = await AuthService.deleteAccount(user.id, body.password);
+
+      return result.match(
+        () => {
+          cookie.session.remove();
+          return { message: "Account deleted successfully" };
+        },
+        (error) => {
+          const problem = mapDeleteAccountError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
+        }
+      );
+    },
+    {
+      body: AuthModel.deleteAccount,
     }
   );

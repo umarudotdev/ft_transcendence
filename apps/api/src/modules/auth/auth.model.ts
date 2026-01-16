@@ -106,6 +106,15 @@ export const AuthModel = {
     password: t.String({ minLength: 1 }),
   }),
 
+  deleteAccount: t.Object({
+    password: t.String({ minLength: 1 }),
+  }),
+
+  deleteAccountError: t.Union([
+    t.Object({ type: t.Literal("INVALID_PASSWORD") }),
+    t.Object({ type: t.Literal("OAUTH_ONLY_ACCOUNT") }),
+  ]),
+
   oauthUnlinkError: t.Union([
     t.Object({ type: t.Literal("NOT_LINKED") }),
     t.Object({ type: t.Literal("PASSWORD_REQUIRED") }),
@@ -141,6 +150,8 @@ export type PasswordError = (typeof AuthModel.passwordError)["static"];
 export type TokenError = (typeof AuthModel.tokenError)["static"];
 export type OAuthError = (typeof AuthModel.oauthError)["static"];
 export type OAuthUnlinkError = (typeof AuthModel.oauthUnlinkError)["static"];
+export type DeleteAccountError =
+  (typeof AuthModel.deleteAccountError)["static"];
 export type SessionError = (typeof AuthModel.sessionError)["static"];
 export type TotpError = (typeof AuthModel.totpError)["static"];
 
@@ -258,5 +269,23 @@ export function mapTotpError(error: TotpError, instance: string) {
       return conflict("2FA is already enabled", { instance });
     case "NOT_ENABLED":
       return badRequest("2FA is not enabled", { instance });
+  }
+}
+
+/**
+ * Maps delete account errors to RFC 9457 Problem Details.
+ */
+export function mapDeleteAccountError(
+  error: DeleteAccountError,
+  instance: string
+) {
+  switch (error.type) {
+    case "INVALID_PASSWORD":
+      return unauthorized("Invalid password", { instance });
+    case "OAUTH_ONLY_ACCOUNT":
+      return badRequest(
+        "Cannot delete OAuth-only account. Please set a password first or contact support.",
+        { instance }
+      );
   }
 }

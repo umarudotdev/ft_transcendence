@@ -27,9 +27,20 @@ services:
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/ft_transcendence
       NODE_ENV: development
+      LOG_FORMAT: pretty
+      LOG_LEVEL: debug
+      SHUTDOWN_TIMEOUT_MS: "10000"
+      CHAT_ENCRYPTION_KEY: dev-chat-encryption-key-32bytes!
     depends_on:
       db:
         condition: service_healthy
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/status/live"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
     develop:
       watch:
         - action: sync

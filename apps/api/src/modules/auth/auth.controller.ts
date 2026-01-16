@@ -6,8 +6,11 @@ import {
   serviceUnavailable,
 } from "../../common/errors";
 import { authGuard } from "../../common/guards/auth.macro";
+import { logger } from "../../common/logger";
 import { rateLimit } from "../../common/plugins/rate-limit";
 import { env } from "../../env";
+
+const authLogger = logger.child("auth");
 import {
   AuthModel,
   mapDeleteAccountError,
@@ -192,9 +195,11 @@ export const authController = new Elysia({ prefix: "/auth" })
         const result = await AuthService.requestPasswordReset(body.email);
 
         if (result.isOk() && result.value.resetToken && !isProduction) {
-          console.log(
-            `Password reset token for ${body.email}: ${result.value.resetToken}`
-          );
+          authLogger.debug({
+            action: "password_reset_token",
+            email: body.email,
+            token: result.value.resetToken,
+          });
         }
 
         return {

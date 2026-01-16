@@ -25,7 +25,7 @@ proxy:
   app_port: 3000
   healthcheck:
     interval: 3
-    path: /api/status
+    path: /api/status/ready
     timeout: 3
 
 # AWS ECR registry
@@ -40,9 +40,14 @@ env:
   clear:
     NODE_ENV: production
     PORT: "3000"
+    LOG_FORMAT: json
+    LOG_LEVEL: info
+    LOG_SAMPLE_RATE: "0.1"
+    SHUTDOWN_TIMEOUT_MS: "30000"
   secret:
     - DATABASE_URL
     - FRONTEND_URL
+    - CORS_ORIGINS
     - INTRA_CLIENT_ID
     - INTRA_CLIENT_SECRET
     - INTRA_REDIRECT_URI

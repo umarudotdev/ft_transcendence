@@ -1,6 +1,21 @@
 import { Type, type Static } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
 
+const LogLevelSchema = Type.Union(
+  [
+    Type.Literal("debug"),
+    Type.Literal("info"),
+    Type.Literal("warn"),
+    Type.Literal("error"),
+  ],
+  { default: "info" }
+);
+
+const LogFormatSchema = Type.Union(
+  [Type.Literal("json"), Type.Literal("pretty")],
+  { default: "json" }
+);
+
 const EnvSchema = Type.Object({
   DATABASE_URL: Type.String({ minLength: 1 }),
 
@@ -15,12 +30,29 @@ const EnvSchema = Type.Object({
   PORT: Type.Number({ default: 3000 }),
   FRONTEND_URL: Type.String({ default: "http://localhost:5173" }),
 
+  // CORS configuration
+  CORS_ORIGINS: Type.Optional(Type.String()), // Comma-separated origins
+
+  // OAuth configuration
   INTRA_CLIENT_ID: Type.Optional(Type.String()),
   INTRA_CLIENT_SECRET: Type.Optional(Type.String()),
   INTRA_REDIRECT_URI: Type.Optional(Type.String()),
 
+  // Encryption keys
   TOTP_ENCRYPTION_KEY: Type.Optional(Type.String({ minLength: 32 })),
   CHAT_ENCRYPTION_KEY: Type.Optional(Type.String({ minLength: 32 })),
+
+  // Email configuration
+  RESEND_API_KEY: Type.Optional(Type.String()),
+  EMAIL_FROM: Type.String({ default: "noreply@transcendence.umaru.dev" }),
+
+  // Logging configuration
+  LOG_LEVEL: LogLevelSchema,
+  LOG_FORMAT: LogFormatSchema,
+  LOG_SAMPLE_RATE: Type.Number({ default: 0.1, minimum: 0, maximum: 1 }),
+
+  // Graceful shutdown
+  SHUTDOWN_TIMEOUT_MS: Type.Number({ default: 30000, minimum: 1000 }),
 });
 
 type Env = Static<typeof EnvSchema>;
@@ -35,11 +67,22 @@ function parseEnv(): Env {
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT ? Number(process.env.PORT) : undefined,
     FRONTEND_URL: process.env.FRONTEND_URL,
+    CORS_ORIGINS: process.env.CORS_ORIGINS,
     INTRA_CLIENT_ID: process.env.INTRA_CLIENT_ID,
     INTRA_CLIENT_SECRET: process.env.INTRA_CLIENT_SECRET,
     INTRA_REDIRECT_URI: process.env.INTRA_REDIRECT_URI,
     TOTP_ENCRYPTION_KEY: process.env.TOTP_ENCRYPTION_KEY,
     CHAT_ENCRYPTION_KEY: process.env.CHAT_ENCRYPTION_KEY,
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    EMAIL_FROM: process.env.EMAIL_FROM,
+    LOG_LEVEL: process.env.LOG_LEVEL,
+    LOG_FORMAT: process.env.LOG_FORMAT,
+    LOG_SAMPLE_RATE: process.env.LOG_SAMPLE_RATE
+      ? Number(process.env.LOG_SAMPLE_RATE)
+      : undefined,
+    SHUTDOWN_TIMEOUT_MS: process.env.SHUTDOWN_TIMEOUT_MS
+      ? Number(process.env.SHUTDOWN_TIMEOUT_MS)
+      : undefined,
   };
 
   for (const key of Object.keys(raw)) {
@@ -82,18 +125,17 @@ function parseEnv(): Env {
     );
   }
 
-  if (!env.CHAT_ENCRYPTION_KEY && env.NODE_ENV === "production") {
-    console.error("❌ CHAT_ENCRYPTION_KEY is required in production");
-    process.exit(1);
-  }
-
-  if (!env.CHAT_ENCRYPTION_KEY && env.NODE_ENV === "development") {
-    console.warn(
-      "⚠️  CHAT_ENCRYPTION_KEY not set - using insecure development key"
+  if (!env.CHAT_ENCRYPTION_KEY) {
+    console.error(
+      "❌ CHAT_ENCRYPTION_KEY is required. Generate a 32+ character key for chat encryption."
     );
+    process.exit(1);
   }
 
   return env;
 }
 
 export const env = parseEnv();
+
+export type LogLevel = Static<typeof LogLevelSchema>;
+export type LogFormat = Static<typeof LogFormatSchema>;

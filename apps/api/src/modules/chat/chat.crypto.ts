@@ -6,11 +6,9 @@ const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12; // 96 bits for GCM
 const AUTH_TAG_LENGTH = 16; // 128 bits
 
-// Development fallback key (32 bytes = 256 bits)
-const DEV_KEY = "dev-chat-encryption-key-32bytes!";
-
 function getKey(): Buffer {
-  const keyString = env.CHAT_ENCRYPTION_KEY ?? DEV_KEY;
+  // CHAT_ENCRYPTION_KEY is validated as required in env.ts
+  const keyString = env.CHAT_ENCRYPTION_KEY as string;
   // Use first 32 bytes of the key string
   return Buffer.from(keyString.slice(0, 32), "utf-8");
 }

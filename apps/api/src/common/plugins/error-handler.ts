@@ -7,6 +7,7 @@ import {
   notFound,
   validationError,
 } from "../errors/problem-details-helper";
+import { logger } from "../logger";
 
 const PROBLEM_JSON_CONTENT_TYPE = "application/problem+json";
 
@@ -53,7 +54,14 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
     }
 
     if (code === "INTERNAL_SERVER_ERROR" || code === "UNKNOWN") {
-      console.error("[ErrorHandler] Unhandled error:", error);
+      logger.error({
+        module: "error-handler",
+        action: "unhandled_error",
+        error: error.message,
+        errorType: error.name,
+        errorStack: error.stack,
+        path: instance,
+      });
       set.status = HttpStatus.INTERNAL_SERVER_ERROR;
       set.headers["Content-Type"] = PROBLEM_JSON_CONTENT_TYPE;
 

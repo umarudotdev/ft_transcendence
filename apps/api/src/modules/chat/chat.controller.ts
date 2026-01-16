@@ -1,6 +1,7 @@
 import { Elysia, t } from "elysia";
 
 import { authGuard } from "../../common/guards/auth.macro";
+import { logger } from "../../common/logger";
 import { AuthService } from "../auth/auth.service";
 import { ChatModel, mapChatError, type WSClientMessage } from "./chat.model";
 import { ChatService } from "./chat.service";
@@ -148,6 +149,10 @@ export const chatController = new Elysia({ prefix: "/chat" })
       const result = await AuthService.validateSession(sessionId);
 
       if (result.isErr()) {
+        logger.ws("open", {
+          action: "auth_failed",
+          error: "Invalid session",
+        });
         ws.send(JSON.stringify({ type: "error", error: "Invalid session" }));
         ws.close();
         return;
@@ -160,6 +165,11 @@ export const chatController = new Elysia({ prefix: "/chat" })
 
       // Register connection
       ChatService.registerConnection(user.id, ws.raw as unknown as WebSocket);
+
+      logger.ws("open", {
+        action: "connected",
+        userId: user.id,
+      });
     },
     async message(ws, message) {
       const userId = (ws.data as { userId?: number }).userId;
@@ -236,6 +246,11 @@ export const chatController = new Elysia({ prefix: "/chat" })
           userId,
           ws.raw as unknown as WebSocket
         );
+
+        logger.ws("close", {
+          action: "disconnected",
+          userId,
+        });
       }
     },
   });

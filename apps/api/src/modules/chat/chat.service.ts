@@ -7,8 +7,12 @@ import type {
   WSServerMessage,
 } from "./chat.model";
 
+import { logger } from "../../common/logger";
+import { shutdownManager } from "../../common/shutdown";
 import { NotificationsService } from "../notifications/notifications.service";
 import { chatRepository } from "./chat.repository";
+
+const chatLogger = logger.child("chat");
 
 // WebSocket connection registry: Map<userId, Set<WebSocket>>
 const wsConnections = new Map<number, Set<WebSocket>>();
@@ -479,5 +483,56 @@ abstract class ChatService {
     ).andThen((result) => result);
   }
 }
+
+// Register WebSocket shutdown handler
+shutdownManager.register(
+  "websocket-connections",
+  async () => {
+    const totalConnections = [...wsConnections.values()].reduce(
+      (sum, set) => sum + set.size,
+      0
+    );
+
+    chatLogger.info({
+      action: "draining_connections",
+      connectionCount: totalConnections,
+      userCount: wsConnections.size,
+    });
+
+    // Send shutdown message to all connected clients
+    const shutdownMessage = JSON.stringify({
+      type: "server_shutdown",
+      message: "Server is shutting down",
+    });
+
+    for (const [_userId, connections] of wsConnections) {
+      for (const ws of connections) {
+        try {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(shutdownMessage);
+            ws.close(1001, "Server shutdown"); // 1001 = Going Away
+          }
+        } catch {
+          // Ignore errors during shutdown
+        }
+      }
+      connections.clear();
+    }
+
+    wsConnections.clear();
+
+    // Clear all typing indicator timeouts
+    for (const [, typingMap] of typingUsers) {
+      for (const [, timeout] of typingMap) {
+        clearTimeout(timeout);
+      }
+      typingMap.clear();
+    }
+    typingUsers.clear();
+
+    chatLogger.info({ action: "connections_drained" });
+  },
+  3000
+);
 
 export { ChatService };

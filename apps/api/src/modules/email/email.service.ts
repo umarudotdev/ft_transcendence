@@ -1,11 +1,14 @@
 import { Resend } from "resend";
 
-const resend = process.env.RESEND_API_KEY
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null;
+import { logger } from "../../common/logger";
+import { env } from "../../env";
 
-const FROM_EMAIL = process.env.EMAIL_FROM || "noreply@transcendence.umaru.dev";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const emailLogger = logger.child("email");
+
+const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
+
+const FROM_EMAIL = env.EMAIL_FROM;
+const FRONTEND_URL = env.FRONTEND_URL;
 
 interface SendEmailOptions {
   to: string;
@@ -16,10 +19,12 @@ interface SendEmailOptions {
 export const EmailService = {
   async send(options: SendEmailOptions): Promise<boolean> {
     if (!resend) {
-      console.warn(
-        "Email service not configured (RESEND_API_KEY missing). Email not sent:",
-        options.subject
-      );
+      emailLogger.warn({
+        action: "skip_send",
+        message: "Email service not configured (RESEND_API_KEY missing)",
+        subject: options.subject,
+        to: options.to,
+      });
       return false;
     }
 
@@ -32,13 +37,30 @@ export const EmailService = {
       });
 
       if (error) {
-        console.error("Failed to send email:", error);
+        emailLogger.error({
+          action: "send_failed",
+          error: error.message,
+          to: options.to,
+          subject: options.subject,
+        });
         return false;
       }
 
+      emailLogger.info({
+        action: "sent",
+        to: options.to,
+        subject: options.subject,
+      });
       return true;
     } catch (error) {
-      console.error("Email send error:", error);
+      emailLogger.error(
+        {
+          action: "send_error",
+          to: options.to,
+          subject: options.subject,
+        },
+        error instanceof Error ? error : new Error(String(error))
+      );
       return false;
     }
   },

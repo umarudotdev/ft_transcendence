@@ -14,7 +14,10 @@ import type {
   TokenError,
 } from "./auth.model";
 
+import { logger } from "../../common/logger";
 import { EmailService } from "../email/email.service";
+
+const authLogger = logger.child("auth");
 import { moderationRepository } from "../moderation/moderation.repository";
 import { authRepository } from "./auth.repository";
 import { fortyTwo, type IntraProfile, OAUTH_SCOPES } from "./oauth";
@@ -107,7 +110,10 @@ abstract class AuthService {
           token.id,
           user.displayName
         ).catch((error) =>
-          console.error("Failed to send verification email:", error)
+          authLogger.error(
+            { action: "verification_email_failed", email: user.email },
+            error instanceof Error ? error : new Error(String(error))
+          )
         );
 
         return ok({
@@ -291,7 +297,10 @@ abstract class AuthService {
           token.id,
           user.displayName
         ).catch((error) =>
-          console.error("Failed to send verification email:", error)
+          authLogger.error(
+            { action: "verification_email_failed", email: user.email },
+            error instanceof Error ? error : new Error(String(error))
+          )
         );
 
         return { verificationToken: token.id };

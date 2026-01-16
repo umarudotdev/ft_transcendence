@@ -42,7 +42,18 @@ WORKDIR /usr/src/app/apps/api
 # Create uploads directory with proper ownership before switching to bun user
 RUN mkdir -p uploads/avatars && chown -R bun:bun uploads
 
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 ENV NODE_ENV=production
 USER bun
 EXPOSE 3000/tcp
+
+# Configure graceful shutdown signal
+STOPSIGNAL SIGTERM
+
+# Health check using liveness probe
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/api/status/live || exit 1
+
 CMD ["bun", "run", "src/index.ts"]

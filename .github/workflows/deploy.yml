@@ -89,7 +89,11 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/ft-transcendence.pem
           chmod 600 ~/.ssh/ft-transcendence.pem
-          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+          # Add both hostname and IP to known_hosts (Kamal checks both)
+          ssh-keyscan "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          # Extract IP from hostname and add it too
+          EC2_IP=$(echo "$EC2_HOST" | sed 's/ec2-\([0-9]*-[0-9]*-[0-9]*-[0-9]*\).*/\1/' | tr '-' '.')
+          ssh-keyscan "$EC2_IP" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Create Kamal secrets file
         env:
@@ -162,7 +166,11 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/ft-transcendence.pem
           chmod 600 ~/.ssh/ft-transcendence.pem
-          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+          # Add both hostname and IP to known_hosts (Kamal checks both)
+          ssh-keyscan "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          # Extract IP from hostname and add it too
+          EC2_IP=$(echo "$EC2_HOST" | sed 's/ec2-\([0-9]*-[0-9]*-[0-9]*-[0-9]*\).*/\1/' | tr '-' '.')
+          ssh-keyscan "$EC2_IP" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Create Kamal secrets file
         env:

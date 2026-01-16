@@ -195,5 +195,8 @@ jobs:
           API_URL=$API_URL
           EOF
 
+      - name: Remove stale proxy config
+        run: kamal proxy remove -d web || true
+
       - name: Deploy Web
         run: kamal deploy -d web

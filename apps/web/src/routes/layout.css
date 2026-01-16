@@ -5,7 +5,7 @@
 
 /*
  * Material Design 3 Design Tokens
- * Generated from seed color: #6750A4
+ * Tokyo Night Theme - seed color: #7aa2f7
  *
  * This file contains:
  * - MD3 Color System (40+ semantic color tokens)
@@ -16,55 +16,55 @@
  */
 
 :root {
-  /* ===== MD3 COLOR SYSTEM - LIGHT THEME ===== */
+  /* ===== MD3 COLOR SYSTEM - LIGHT THEME (Tokyo Night Light) ===== */
 
-  /* Primary */
-  --md3-primary: oklch(0.4966 0.1501 281.45);
+  /* Primary - Blue (#2959aa) */
+  --md3-primary: oklch(0.45 0.13 250);
   --md3-on-primary: oklch(1 0 0);
-  --md3-primary-container: oklch(0.9102 0.0658 281.45);
-  --md3-on-primary-container: oklch(0.2193 0.0752 281.45);
+  --md3-primary-container: oklch(0.88 0.05 250);
+  --md3-on-primary-container: oklch(0.25 0.1 250);
 
-  /* Secondary */
-  --md3-secondary: oklch(0.4922 0.0537 281.45);
+  /* Secondary - Cyan (#006c86) */
+  --md3-secondary: oklch(0.48 0.09 215);
   --md3-on-secondary: oklch(1 0 0);
-  --md3-secondary-container: oklch(0.9102 0.0268 281.45);
-  --md3-on-secondary-container: oklch(0.2193 0.0268 281.45);
+  --md3-secondary-container: oklch(0.88 0.04 215);
+  --md3-on-secondary-container: oklch(0.25 0.07 215);
 
-  /* Tertiary */
-  --md3-tertiary: oklch(0.5019 0.0763 341.45);
+  /* Tertiary - Purple (#7b43ba) */
+  --md3-tertiary: oklch(0.48 0.18 290);
   --md3-on-tertiary: oklch(1 0 0);
-  --md3-tertiary-container: oklch(0.9102 0.0381 341.45);
-  --md3-on-tertiary-container: oklch(0.2193 0.0381 341.45);
+  --md3-tertiary-container: oklch(0.88 0.08 290);
+  --md3-on-tertiary-container: oklch(0.25 0.14 290);
 
-  /* Error */
-  --md3-error: oklch(0.5044 0.2365 25);
+  /* Error - Red (#942f2f) */
+  --md3-error: oklch(0.4 0.13 25);
   --md3-on-error: oklch(1 0 0);
-  --md3-error-container: oklch(0.9102 0.1183 25);
-  --md3-on-error-container: oklch(0.2193 0.1183 25);
+  --md3-error-container: oklch(0.88 0.08 25);
+  --md3-on-error-container: oklch(0.25 0.1 25);
 
-  /* Surface - increased chroma for visible purple tint */
-  --md3-surface: oklch(0.98 0.012 281.45);
-  --md3-on-surface: oklch(0.22 0.02 281.45);
-  --md3-surface-variant: oklch(0.92 0.03 281.45);
-  --md3-on-surface-variant: oklch(0.4 0.03 281.45);
+  /* Surface - Tokyo Night Light blue-gray tint */
+  --md3-surface: oklch(0.93 0.008 260);
+  --md3-on-surface: oklch(0.35 0.05 260);
+  --md3-surface-variant: oklch(0.88 0.012 260);
+  --md3-on-surface-variant: oklch(0.45 0.04 260);
 
-  /* Surface containers - purple-tinted hierarchy */
-  --md3-surface-container-lowest: oklch(0.99 0.008 281.45);
-  --md3-surface-container-low: oklch(0.96 0.015 281.45);
-  --md3-surface-container: oklch(0.94 0.018 281.45);
-  --md3-surface-container-high: oklch(0.92 0.02 281.45);
-  --md3-surface-container-highest: oklch(0.9 0.025 281.45);
-  --md3-surface-dim: oklch(0.87 0.015 281.45);
-  --md3-surface-bright: oklch(0.98 0.012 281.45);
+  /* Surface containers - blue-gray tinted hierarchy */
+  --md3-surface-container-lowest: oklch(1 0 0);
+  --md3-surface-container-low: oklch(0.97 0.006 260);
+  --md3-surface-container: oklch(0.93 0.008 260);
+  --md3-surface-container-high: oklch(0.91 0.01 260);
+  --md3-surface-container-highest: oklch(0.88 0.012 260);
+  --md3-surface-dim: oklch(0.85 0.01 260);
+  --md3-surface-bright: oklch(0.97 0.006 260);
 
   /* Outline */
-  --md3-outline: oklch(0.5522 0.0268 281.45);
-  --md3-outline-variant: oklch(0.8169 0.0268 281.45);
+  --md3-outline: oklch(0.55 0.03 260);
+  --md3-outline-variant: oklch(0.78 0.015 260);
 
   /* Inverse */
-  --md3-inverse-surface: oklch(0.3098 0.0134 281.45);
-  --md3-inverse-on-surface: oklch(0.957 0.0013 281.45);
-  --md3-inverse-primary: oklch(0.7852 0.1001 281.45);
+  --md3-inverse-surface: oklch(0.21 0.02 260);
+  --md3-inverse-on-surface: oklch(0.93 0.008 260);
+  --md3-inverse-primary: oklch(0.73 0.134 250);
 
   /* Shadow & Scrim */
   --md3-shadow: oklch(0 0 0);
@@ -237,12 +237,12 @@
   --input: var(--md3-outline-variant);
   --ring: var(--md3-primary);
 
-  /* Chart colors */
+  /* Chart colors - Tokyo Night accent palette */
   --chart-1: var(--md3-primary);
   --chart-2: var(--md3-secondary);
   --chart-3: var(--md3-tertiary);
-  --chart-4: var(--md3-primary-container);
-  --chart-5: var(--md3-secondary-container);
+  --chart-4: oklch(0.48 0.1 165); /* Green - #33635c light */
+  --chart-5: oklch(0.52 0.12 60); /* Orange - #8f5e15 light */
 
   /* Sidebar */
   --sidebar: var(--md3-surface-container-low);
@@ -275,55 +275,59 @@
   --spacing: 0.25rem;
 }
 
-/* ===== DARK THEME ===== */
+/* ===== DARK THEME (Tokyo Night Dark) ===== */
 .dark {
-  /* Primary */
-  --md3-primary: oklch(0.7852 0.1001 281.45);
-  --md3-on-primary: oklch(0.3098 0.1001 281.45);
-  --md3-primary-container: oklch(0.3712 0.1001 281.45);
-  --md3-on-primary-container: oklch(0.9102 0.0658 281.45);
+  /* Primary - Blue (#7aa2f7) */
+  --md3-primary: oklch(0.73 0.134 250);
+  --md3-on-primary: oklch(0.2 0.08 250);
+  --md3-primary-container: oklch(0.35 0.1 250);
+  --md3-on-primary-container: oklch(0.88 0.08 250);
 
-  /* Secondary */
-  --md3-secondary: oklch(0.7852 0.0537 281.45);
-  --md3-on-secondary: oklch(0.3098 0.0537 281.45);
-  --md3-secondary-container: oklch(0.3712 0.0537 281.45);
-  --md3-on-secondary-container: oklch(0.9102 0.0268 281.45);
+  /* Secondary - Cyan (#7dcfff) */
+  --md3-secondary: oklch(0.82 0.1 215);
+  --md3-on-secondary: oklch(0.2 0.06 215);
+  --md3-secondary-container: oklch(0.35 0.07 215);
+  --md3-on-secondary-container: oklch(0.88 0.06 215);
 
-  /* Tertiary */
-  --md3-tertiary: oklch(0.7852 0.0763 341.45);
-  --md3-on-tertiary: oklch(0.3098 0.0763 341.45);
-  --md3-tertiary-container: oklch(0.3712 0.0763 341.45);
-  --md3-on-tertiary-container: oklch(0.9102 0.0381 341.45);
+  /* Tertiary - Purple (#bb9af7) */
+  --md3-tertiary: oklch(0.74 0.15 290);
+  --md3-on-tertiary: oklch(0.2 0.1 290);
+  --md3-tertiary-container: oklch(0.35 0.12 290);
+  --md3-on-tertiary-container: oklch(0.88 0.1 290);
 
-  /* Error */
-  --md3-error: oklch(0.7852 0.1576 25);
-  --md3-on-error: oklch(0.3098 0.1576 25);
-  --md3-error-container: oklch(0.3712 0.1576 25);
-  --md3-on-error-container: oklch(0.9102 0.1183 25);
+  /* Error - Red (#f7768e) */
+  --md3-error: oklch(0.72 0.16 10);
+  --md3-on-error: oklch(0.2 0.1 10);
+  --md3-error-container: oklch(0.35 0.12 10);
+  --md3-on-error-container: oklch(0.88 0.1 10);
 
-  /* Surface - increased chroma for visible purple tint */
-  --md3-surface: oklch(0.16 0.02 281.45);
-  --md3-on-surface: oklch(0.92 0.015 281.45);
-  --md3-surface-variant: oklch(0.35 0.035 281.45);
-  --md3-on-surface-variant: oklch(0.8 0.03 281.45);
+  /* Surface - Tokyo Night Dark blue-gray tint (#1a1b26) */
+  --md3-surface: oklch(0.21 0.02 260);
+  --md3-on-surface: oklch(0.77 0.04 260);
+  --md3-surface-variant: oklch(0.35 0.04 260);
+  --md3-on-surface-variant: oklch(0.65 0.03 260);
 
-  /* Surface containers - purple-tinted hierarchy */
-  --md3-surface-container-lowest: oklch(0.12 0.015 281.45);
-  --md3-surface-container-low: oklch(0.2 0.022 281.45);
-  --md3-surface-container: oklch(0.24 0.025 281.45);
-  --md3-surface-container-high: oklch(0.28 0.028 281.45);
-  --md3-surface-container-highest: oklch(0.32 0.03 281.45);
-  --md3-surface-dim: oklch(0.16 0.02 281.45);
-  --md3-surface-bright: oklch(0.35 0.025 281.45);
+  /* Surface containers - blue-gray tinted hierarchy */
+  --md3-surface-container-lowest: oklch(0.15 0.015 260);
+  --md3-surface-container-low: oklch(0.19 0.018 260);
+  --md3-surface-container: oklch(0.21 0.02 260);
+  --md3-surface-container-high: oklch(0.25 0.025 260);
+  --md3-surface-container-highest: oklch(0.29 0.03 260);
+  --md3-surface-dim: oklch(0.17 0.018 260);
+  --md3-surface-bright: oklch(0.35 0.035 260);
 
-  /* Outline */
-  --md3-outline: oklch(0.6417 0.0268 281.45);
-  --md3-outline-variant: oklch(0.3712 0.0268 281.45);
+  /* Outline (#363b54) */
+  --md3-outline: oklch(0.58 0.04 260);
+  --md3-outline-variant: oklch(0.35 0.035 260);
 
   /* Inverse */
-  --md3-inverse-surface: oklch(0.9102 0.0134 281.45);
-  --md3-inverse-on-surface: oklch(0.3098 0.0134 281.45);
-  --md3-inverse-primary: oklch(0.4966 0.1501 281.45);
+  --md3-inverse-surface: oklch(0.93 0.008 260);
+  --md3-inverse-on-surface: oklch(0.21 0.02 260);
+  --md3-inverse-primary: oklch(0.45 0.13 250);
+
+  /* Chart colors - Tokyo Night Dark accent palette */
+  --chart-4: oklch(0.78 0.12 175); /* Green - #73daca dark */
+  --chart-5: oklch(0.78 0.14 55); /* Orange - #ff9e64 dark */
 }
 
 /* ===== TAILWIND THEME MAPPING ===== */

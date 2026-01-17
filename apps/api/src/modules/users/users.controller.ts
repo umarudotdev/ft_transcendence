@@ -9,6 +9,7 @@ import {
   mapAvatarUploadError,
   mapFriendshipError,
   mapProfileUpdateError,
+  mapUsernameChangeError,
 } from "./users.model";
 import { UsersService } from "./users.service";
 
@@ -138,6 +139,34 @@ export const usersController = new Elysia({ prefix: "/users" })
         set.headers["Content-Type"] = "application/problem+json";
         return problem;
       }
+    );
+  })
+  .patch(
+    "/me/username",
+    async ({ body, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
+      const result = await UsersService.updateUsername(user.id, body.username);
+
+      return result.match(
+        (profile) => ({ user: profile }),
+        (error) => {
+          const problem = mapUsernameChangeError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
+        }
+      );
+    },
+    {
+      body: UsersModel.updateUsername,
+    }
+  )
+  .get("/me/username/history", async ({ user }) => {
+    const result = await UsersService.getUsernameHistory(user.id);
+
+    return result.match(
+      (history) => ({ history }),
+      () => ({ history: [] })
     );
   })
   .get(

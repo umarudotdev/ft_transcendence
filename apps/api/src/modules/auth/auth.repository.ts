@@ -28,10 +28,17 @@ export const authRepository = {
     });
   },
 
+  async findUserByUsername(username: string) {
+    return db.query.users.findFirst({
+      where: eq(users.username, username.toLowerCase()),
+    });
+  },
+
   async createUser(data: {
     email: string;
     passwordHash?: string;
     displayName: string;
+    username: string;
     intraId?: number;
     avatarUrl?: string;
   }) {
@@ -41,6 +48,7 @@ export const authRepository = {
         email: data.email.toLowerCase(),
         passwordHash: data.passwordHash,
         displayName: data.displayName,
+        username: data.username.toLowerCase(),
         intraId: data.intraId,
         avatarUrl: data.avatarUrl,
         // OAuth users have verified emails from 42, email/password users must verify

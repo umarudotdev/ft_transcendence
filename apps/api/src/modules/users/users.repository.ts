@@ -5,6 +5,7 @@ import {
   type FriendshipStatus,
   friends,
   matches,
+  usernameHistory,
   users,
 } from "../../db/schema";
 
@@ -15,9 +16,9 @@ export const usersRepository = {
     });
   },
 
-  async findByDisplayName(displayName: string) {
+  async findByUsername(username: string) {
     return db.query.users.findFirst({
-      where: eq(users.displayName, displayName),
+      where: eq(users.username, username.toLowerCase()),
     });
   },
 
@@ -50,6 +51,45 @@ export const usersRepository = {
     return updated;
   },
 
+  async updateUsername(userId: number, username: string) {
+    const [updated] = await db
+      .update(users)
+      .set({
+        username: username.toLowerCase(),
+        usernameChangedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updated;
+  },
+
+  async createUsernameHistoryEntry(data: {
+    userId: number;
+    oldUsername: string;
+    newUsername: string;
+  }) {
+    const [entry] = await db
+      .insert(usernameHistory)
+      .values({
+        userId: data.userId,
+        oldUsername: data.oldUsername,
+        newUsername: data.newUsername,
+      })
+      .returning();
+
+    return entry;
+  },
+
+  async getUsernameHistory(userId: number, limit = 10) {
+    return db.query.usernameHistory.findMany({
+      where: eq(usernameHistory.userId, userId),
+      orderBy: [desc(usernameHistory.changedAt)],
+      limit,
+    });
+  },
+
   async getMatchHistory(
     userId: number,
     options: {
@@ -78,6 +118,7 @@ export const usersRepository = {
           columns: {
             id: true,
             displayName: true,
+            username: true,
             avatarUrl: true,
           },
         },
@@ -85,6 +126,7 @@ export const usersRepository = {
           columns: {
             id: true,
             displayName: true,
+            username: true,
             avatarUrl: true,
           },
         },
@@ -92,6 +134,7 @@ export const usersRepository = {
           columns: {
             id: true,
             displayName: true,
+            username: true,
           },
         },
       },
@@ -190,6 +233,7 @@ export const usersRepository = {
           columns: {
             id: true,
             displayName: true,
+            username: true,
             avatarUrl: true,
           },
         },
@@ -197,6 +241,7 @@ export const usersRepository = {
           columns: {
             id: true,
             displayName: true,
+            username: true,
             avatarUrl: true,
           },
         },
@@ -218,6 +263,7 @@ export const usersRepository = {
           columns: {
             id: true,
             displayName: true,
+            username: true,
             avatarUrl: true,
           },
         },
@@ -239,6 +285,7 @@ export const usersRepository = {
           columns: {
             id: true,
             displayName: true,
+            username: true,
             avatarUrl: true,
           },
         },
@@ -296,6 +343,7 @@ export const usersRepository = {
           columns: {
             id: true,
             displayName: true,
+            username: true,
             avatarUrl: true,
           },
         },
@@ -312,13 +360,17 @@ export const usersRepository = {
   async searchUsers(query: string, currentUserId: number, limit = 10) {
     return db.query.users.findMany({
       where: and(
-        sql`${users.displayName} ILIKE ${`%${query}%`}`,
+        or(
+          sql`${users.displayName} ILIKE ${`%${query}%`}`,
+          sql`${users.username} ILIKE ${`%${query}%`}`
+        ),
         sql`${users.id} != ${currentUserId}`
       ),
       limit,
       columns: {
         id: true,
         displayName: true,
+        username: true,
         avatarUrl: true,
       },
     });

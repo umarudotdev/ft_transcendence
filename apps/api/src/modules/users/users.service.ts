@@ -6,6 +6,8 @@ import type {
   MatchHistoryItem,
   ProfileUpdateError,
   PublicUser,
+  UsernameChangeError,
+  UsernameHistoryItem,
   UserProfile,
   UserStats,
 } from "./users.model";
@@ -13,9 +15,12 @@ import type {
 import { usersRepository } from "./users.repository";
 
 abstract class UsersService {
-  private static readonly DISPLAY_NAME_MIN_LENGTH = 3;
-  private static readonly DISPLAY_NAME_MAX_LENGTH = 20;
-  private static readonly DISPLAY_NAME_PATTERN = /^[a-zA-Z0-9 ]+$/;
+  private static readonly DISPLAY_NAME_MIN_LENGTH = 1;
+  private static readonly DISPLAY_NAME_MAX_LENGTH = 50;
+  private static readonly USERNAME_MIN_LENGTH = 3;
+  private static readonly USERNAME_MAX_LENGTH = 20;
+  private static readonly USERNAME_PATTERN = /^[a-z0-9_]+$/;
+  private static readonly USERNAME_COOLDOWN_DAYS = 30;
   private static readonly MAX_AVATAR_SIZE = 2 * 1024 * 1024;
   private static readonly ALLOWED_AVATAR_TYPES = [
     "image/jpeg",
@@ -36,6 +41,8 @@ abstract class UsersService {
           id: user.id,
           email: user.email,
           displayName: user.displayName,
+          username: user.username,
+          usernameChangedAt: user.usernameChangedAt,
           avatarUrl: user.avatarUrl,
           emailVerified: user.emailVerified,
           twoFactorEnabled: user.twoFactorEnabled,
@@ -61,6 +68,7 @@ abstract class UsersService {
         return {
           id: user.id,
           displayName: user.displayName,
+          username: user.username,
           avatarUrl: user.avatarUrl,
           createdAt: user.createdAt,
         };
@@ -87,7 +95,7 @@ abstract class UsersService {
           if (displayName.length < UsersService.DISPLAY_NAME_MIN_LENGTH) {
             return err({
               type: "INVALID_DISPLAY_NAME" as const,
-              message: `Display name must be at least ${UsersService.DISPLAY_NAME_MIN_LENGTH} characters`,
+              message: `Display name must be at least ${UsersService.DISPLAY_NAME_MIN_LENGTH} character`,
             });
           }
 
@@ -97,19 +105,6 @@ abstract class UsersService {
               message: `Display name must be at most ${UsersService.DISPLAY_NAME_MAX_LENGTH} characters`,
             });
           }
-
-          if (!UsersService.DISPLAY_NAME_PATTERN.test(displayName)) {
-            return err({
-              type: "INVALID_DISPLAY_NAME" as const,
-              message:
-                "Display name can only contain letters, numbers, and spaces",
-            });
-          }
-
-          const existing = await usersRepository.findByDisplayName(displayName);
-          if (existing && existing.id !== userId) {
-            return err({ type: "DISPLAY_NAME_TAKEN" as const });
-          }
         }
 
         const updated = await usersRepository.updateProfile(userId, data);
@@ -118,6 +113,8 @@ abstract class UsersService {
           id: updated.id,
           email: updated.email,
           displayName: updated.displayName,
+          username: updated.username,
+          usernameChangedAt: updated.usernameChangedAt,
           avatarUrl: updated.avatarUrl,
           emailVerified: updated.emailVerified,
           twoFactorEnabled: updated.twoFactorEnabled,
@@ -175,6 +172,8 @@ abstract class UsersService {
           id: updated.id,
           email: updated.email,
           displayName: updated.displayName,
+          username: updated.username,
+          usernameChangedAt: updated.usernameChangedAt,
           avatarUrl: updated.avatarUrl,
           emailVerified: updated.emailVerified,
           twoFactorEnabled: updated.twoFactorEnabled,
@@ -201,6 +200,117 @@ abstract class UsersService {
       })(),
       () => ({ type: "UPLOAD_FAILED" as const })
     ).andThen((result) => result);
+  }
+
+  static updateUsername(
+    userId: number,
+    username: string
+  ): ResultAsync<UserProfile, UsernameChangeError> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        const user = await usersRepository.findById(userId);
+
+        if (!user) {
+          return err({ type: "USER_NOT_FOUND" as const });
+        }
+
+        const normalizedUsername = username.toLowerCase().trim();
+
+        // Validate length
+        if (normalizedUsername.length < UsersService.USERNAME_MIN_LENGTH) {
+          return err({
+            type: "INVALID_USERNAME" as const,
+            message: `Username must be at least ${UsersService.USERNAME_MIN_LENGTH} characters`,
+          });
+        }
+
+        if (normalizedUsername.length > UsersService.USERNAME_MAX_LENGTH) {
+          return err({
+            type: "INVALID_USERNAME" as const,
+            message: `Username must be at most ${UsersService.USERNAME_MAX_LENGTH} characters`,
+          });
+        }
+
+        // Validate format
+        if (!UsersService.USERNAME_PATTERN.test(normalizedUsername)) {
+          return err({
+            type: "INVALID_USERNAME" as const,
+            message:
+              "Username can only contain lowercase letters, numbers, and underscores",
+          });
+        }
+
+        // Check cooldown
+        if (user.usernameChangedAt) {
+          const cooldownEnd = new Date(
+            user.usernameChangedAt.getTime() +
+              UsersService.USERNAME_COOLDOWN_DAYS * 24 * 60 * 60 * 1000
+          );
+          if (new Date() < cooldownEnd) {
+            return err({
+              type: "COOLDOWN_ACTIVE" as const,
+              canChangeAt: cooldownEnd,
+            });
+          }
+        }
+
+        // Check uniqueness (skip if same as current)
+        if (normalizedUsername !== user.username) {
+          const existing =
+            await usersRepository.findByUsername(normalizedUsername);
+          if (existing) {
+            return err({ type: "USERNAME_TAKEN" as const });
+          }
+        }
+
+        // Record history if changing
+        if (user.username !== normalizedUsername) {
+          await usersRepository.createUsernameHistoryEntry({
+            userId,
+            oldUsername: user.username,
+            newUsername: normalizedUsername,
+          });
+        }
+
+        const updated = await usersRepository.updateUsername(
+          userId,
+          normalizedUsername
+        );
+
+        return ok({
+          id: updated.id,
+          email: updated.email,
+          displayName: updated.displayName,
+          username: updated.username,
+          usernameChangedAt: updated.usernameChangedAt,
+          avatarUrl: updated.avatarUrl,
+          emailVerified: updated.emailVerified,
+          twoFactorEnabled: updated.twoFactorEnabled,
+          intraId: updated.intraId,
+          createdAt: updated.createdAt,
+        });
+      })(),
+      () => ({ type: "USER_NOT_FOUND" as const })
+    ).andThen((result) => result);
+  }
+
+  static getUsernameHistory(
+    userId: number
+  ): ResultAsync<UsernameHistoryItem[], never> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        const history = await usersRepository.getUsernameHistory(userId);
+        return history.map((entry) => ({
+          id: entry.id,
+          oldUsername: entry.oldUsername,
+          newUsername: entry.newUsername,
+          changedAt: entry.changedAt,
+        }));
+      })(),
+      (): never => {
+        throw new Error("Unexpected error fetching username history");
+      }
+    );
   }
 
   static getMatchHistory(
@@ -249,6 +359,7 @@ abstract class UsersService {
             let opponent: {
               id: number | null;
               displayName: string;
+              username: string | null;
               avatarUrl: string | null;
             };
 
@@ -256,22 +367,30 @@ abstract class UsersService {
               opponent = {
                 id: null,
                 displayName: "AI Opponent",
+                username: null,
                 avatarUrl: null,
               };
             } else if (isPlayer1 && match.player2) {
               opponent = {
                 id: match.player2.id,
                 displayName: match.player2.displayName,
+                username: match.player2.username,
                 avatarUrl: match.player2.avatarUrl,
               };
             } else if (!isPlayer1 && match.player1) {
               opponent = {
                 id: match.player1.id,
                 displayName: match.player1.displayName,
+                username: match.player1.username,
                 avatarUrl: match.player1.avatarUrl,
               };
             } else {
-              opponent = { id: null, displayName: "Unknown", avatarUrl: null };
+              opponent = {
+                id: null,
+                displayName: "Unknown",
+                username: null,
+                avatarUrl: null,
+              };
             }
 
             let result: "win" | "loss" | "draw";

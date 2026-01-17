@@ -47,6 +47,7 @@ async function toSafeUser(user: {
   id: number;
   email: string;
   displayName: string;
+  username: string;
   avatarUrl: string | null;
   emailVerified: boolean;
   twoFactorEnabled: boolean;
@@ -61,6 +62,7 @@ async function toSafeUser(user: {
     id: user.id,
     email: user.email,
     displayName: user.displayName,
+    username: user.username,
     avatarUrl: user.avatarUrl,
     emailVerified: user.emailVerified,
     twoFactorEnabled: user.twoFactorEnabled,
@@ -76,6 +78,7 @@ abstract class AuthService {
     email: string;
     password: string;
     displayName: string;
+    username: string;
   }): ResultAsync<
     { user: SafeUser; verificationToken: string },
     RegisterError
@@ -85,6 +88,13 @@ abstract class AuthService {
         const existing = await authRepository.findUserByEmail(data.email);
         if (existing) {
           return err({ type: "EMAIL_EXISTS" as const });
+        }
+
+        const existingUsername = await authRepository.findUserByUsername(
+          data.username
+        );
+        if (existingUsername) {
+          return err({ type: "USERNAME_TAKEN" as const });
         }
 
         const passwordValidation = validatePasswordStrength(data.password);
@@ -101,6 +111,7 @@ abstract class AuthService {
           email: data.email,
           passwordHash,
           displayName: data.displayName,
+          username: data.username,
         });
 
         const expiresAt = new Date(Date.now() + EMAIL_VERIFICATION_DURATION_MS);
@@ -636,9 +647,29 @@ abstract class AuthService {
               intraId
             );
           } else {
+            // Generate username from 42 login, falling back to user_<intraId> if taken
+            let username = profile.login
+              .toLowerCase()
+              .replace(/[^a-z0-9_]/g, "_");
+            // Ensure username meets minimum length
+            if (username.length < 3) {
+              username = `user_${intraId}`;
+            }
+            // Truncate if too long
+            if (username.length > 20) {
+              username = username.slice(0, 20);
+            }
+            // Check if username is taken and append suffix if needed
+            const existingUsername =
+              await authRepository.findUserByUsername(username);
+            if (existingUsername) {
+              username = `user_${intraId}`;
+            }
+
             user = await authRepository.createUser({
               email,
               displayName,
+              username,
               intraId,
               avatarUrl,
             });

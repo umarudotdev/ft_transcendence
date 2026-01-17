@@ -76,6 +76,7 @@ async function main() {
     passwordHash,
     emailVerified: true,
     displayName: name,
+    username: name.toLowerCase().replace(/\s+/g, "_"),
     avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
     createdAt: new Date(Date.now() - (50 - i) * 24 * 60 * 60 * 1000), // Staggered creation dates
     updatedAt: new Date(),

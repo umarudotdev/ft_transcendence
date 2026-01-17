@@ -11,6 +11,7 @@
 	let password = $state('');
 	let confirmPassword = $state('');
 	let displayName = $state('');
+	let username = $state('');
 	let errorMessage = $state('');
 
 	const registerMutation = createRegisterMutation();
@@ -32,9 +33,27 @@
 
 	const passwordsMatch = $derived(password === confirmPassword && password.length > 0);
 
+	// Username requirements
+	const usernameRequirements = $derived({
+		minLength: username.length >= 3,
+		maxLength: username.length <= 20,
+		validChars: /^[a-z0-9_]*$/.test(username)
+	});
+
+	const isUsernameValid = $derived(
+		usernameRequirements.minLength &&
+			usernameRequirements.maxLength &&
+			usernameRequirements.validChars
+	);
+
 	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		errorMessage = '';
+
+		if (!isUsernameValid) {
+			errorMessage = 'Please meet all username requirements';
+			return;
+		}
 
 		if (!isPasswordValid) {
 			errorMessage = 'Please meet all password requirements';
@@ -47,7 +66,7 @@
 		}
 
 		registerMutation.mutate(
-			{ email, password, displayName },
+			{ email, password, displayName, username },
 			{
 				onSuccess: () => {
 					goto('/auth/login?registered=true');
@@ -80,10 +99,34 @@
 					type="text"
 					bind:value={displayName}
 					required
-					minlength={3}
-					maxlength={30}
+					minlength={1}
+					maxlength={50}
 					placeholder="Your display name"
 				/>
+				<p class="text-xs text-muted-foreground">This is how your name will appear to others</p>
+			</div>
+
+			<div class="space-y-2">
+				<Label for="username">Username</Label>
+				<Input
+					id="username"
+					type="text"
+					bind:value={username}
+					required
+					minlength={3}
+					maxlength={20}
+					pattern="^[a-z0-9_]+$"
+					placeholder="your_username"
+				/>
+				<div class="mt-1 space-y-1 text-sm">
+					<ul class="list-inside list-disc text-muted-foreground">
+						<li class:text-green-600={usernameRequirements.minLength}>At least 3 characters</li>
+						<li class:text-green-600={usernameRequirements.maxLength}>At most 20 characters</li>
+						<li class:text-green-600={usernameRequirements.validChars}>
+							Only lowercase letters, numbers, and underscores
+						</li>
+					</ul>
+				</div>
 			</div>
 
 			<div class="space-y-2">

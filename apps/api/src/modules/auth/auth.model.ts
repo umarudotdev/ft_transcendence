@@ -14,7 +14,12 @@ export const AuthModel = {
   register: t.Object({
     email: t.String({ format: "email" }),
     password: t.String({ minLength: 8 }),
-    displayName: t.String({ minLength: 3, maxLength: 30 }),
+    displayName: t.String({ minLength: 1, maxLength: 50 }),
+    username: t.String({
+      minLength: 3,
+      maxLength: 20,
+      pattern: "^[a-z0-9_]+$",
+    }),
   }),
 
   login: t.Object({
@@ -67,6 +72,7 @@ export const AuthModel = {
     id: t.Number(),
     email: t.String(),
     displayName: t.String(),
+    username: t.String(),
     avatarUrl: t.Nullable(t.String()),
     emailVerified: t.Boolean(),
     twoFactorEnabled: t.Boolean(),
@@ -82,6 +88,7 @@ export const AuthModel = {
 
   registerError: t.Union([
     t.Object({ type: t.Literal("EMAIL_EXISTS") }),
+    t.Object({ type: t.Literal("USERNAME_TAKEN") }),
     t.Object({
       type: t.Literal("WEAK_PASSWORD"),
       requirements: t.Array(t.String()),
@@ -197,6 +204,8 @@ export function mapRegisterError(error: RegisterError, instance: string) {
   switch (error.type) {
     case "EMAIL_EXISTS":
       return conflict("Email already registered", { instance });
+    case "USERNAME_TAKEN":
+      return conflict("Username already taken", { instance });
     case "WEAK_PASSWORD":
       return validationError(
         "Password does not meet requirements",

@@ -26,6 +26,7 @@
 		createRemoveAvatarMutation,
 		createRemoveFriendMutation,
 		createUpdateProfileMutation,
+		createUpdateUsernameMutation,
 		createUploadAvatarMutation
 	} from '$lib/queries/users';
 	import { toast } from 'svelte-sonner';
@@ -39,6 +40,7 @@
 
 	// Mutations
 	const updateProfileMutation = createUpdateProfileMutation();
+	const updateUsernameMutation = createUpdateUsernameMutation();
 	const uploadAvatarMutation = createUploadAvatarMutation();
 	const removeAvatarMutation = createRemoveAvatarMutation();
 	const removeFriendMutation = createRemoveFriendMutation();
@@ -58,24 +60,49 @@
 		})
 	);
 
-	// Edit display name dialog
+	// Edit profile dialog
 	let showEditDialog = $state(false);
 	let newDisplayName = $state('');
+	let newUsername = $state('');
+
+	// Username validation
+	const usernameValid = $derived(
+		newUsername.length >= 3 &&
+			newUsername.length <= 20 &&
+			/^[a-z0-9_]+$/.test(newUsername)
+	);
 
 	function openEditDialog() {
 		if (meQuery.data) {
 			newDisplayName = meQuery.data.displayName;
+			newUsername = meQuery.data.username;
 			showEditDialog = true;
 		}
 	}
 
-	async function saveDisplayName() {
+	async function saveProfile() {
 		if (!newDisplayName.trim()) return;
 
+		const user = meQuery.data;
+		if (!user) return;
+
 		try {
-			await updateProfileMutation.mutateAsync({ displayName: newDisplayName.trim() });
+			// Update display name if changed
+			if (newDisplayName.trim() !== user.displayName) {
+				await updateProfileMutation.mutateAsync({ displayName: newDisplayName.trim() });
+			}
+
+			// Update username if changed and valid
+			if (newUsername !== user.username) {
+				if (!usernameValid) {
+					toast.error('Invalid username format');
+					return;
+				}
+				await updateUsernameMutation.mutateAsync({ username: newUsername });
+			}
+
 			showEditDialog = false;
-			toast.success('Display name updated!');
+			toast.success('Profile updated!');
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to update';
 			toast.error(message);
@@ -177,7 +204,9 @@
 
 					<div class="flex-1 text-center sm:text-left">
 						<div class="flex flex-col items-center gap-2 sm:flex-row">
-							<h1 class="text-2xl font-bold">{user.displayName}</h1>
+							<h1 class="text-2xl font-bold">
+								{user.displayName}<span class="text-muted-foreground">#{user.username}</span>
+							</h1>
 							<Button variant="ghost" size="sm" onclick={openEditDialog}>
 								<PencilIcon class="size-4" />
 							</Button>
@@ -310,28 +339,51 @@
 <Dialog bind:open={showEditDialog}>
 	<DialogContent>
 		<DialogHeader>
-			<DialogTitle>Edit Display Name</DialogTitle>
-			<DialogDescription>
-				Choose a display name between 3-20 characters. Letters, numbers, and spaces only.
-			</DialogDescription>
+			<DialogTitle>Edit Profile</DialogTitle>
+			<DialogDescription>Update your display name and username.</DialogDescription>
 		</DialogHeader>
-		<div class="py-4">
-			<Label for="displayName">Display Name</Label>
-			<Input
-				id="displayName"
-				bind:value={newDisplayName}
-				placeholder="Enter your display name"
-				maxlength={20}
-				class="mt-2"
-			/>
+		<div class="space-y-4 py-4">
+			<div class="space-y-2">
+				<Label for="displayName">Display Name</Label>
+				<Input
+					id="displayName"
+					bind:value={newDisplayName}
+					placeholder="Enter your display name"
+					maxlength={50}
+				/>
+				<p class="text-xs text-muted-foreground">This is how your name appears to others.</p>
+			</div>
+
+			<div class="space-y-2">
+				<Label for="username">Username</Label>
+				<Input
+					id="username"
+					bind:value={newUsername}
+					placeholder="your_username"
+					minlength={3}
+					maxlength={20}
+					pattern="^[a-z0-9_]+$"
+				/>
+				<p class="text-xs text-muted-foreground">
+					3-20 characters. Lowercase letters, numbers, and underscores only.
+				</p>
+				{#if newUsername && !usernameValid}
+					<p class="text-xs text-destructive">Invalid username format.</p>
+				{/if}
+				<p class="text-xs text-muted-foreground">
+					Note: You can only change your username once every 30 days.
+				</p>
+			</div>
 		</div>
 		<DialogFooter>
 			<Button variant="outline" onclick={() => (showEditDialog = false)}>Cancel</Button>
 			<Button
-				onclick={saveDisplayName}
-				disabled={updateProfileMutation.isPending || !newDisplayName.trim()}
+				onclick={saveProfile}
+				disabled={updateProfileMutation.isPending ||
+					updateUsernameMutation.isPending ||
+					!newDisplayName.trim()}
 			>
-				{#if updateProfileMutation.isPending}
+				{#if updateProfileMutation.isPending || updateUsernameMutation.isPending}
 					Saving...
 				{:else}
 					Save

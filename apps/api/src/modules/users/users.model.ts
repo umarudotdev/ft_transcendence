@@ -10,7 +10,15 @@ import {
 
 export const UsersModel = {
   updateProfile: t.Object({
-    displayName: t.Optional(t.String({ minLength: 3, maxLength: 20 })),
+    displayName: t.Optional(t.String({ minLength: 1, maxLength: 50 })),
+  }),
+
+  updateUsername: t.Object({
+    username: t.String({
+      minLength: 3,
+      maxLength: 20,
+      pattern: "^[a-z0-9_]+$",
+    }),
   }),
 
   uploadAvatar: t.Object({
@@ -47,6 +55,7 @@ export const UsersModel = {
   publicUser: t.Object({
     id: t.Number(),
     displayName: t.String(),
+    username: t.String(),
     avatarUrl: t.Nullable(t.String()),
     createdAt: t.Date(),
   }),
@@ -55,11 +64,20 @@ export const UsersModel = {
     id: t.Number(),
     email: t.String(),
     displayName: t.String(),
+    username: t.String(),
+    usernameChangedAt: t.Nullable(t.Date()),
     avatarUrl: t.Nullable(t.String()),
     emailVerified: t.Boolean(),
     twoFactorEnabled: t.Boolean(),
     intraId: t.Nullable(t.Number()),
     createdAt: t.Date(),
+  }),
+
+  usernameHistoryItem: t.Object({
+    id: t.Number(),
+    oldUsername: t.String(),
+    newUsername: t.String(),
+    changedAt: t.Date(),
   }),
 
   userStats: t.Object({
@@ -76,6 +94,7 @@ export const UsersModel = {
     opponent: t.Object({
       id: t.Nullable(t.Number()),
       displayName: t.String(),
+      username: t.Nullable(t.String()),
       avatarUrl: t.Nullable(t.String()),
     }),
     playerScore: t.Number(),
@@ -91,6 +110,7 @@ export const UsersModel = {
     friendshipId: t.Number(),
     id: t.Number(),
     displayName: t.String(),
+    username: t.String(),
     avatarUrl: t.Nullable(t.String()),
     since: t.Date(),
   }),
@@ -100,6 +120,7 @@ export const UsersModel = {
     from: t.Object({
       id: t.Number(),
       displayName: t.String(),
+      username: t.String(),
       avatarUrl: t.Nullable(t.String()),
     }),
     createdAt: t.Date(),
@@ -110,6 +131,7 @@ export const UsersModel = {
     to: t.Object({
       id: t.Number(),
       displayName: t.String(),
+      username: t.String(),
       avatarUrl: t.Nullable(t.String()),
     }),
     createdAt: t.Date(),
@@ -130,7 +152,19 @@ export const UsersModel = {
       type: t.Literal("INVALID_DISPLAY_NAME"),
       message: t.String(),
     }),
-    t.Object({ type: t.Literal("DISPLAY_NAME_TAKEN") }),
+  ]),
+
+  usernameChangeError: t.Union([
+    t.Object({ type: t.Literal("USER_NOT_FOUND") }),
+    t.Object({
+      type: t.Literal("INVALID_USERNAME"),
+      message: t.String(),
+    }),
+    t.Object({ type: t.Literal("USERNAME_TAKEN") }),
+    t.Object({
+      type: t.Literal("COOLDOWN_ACTIVE"),
+      canChangeAt: t.Date(),
+    }),
   ]),
 
   avatarUploadError: t.Union([
@@ -158,6 +192,7 @@ export const UsersModel = {
 };
 
 export type UpdateProfileBody = (typeof UsersModel.updateProfile)["static"];
+export type UpdateUsernameBody = (typeof UsersModel.updateUsername)["static"];
 export type UploadAvatarBody = (typeof UsersModel.uploadAvatar)["static"];
 export type UserIdParam = (typeof UsersModel.userIdParam)["static"];
 export type RequestIdParam = (typeof UsersModel.requestIdParam)["static"];
@@ -173,9 +208,13 @@ export type FriendItem = (typeof UsersModel.friendItem)["static"];
 export type PendingRequest = (typeof UsersModel.pendingRequest)["static"];
 export type SentRequest = (typeof UsersModel.sentRequest)["static"];
 export type FriendshipStatus = (typeof UsersModel.friendshipStatus)["static"];
+export type UsernameHistoryItem =
+  (typeof UsersModel.usernameHistoryItem)["static"];
 
 export type ProfileUpdateError =
   (typeof UsersModel.profileUpdateError)["static"];
+export type UsernameChangeError =
+  (typeof UsersModel.usernameChangeError)["static"];
 export type AvatarUploadError = (typeof UsersModel.avatarUploadError)["static"];
 export type FriendshipError = (typeof UsersModel.friendshipError)["static"];
 
@@ -197,8 +236,32 @@ export function mapProfileUpdateError(
           instance,
         }
       );
-    case "DISPLAY_NAME_TAKEN":
-      return conflict("Display name already taken", { instance });
+  }
+}
+
+/**
+ * Maps username change errors to RFC 9457 Problem Details.
+ */
+export function mapUsernameChangeError(
+  error: UsernameChangeError,
+  instance: string
+) {
+  switch (error.type) {
+    case "USER_NOT_FOUND":
+      return notFound("User not found", { instance });
+    case "INVALID_USERNAME":
+      return validationError(
+        error.message,
+        [{ field: "username", message: error.message }],
+        { instance }
+      );
+    case "USERNAME_TAKEN":
+      return conflict("Username already taken", { instance });
+    case "COOLDOWN_ACTIVE":
+      return badRequest(
+        `Username can be changed again on ${error.canChangeAt.toISOString()}`,
+        { instance }
+      );
   }
 }
 

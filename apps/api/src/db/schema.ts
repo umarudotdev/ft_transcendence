@@ -21,6 +21,10 @@ export const users = pgTable(
 
     displayName: text("display_name").notNull(),
 
+    username: text("username").unique().notNull(),
+
+    usernameChangedAt: timestamp("username_changed_at", { withTimezone: true }),
+
     avatarUrl: text("avatar_url"),
 
     intraId: integer("intra_id").unique(),
@@ -43,6 +47,8 @@ export const users = pgTable(
     index("users_intra_id_idx").on(table.intraId),
 
     index("users_email_idx").on(table.email),
+
+    index("users_username_idx").on(table.username),
   ]
 );
 export const sessions = pgTable(
@@ -108,6 +114,7 @@ export const usersRelations = relations(users, ({ many, one }) => ({
   sessions: many(sessions),
   emailVerificationTokens: many(emailVerificationTokens),
   passwordResetTokens: many(passwordResetTokens),
+  usernameHistory: many(usernameHistory),
 
   player1Matches: many(matches, { relationName: "player1Matches" }),
 
@@ -189,6 +196,47 @@ export type NewSession = typeof sessions.$inferInsert;
 export type EmailVerificationToken =
   typeof emailVerificationTokens.$inferSelect;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+
+// =============================================================================
+// USERNAME HISTORY
+// =============================================================================
+
+export const usernameHistory = pgTable(
+  "username_history",
+  {
+    id: serial("id").primaryKey(),
+
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+
+    oldUsername: text("old_username").notNull(),
+
+    newUsername: text("new_username").notNull(),
+
+    changedAt: timestamp("changed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("username_history_user_id_idx").on(table.userId),
+    index("username_history_changed_at_idx").on(table.changedAt),
+  ]
+);
+
+export const usernameHistoryRelations = relations(
+  usernameHistory,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [usernameHistory.userId],
+      references: [users.id],
+    }),
+  })
+);
+
+export type UsernameHistoryEntry = typeof usernameHistory.$inferSelect;
+export type NewUsernameHistoryEntry = typeof usernameHistory.$inferInsert;
+
 export const matches = pgTable(
   "matches",
   {

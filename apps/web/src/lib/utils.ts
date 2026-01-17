@@ -15,3 +15,30 @@ export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & {
   ref?: U | null;
 };
+
+/**
+ * Formats a user's display name and username in Discord-style format.
+ * Example: "John Doe#johndoe"
+ */
+export function formatUserDisplay(
+  displayName: string,
+  username: string
+): string {
+  return `${displayName}#${username}`;
+}
+
+/**
+ * Returns just the display name for contexts where username is not needed.
+ * Example: chat messages, simple mentions
+ */
+export function formatDisplayName(displayName: string): string {
+  return displayName;
+}
+
+/**
+ * Returns just the @username for contexts where only username is shown.
+ * Example: @mentions, user handles
+ */
+export function formatUsername(username: string): string {
+  return `@${username}`;
+}

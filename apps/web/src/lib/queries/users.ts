@@ -6,6 +6,7 @@ import type {
   SentRequest,
   UserProfile,
   UserStats,
+  UsernameHistoryItem,
 } from "@api/modules/users/users.model";
 
 import { api } from "$lib/api";
@@ -29,6 +30,7 @@ export const usersKeys = {
   pendingRequests: () => [...usersKeys.all, "pending-requests"] as const,
   sentRequests: () => [...usersKeys.all, "sent-requests"] as const,
   search: (query: string) => [...usersKeys.all, "search", query] as const,
+  usernameHistory: () => [...usersKeys.all, "username-history"] as const,
 };
 
 export type {
@@ -37,6 +39,7 @@ export type {
   UserStats,
   MatchHistoryItem,
   SentRequest,
+  UsernameHistoryItem,
 };
 
 export type Friend = FriendItem;
@@ -268,7 +271,12 @@ export function createUserMatchesQuery(
 
 export function createSearchUsersQuery(query: string) {
   return createQuery<
-    Array<{ id: number; displayName: string; avatarUrl: string | null }>,
+    Array<{
+      id: number;
+      displayName: string;
+      username: string;
+      avatarUrl: string | null;
+    }>,
     ApiError
   >(() => ({
     queryKey: usersKeys.search(query),
@@ -285,6 +293,7 @@ export function createSearchUsersQuery(query: string) {
       return response.data.users as Array<{
         id: number;
         displayName: string;
+        username: string;
         avatarUrl: string | null;
       }>;
     },
@@ -502,6 +511,49 @@ export function createUnblockUserMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: usersKeys.all });
+    },
+  }));
+}
+
+export function createUpdateUsernameMutation() {
+  const queryClient = useQueryClient();
+
+  return createMutation<unknown, ApiError, { username: string }>(() => ({
+    mutationFn: async (data) => {
+      const response = await api.api.users.me.username.patch(data, {
+        fetch: { credentials: "include" },
+      });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      queryClient.invalidateQueries({ queryKey: usersKeys.usernameHistory() });
+    },
+  }));
+}
+
+export function createUsernameHistoryQuery() {
+  return createQuery<UsernameHistoryItem[], ApiError>(() => ({
+    queryKey: usersKeys.usernameHistory(),
+    queryFn: async () => {
+      const response = await api.api.users.me.username.history.get({
+        fetch: { credentials: "include" },
+      });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+
+      const data = response.data as { history: UsernameHistoryItem[] };
+      return data.history.map((h) => ({
+        ...h,
+        changedAt: new Date(h.changedAt),
+      }));
     },
   }));
 }

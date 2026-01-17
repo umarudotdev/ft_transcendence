@@ -45,18 +45,25 @@ export async function cleanupTestData(): Promise<void> {
 export async function createUserInDb(data: {
   email: string;
   displayName: string;
+  username?: string;
   passwordHash?: string;
   emailVerified?: boolean;
   intraId?: number;
   twoFactorEnabled?: boolean;
   totpSecret?: string;
 }) {
+  // Generate a unique username if not provided
+  const username =
+    data.username ??
+    `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
   const [user] = await db
     .insert(schema.users)
     .values({
       email: data.email.toLowerCase(),
       passwordHash: data.passwordHash ?? null,
       displayName: data.displayName,
+      username: username.toLowerCase(),
       emailVerified: data.emailVerified ?? true,
       intraId: data.intraId ?? null,
       twoFactorEnabled: data.twoFactorEnabled ?? false,

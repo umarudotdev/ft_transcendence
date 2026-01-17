@@ -209,6 +209,9 @@
   --md3-shape-extra-large: 28px;
   --md3-shape-full: 9999px;
 
+  /* Corner shape (experimental CSS property) */
+  --md3-corner-shape-button: squircle;
+
   /* ===== STATE LAYER ===== */
   --md3-state-hover: 0.08;
   --md3-state-focus: 0.1;
@@ -606,6 +609,23 @@
 
   .md3-elevation-5 {
     box-shadow: var(--md3-elevation-level5);
+  }
+
+  /* Corner shape utilities (experimental - progressive enhancement) */
+  .corner-squircle {
+    corner-shape: squircle;
+  }
+
+  .corner-scoop {
+    corner-shape: scoop;
+  }
+
+  .corner-bevel {
+    corner-shape: bevel;
+  }
+
+  .corner-notch {
+    corner-shape: notch;
   }
 }
 

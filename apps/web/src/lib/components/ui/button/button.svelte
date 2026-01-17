@@ -21,8 +21,8 @@
 			"md3-state-layer relative inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap",
 			// Typography (MD3 label-large)
 			"text-[14px] font-medium leading-5 tracking-[0.1px]",
-			// Shape (MD3 full rounded for buttons)
-			"rounded-full",
+			// Shape (MD3 full rounded for buttons with squircle enhancement)
+			"rounded-full corner-squircle",
 			// Transition (MD3 motion)
 			"transition-all duration-[var(--md3-duration-short4)] ease-[var(--md3-easing-standard)]",
 			// Focus state

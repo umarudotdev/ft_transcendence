@@ -96,8 +96,8 @@ export const ModerationModel = {
     type: t.String(),
     reason: t.String(),
     reportId: t.Nullable(t.Number()),
-    issuedBy: t.Number(),
-    issuedByName: t.String(),
+    issuedBy: t.Nullable(t.Number()),
+    issuedByName: t.Nullable(t.String()),
     expiresAt: t.Nullable(t.Date()),
     isActive: t.Boolean(),
     revokedAt: t.Nullable(t.Date()),
@@ -107,8 +107,8 @@ export const ModerationModel = {
 
   auditLogEntry: t.Object({
     id: t.Number(),
-    actorId: t.Number(),
-    actorName: t.String(),
+    actorId: t.Nullable(t.Number()),
+    actorName: t.Nullable(t.String()),
     action: t.String(),
     targetUserId: t.Nullable(t.Number()),
     targetUserName: t.Nullable(t.String()),

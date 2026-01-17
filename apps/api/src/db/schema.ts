@@ -752,7 +752,9 @@ export const userRoles = pgTable(
       .references(() => users.id, { onDelete: "cascade" })
       .unique(),
     role: text("role").notNull().default("user"),
-    assignedBy: integer("assigned_by").references(() => users.id),
+    assignedBy: integer("assigned_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -799,7 +801,9 @@ export const reports = pgTable(
     reason: text("reason").notNull(),
     description: text("description"),
     status: text("status").notNull().default("pending"),
-    resolvedBy: integer("resolved_by").references(() => users.id),
+    resolvedBy: integer("resolved_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
     resolvedAt: timestamp("resolved_at", { withTimezone: true }),
     resolution: text("resolution"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -829,13 +833,15 @@ export const sanctions = pgTable(
     reportId: integer("report_id").references(() => reports.id, {
       onDelete: "set null",
     }),
-    issuedBy: integer("issued_by")
-      .notNull()
-      .references(() => users.id),
+    issuedBy: integer("issued_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     isActive: boolean("is_active").default(true).notNull(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
-    revokedBy: integer("revoked_by").references(() => users.id),
+    revokedBy: integer("revoked_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -852,11 +858,13 @@ export const moderationAuditLog = pgTable(
   "moderation_audit_log",
   {
     id: serial("id").primaryKey(),
-    actorId: integer("actor_id")
-      .notNull()
-      .references(() => users.id),
+    actorId: integer("actor_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     action: text("action").notNull(),
-    targetUserId: integer("target_user_id").references(() => users.id),
+    targetUserId: integer("target_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
     targetId: integer("target_id"),
     targetType: text("target_type"),
     details: text("details"),

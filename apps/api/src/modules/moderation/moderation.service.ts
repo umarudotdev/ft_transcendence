@@ -350,7 +350,9 @@ abstract class ModerationService {
         const targetUser = await moderationRepository.getUserById(
           updated.userId
         );
-        const issuer = await moderationRepository.getUserById(updated.issuedBy);
+        const issuer = updated.issuedBy
+          ? await moderationRepository.getUserById(updated.issuedBy)
+          : null;
 
         // Log the action
         await moderationRepository.createAuditLogEntry({
@@ -425,9 +427,9 @@ abstract class ModerationService {
           const targetUser = await moderationRepository.getUserById(
             sanction.userId
           );
-          const issuer = await moderationRepository.getUserById(
-            sanction.issuedBy
-          );
+          const issuer = sanction.issuedBy
+            ? await moderationRepository.getUserById(sanction.issuedBy)
+            : null;
 
           sanctionsWithNames.push({
             id: sanction.id,
@@ -583,7 +585,9 @@ abstract class ModerationService {
         // Fetch user names
         const entriesWithNames: AuditLogEntry[] = [];
         for (const entry of entriesToReturn) {
-          const actor = await moderationRepository.getUserById(entry.actorId);
+          const actor = entry.actorId
+            ? await moderationRepository.getUserById(entry.actorId)
+            : null;
           const targetUser = entry.targetUserId
             ? await moderationRepository.getUserById(entry.targetUserId)
             : null;

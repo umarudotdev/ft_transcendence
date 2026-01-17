@@ -266,4 +266,62 @@ export const authRepository = {
       .delete(passwordResetTokens)
       .where(eq(passwordResetTokens.id, tokenId));
   },
+
+  async createEmailChangeToken(
+    userId: number,
+    pendingEmail: string,
+    expiresAt: Date
+  ) {
+    // Delete any existing tokens for this user
+    await db
+      .delete(emailVerificationTokens)
+      .where(eq(emailVerificationTokens.userId, userId));
+
+    const id = generateSecureToken(32);
+
+    const [token] = await db
+      .insert(emailVerificationTokens)
+      .values({
+        id,
+        userId,
+        pendingEmail: pendingEmail.toLowerCase(),
+        expiresAt,
+      })
+      .returning();
+
+    return token;
+  },
+
+  async findEmailChangeToken(tokenId: string) {
+    const token = await db.query.emailVerificationTokens.findFirst({
+      where: eq(emailVerificationTokens.id, tokenId),
+    });
+
+    // Only return if this is an email change token (has pendingEmail)
+    return token?.pendingEmail ? token : null;
+  },
+
+  async updateEmail(userId: number, newEmail: string) {
+    try {
+      const [updated] = await db
+        .update(users)
+        .set({
+          email: newEmail.toLowerCase(),
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId))
+        .returning();
+
+      return updated;
+    } catch (error) {
+      // Handle unique constraint violation (email already exists)
+      if (
+        error instanceof Error &&
+        error.message.includes("unique constraint")
+      ) {
+        return null;
+      }
+      throw error;
+    }
+  },
 };

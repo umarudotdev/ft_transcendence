@@ -150,4 +150,50 @@ export const EmailService = {
       `,
     });
   },
+
+  async sendEmailChangeVerification(
+    newEmail: string,
+    token: string,
+    displayName: string
+  ): Promise<boolean> {
+    const verifyUrl = `${FRONTEND_URL}/auth/verify-email-change/${token}`;
+
+    return this.send({
+      to: newEmail,
+      subject: "Verify your new email address - ft_transcendence",
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">ft_transcendence</h1>
+            </div>
+            <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none;">
+              <h2 style="margin-top: 0;">Email Change Request</h2>
+              <p>Hi ${displayName}, you requested to change your email address to this one. Please verify by clicking the button below:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verifyUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                  Verify New Email
+                </a>
+              </div>
+              <p style="color: #6b7280; font-size: 14px;">
+                Or copy and paste this link in your browser:<br>
+                <a href="${verifyUrl}" style="color: #667eea; word-break: break-all;">${verifyUrl}</a>
+              </p>
+              <p style="color: #6b7280; font-size: 14px;">
+                <strong>Important:</strong> Your email will not change until you click this link. This link will expire in 1 hour.
+              </p>
+              <p style="color: #6b7280; font-size: 14px;">
+                If you didn't request this change, please ignore this email and your email will remain unchanged.
+              </p>
+            </div>
+          </body>
+        </html>
+      `,
+    });
+  },
 };

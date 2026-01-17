@@ -44,6 +44,15 @@ export const AuthModel = {
     newPassword: t.String({ minLength: 8 }),
   }),
 
+  changeEmail: t.Object({
+    newEmail: t.String({ format: "email" }),
+    password: t.String({ minLength: 1 }),
+  }),
+
+  verifyEmailChange: t.Object({
+    token: t.String(),
+  }),
+
   oauthCallback: t.Object({
     code: t.Optional(t.String()),
     state: t.Optional(t.String()),
@@ -131,6 +140,13 @@ export const AuthModel = {
     t.Object({ type: t.Literal("ALREADY_ENABLED") }),
     t.Object({ type: t.Literal("NOT_ENABLED") }),
   ]),
+
+  changeEmailError: t.Union([
+    t.Object({ type: t.Literal("EMAIL_EXISTS") }),
+    t.Object({ type: t.Literal("INCORRECT_PASSWORD") }),
+    t.Object({ type: t.Literal("OAUTH_ONLY_ACCOUNT") }),
+    t.Object({ type: t.Literal("SAME_EMAIL") }),
+  ]),
 };
 
 export type RegisterBody = (typeof AuthModel.register)["static"];
@@ -140,6 +156,9 @@ export type VerifyEmailBody = (typeof AuthModel.verifyEmail)["static"];
 export type ForgotPasswordBody = (typeof AuthModel.forgotPassword)["static"];
 export type ResetPasswordBody = (typeof AuthModel.resetPassword)["static"];
 export type ChangePasswordBody = (typeof AuthModel.changePassword)["static"];
+export type ChangeEmailBody = (typeof AuthModel.changeEmail)["static"];
+export type VerifyEmailChangeBody =
+  (typeof AuthModel.verifyEmailChange)["static"];
 export type OAuthCallbackQuery = (typeof AuthModel.oauthCallback)["static"];
 
 export type SafeUser = (typeof AuthModel.safeUser)["static"];
@@ -154,6 +173,7 @@ export type DeleteAccountError =
   (typeof AuthModel.deleteAccountError)["static"];
 export type SessionError = (typeof AuthModel.sessionError)["static"];
 export type TotpError = (typeof AuthModel.totpError)["static"];
+export type ChangeEmailError = (typeof AuthModel.changeEmailError)["static"];
 
 /**
  * Maps registration errors to RFC 9457 Problem Details.
@@ -287,5 +307,26 @@ export function mapDeleteAccountError(
         "Cannot delete OAuth-only account. Please set a password first or contact support.",
         { instance }
       );
+  }
+}
+
+/**
+ * Maps email change errors to RFC 9457 Problem Details.
+ */
+export function mapChangeEmailError(error: ChangeEmailError, instance: string) {
+  switch (error.type) {
+    case "EMAIL_EXISTS":
+      return conflict("Email already in use", { instance });
+    case "INCORRECT_PASSWORD":
+      return unauthorized("Current password is incorrect", { instance });
+    case "OAUTH_ONLY_ACCOUNT":
+      return badRequest(
+        "Cannot change email for OAuth-only account. Please set a password first.",
+        { instance }
+      );
+    case "SAME_EMAIL":
+      return badRequest("New email must be different from current email", {
+        instance,
+      });
   }
 }

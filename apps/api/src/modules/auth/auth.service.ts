@@ -2,6 +2,7 @@ import { generateState, OAuth2RequestError } from "arctic";
 import { err, ok, ResultAsync } from "neverthrow";
 
 import type {
+  ChangeEmailError,
   DeleteAccountError,
   LoginError,
   OAuthError,
@@ -39,6 +40,7 @@ const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 const EMAIL_VERIFICATION_DURATION_MS = 24 * 60 * 60 * 1000;
 const PASSWORD_RESET_DURATION_MS = 60 * 60 * 1000;
+const EMAIL_CHANGE_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
 async function toSafeUser(user: {
   id: number;
@@ -417,6 +419,110 @@ abstract class AuthService {
         return ok(undefined);
       })(),
       () => ({ type: "INCORRECT_PASSWORD" as const })
+    ).andThen((result) => result);
+  }
+
+  static requestEmailChange(
+    userId: number,
+    newEmail: string,
+    password: string
+  ): ResultAsync<{ token: string }, ChangeEmailError> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        const user = await authRepository.findUserById(userId);
+
+        if (!user) {
+          return err({ type: "INCORRECT_PASSWORD" as const });
+        }
+
+        // OAuth-only accounts cannot change email
+        if (!user.passwordHash) {
+          return err({ type: "OAUTH_ONLY_ACCOUNT" as const });
+        }
+
+        // Verify current password
+        const isValid = await verifyPassword(password, user.passwordHash);
+        if (!isValid) {
+          return err({ type: "INCORRECT_PASSWORD" as const });
+        }
+
+        // Check if new email is different
+        if (newEmail.toLowerCase() === user.email.toLowerCase()) {
+          return err({ type: "SAME_EMAIL" as const });
+        }
+
+        // Check if new email is already in use
+        const existingUser = await authRepository.findUserByEmail(newEmail);
+        if (existingUser) {
+          return err({ type: "EMAIL_EXISTS" as const });
+        }
+
+        // Create token with pending email
+        // Note: This deletes any existing email verification tokens for this user,
+        // but that's acceptable since users can only change email after verifying
+        // their initial email (enforced by authGuard requiring a valid session)
+        const expiresAt = new Date(Date.now() + EMAIL_CHANGE_DURATION_MS);
+        const token = await authRepository.createEmailChangeToken(
+          userId,
+          newEmail.toLowerCase(),
+          expiresAt
+        );
+
+        // Send verification email to NEW address (fire and forget)
+        EmailService.sendEmailChangeVerification(
+          newEmail,
+          token.id,
+          user.displayName
+        ).catch((error) =>
+          authLogger.error(
+            { action: "email_change_verification_failed", newEmail },
+            error instanceof Error ? error : new Error(String(error))
+          )
+        );
+
+        return ok({ token: token.id });
+      })(),
+      () => ({ type: "INCORRECT_PASSWORD" as const })
+    ).andThen((result) => result);
+  }
+
+  static verifyEmailChange(tokenId: string): ResultAsync<void, TokenError> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        const token = await authRepository.findEmailChangeToken(tokenId);
+
+        if (!token || !token.pendingEmail) {
+          return err({ type: "INVALID_TOKEN" as const });
+        }
+
+        if (token.expiresAt < new Date()) {
+          await authRepository.deleteEmailVerificationToken(tokenId);
+          return err({ type: "EXPIRED_TOKEN" as const });
+        }
+
+        // Try to update email - the database unique constraint will prevent
+        // race conditions where another user takes this email between check and update
+        const updated = await authRepository.updateEmail(
+          token.userId,
+          token.pendingEmail
+        );
+
+        // If update failed (e.g., unique constraint violation), the repository
+        // returns null, which we handle as an invalid token
+        if (!updated) {
+          await authRepository.deleteEmailVerificationToken(tokenId);
+          return err({ type: "INVALID_TOKEN" as const });
+        }
+
+        // Invalidate all sessions (force re-login with new email)
+        await authRepository.deleteAllUserSessions(token.userId);
+
+        // Delete token
+        await authRepository.deleteEmailVerificationToken(tokenId);
+
+        return ok(undefined);
+      })(),
+      () => ({ type: "INVALID_TOKEN" as const })
     ).andThen((result) => result);
   }
 

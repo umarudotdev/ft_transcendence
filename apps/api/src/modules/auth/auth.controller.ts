@@ -13,6 +13,7 @@ import { env } from "../../env";
 const authLogger = logger.child("auth");
 import {
   AuthModel,
+  mapChangeEmailError,
   mapDeleteAccountError,
   mapLoginError,
   mapOAuthUnlinkError,
@@ -186,6 +187,33 @@ export const authController = new Elysia({ prefix: "/auth" })
     },
     {
       body: AuthModel.verifyEmail,
+    }
+  )
+  .post(
+    "/verify-email-change",
+    async ({ body, cookie, request, set }) => {
+      const instance = new URL(request.url).pathname;
+      const result = await AuthService.verifyEmailChange(body.token);
+
+      return result.match(
+        () => {
+          // Remove session cookie since all sessions are invalidated
+          cookie.session.remove();
+          return {
+            message:
+              "Email changed successfully. Please log in with your new email.",
+          };
+        },
+        (error) => {
+          const problem = mapTokenError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
+        }
+      );
+    },
+    {
+      body: AuthModel.verifyEmailChange,
     }
   )
   .group("", (app) =>
@@ -377,6 +405,35 @@ export const authController = new Elysia({ prefix: "/auth" })
     {
       body: AuthModel.changePassword,
     }
+  )
+  .group("", (app) =>
+    app.use(rateLimit({ max: 3, window: 60 * 60 * 1000 })).post(
+      "/change-email",
+      async ({ body, user, request, set }) => {
+        const instance = new URL(request.url).pathname;
+        const result = await AuthService.requestEmailChange(
+          user.id,
+          body.newEmail,
+          body.password
+        );
+
+        return result.match(
+          ({ token }) => ({
+            message: "Verification email sent to new address",
+            token: !isProduction ? token : undefined,
+          }),
+          (error) => {
+            const problem = mapChangeEmailError(error, instance);
+            set.status = problem.status;
+            set.headers["Content-Type"] = "application/problem+json";
+            return problem;
+          }
+        );
+      },
+      {
+        body: AuthModel.changeEmail,
+      }
+    )
   )
   .get("/42/link", ({ cookie, request, set }) => {
     const instance = new URL(request.url).pathname;

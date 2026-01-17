@@ -9,6 +9,7 @@
 	import { Alert, AlertDescription } from "$lib/components/ui/alert";
 	import { Skeleton } from "$lib/components/ui/skeleton";
 	import {
+		createChangeEmailMutation,
 		createChangePasswordMutation,
 		createDeleteAccountMutation,
 		createMeQuery,
@@ -16,6 +17,7 @@
 		redirectToLink42,
 	} from "$lib/queries/auth";
 	import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
+	import MailIcon from "@lucide/svelte/icons/mail";
 	import KeyIcon from "@lucide/svelte/icons/key";
 	import LinkIcon from "@lucide/svelte/icons/link";
 	import UnlinkIcon from "@lucide/svelte/icons/unlink";
@@ -28,6 +30,7 @@
 
 	const meQuery = createMeQuery();
 	const changePasswordMutation = createChangePasswordMutation();
+	const changeEmailMutation = createChangeEmailMutation();
 	const unlink42Mutation = createUnlink42Mutation();
 	const deleteAccountMutation = createDeleteAccountMutation();
 
@@ -35,6 +38,11 @@
 	let newPassword = $state("");
 	let confirmPassword = $state("");
 	let successMessage = $state("");
+
+	// Email change state
+	let newEmail = $state("");
+	let emailPassword = $state("");
+	let emailSuccessMessage = $state("");
 
 	// 42 Unlink state
 	let unlinkDialogOpen = $state(false);
@@ -82,6 +90,31 @@
 					setTimeout(() => {
 						goto("/auth/login?message=Password changed. Please log in again.");
 					}, 2000);
+				},
+			}
+		);
+	}
+
+	const isEmailValid = $derived(
+		/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail) && emailPassword.length > 0
+	);
+
+	async function handleChangeEmail(e: Event) {
+		e.preventDefault();
+		emailSuccessMessage = "";
+
+		if (!isEmailValid) {
+			return;
+		}
+
+		changeEmailMutation.mutate(
+			{ newEmail, password: emailPassword },
+			{
+				onSuccess: () => {
+					emailSuccessMessage =
+						"Verification email sent! Please check your new email address and click the link to confirm the change.";
+					newEmail = "";
+					emailPassword = "";
 				},
 			}
 		);
@@ -285,6 +318,72 @@
 							</Button>
 						</form>
 					{/if}
+				</Card.Content>
+			</Card.Root>
+
+			<!-- Change Email -->
+			<Card.Root>
+				<Card.Header>
+					<Card.Title class="flex items-center gap-2">
+						<MailIcon class="size-5" />
+						Change Email
+					</Card.Title>
+					<Card.Description>Update your email address</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<form onsubmit={handleChangeEmail} class="space-y-4">
+						{#if emailSuccessMessage}
+							<Alert class="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+								<CheckCircleIcon class="size-4" />
+								<AlertDescription>{emailSuccessMessage}</AlertDescription>
+							</Alert>
+						{/if}
+
+						{#if changeEmailMutation.error}
+							<Alert variant="destructive">
+								<AlertTriangleIcon class="size-4" />
+								<AlertDescription>{changeEmailMutation.error.message}</AlertDescription>
+							</Alert>
+						{/if}
+
+						<div class="rounded-lg bg-muted p-3">
+							<p class="text-sm text-muted-foreground">
+								<span class="font-medium">Current email:</span> {user.email}
+							</p>
+						</div>
+
+						<div class="space-y-2">
+							<Label for="new-email">New Email Address</Label>
+							<Input
+								type="email"
+								id="new-email"
+								bind:value={newEmail}
+								placeholder="Enter your new email"
+								required
+								autocomplete="email"
+							/>
+						</div>
+
+						<div class="space-y-2">
+							<Label for="email-password">Current Password</Label>
+							<Input
+								type="password"
+								id="email-password"
+								bind:value={emailPassword}
+								placeholder="Confirm with your password"
+								required
+								autocomplete="current-password"
+							/>
+						</div>
+
+						<p class="text-sm text-muted-foreground">
+							A verification email will be sent to your new address. Your email won't change until you click the verification link.
+						</p>
+
+						<Button type="submit" disabled={!isEmailValid || changeEmailMutation.isPending}>
+							{changeEmailMutation.isPending ? "Sending Verification..." : "Change Email"}
+						</Button>
+					</form>
 				</Card.Content>
 			</Card.Root>
 

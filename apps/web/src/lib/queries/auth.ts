@@ -1,4 +1,5 @@
 import type {
+  ChangeEmailBody,
   ChangePasswordBody,
   ForgotPasswordBody,
   LoginBody,
@@ -40,6 +41,8 @@ export type ForgotPasswordInput = ForgotPasswordBody;
 export type ResetPasswordInput = ResetPasswordBody;
 
 export type ChangePasswordInput = ChangePasswordBody;
+
+export type ChangeEmailInput = ChangeEmailBody;
 
 export interface Enable2faResponse {
   message: string;
@@ -290,6 +293,51 @@ export function createChangePasswordMutation() {
       const response = await api.api.auth["change-password"].post(input, {
         fetch: { credentials: "include" },
       });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.me() });
+      queryClient.clear();
+    },
+  }));
+}
+
+/**
+ * Mutation to request email change (sends verification to new email).
+ */
+export function createChangeEmailMutation() {
+  return createMutation<unknown, ApiError, ChangeEmailInput>(() => ({
+    mutationFn: async (input: ChangeEmailInput) => {
+      const response = await api.api.auth["change-email"].post(input, {
+        fetch: { credentials: "include" },
+      });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+
+      return response.data;
+    },
+  }));
+}
+
+/**
+ * Mutation to verify email change with token.
+ */
+export function createVerifyEmailChangeMutation() {
+  const queryClient = useQueryClient();
+
+  return createMutation<unknown, ApiError, string>(() => ({
+    mutationFn: async (token: string) => {
+      const response = await api.api.auth["verify-email-change"].post(
+        { token },
+        { fetch: { credentials: "include" } }
+      );
 
       if (response.error) {
         throw createApiError(response.error.value);

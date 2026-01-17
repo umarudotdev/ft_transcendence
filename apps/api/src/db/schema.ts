@@ -75,6 +75,10 @@ export const emailVerificationTokens = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
 
+    // For email change flow: stores the new email until verified
+    // null = initial email verification, non-null = email change verification
+    pendingEmail: text("pending_email"),
+
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
 
     createdAt: timestamp("created_at", { withTimezone: true })

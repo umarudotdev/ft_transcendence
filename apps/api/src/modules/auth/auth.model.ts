@@ -44,6 +44,10 @@ export const AuthModel = {
     newPassword: t.String({ minLength: 8 }),
   }),
 
+  setPassword: t.Object({
+    password: t.String({ minLength: 8 }),
+  }),
+
   changeEmail: t.Object({
     newEmail: t.String({ format: "email" }),
     password: t.String({ minLength: 1 }),
@@ -67,6 +71,7 @@ export const AuthModel = {
     emailVerified: t.Boolean(),
     twoFactorEnabled: t.Boolean(),
     intraId: t.Nullable(t.Number()),
+    hasPassword: t.Boolean(),
     role: t.Union([
       t.Literal("user"),
       t.Literal("moderator"),
@@ -97,6 +102,14 @@ export const AuthModel = {
       requirements: t.Array(t.String()),
     }),
     t.Object({ type: t.Literal("SAME_AS_CURRENT") }),
+  ]),
+
+  setPasswordError: t.Union([
+    t.Object({ type: t.Literal("ALREADY_HAS_PASSWORD") }),
+    t.Object({
+      type: t.Literal("WEAK_PASSWORD"),
+      requirements: t.Array(t.String()),
+    }),
   ]),
 
   tokenError: t.Union([
@@ -156,6 +169,7 @@ export type VerifyEmailBody = (typeof AuthModel.verifyEmail)["static"];
 export type ForgotPasswordBody = (typeof AuthModel.forgotPassword)["static"];
 export type ResetPasswordBody = (typeof AuthModel.resetPassword)["static"];
 export type ChangePasswordBody = (typeof AuthModel.changePassword)["static"];
+export type SetPasswordBody = (typeof AuthModel.setPassword)["static"];
 export type ChangeEmailBody = (typeof AuthModel.changeEmail)["static"];
 export type VerifyEmailChangeBody =
   (typeof AuthModel.verifyEmailChange)["static"];
@@ -166,6 +180,7 @@ export type SafeUser = (typeof AuthModel.safeUser)["static"];
 export type RegisterError = (typeof AuthModel.registerError)["static"];
 export type LoginError = (typeof AuthModel.loginError)["static"];
 export type PasswordError = (typeof AuthModel.passwordError)["static"];
+export type SetPasswordError = (typeof AuthModel.setPasswordError)["static"];
 export type TokenError = (typeof AuthModel.tokenError)["static"];
 export type OAuthError = (typeof AuthModel.oauthError)["static"];
 export type OAuthUnlinkError = (typeof AuthModel.oauthUnlinkError)["static"];
@@ -228,6 +243,25 @@ export function mapPasswordError(error: PasswordError, instance: string) {
       return badRequest("New password must be different from current", {
         instance,
       });
+  }
+}
+
+/**
+ * Maps set password errors to RFC 9457 Problem Details.
+ */
+export function mapSetPasswordError(error: SetPasswordError, instance: string) {
+  switch (error.type) {
+    case "ALREADY_HAS_PASSWORD":
+      return badRequest(
+        "Account already has a password. Use change password instead.",
+        { instance }
+      );
+    case "WEAK_PASSWORD":
+      return validationError(
+        "Password does not meet requirements",
+        error.requirements.map((r) => ({ field: "password", message: r })),
+        { instance }
+      );
   }
 }
 

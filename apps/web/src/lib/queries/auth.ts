@@ -6,6 +6,7 @@ import type {
   RegisterBody,
   ResetPasswordBody,
   SafeUser,
+  SetPasswordBody,
   TotpCodeBody,
 } from "@api/modules/auth/auth.model";
 
@@ -41,6 +42,8 @@ export type ForgotPasswordInput = ForgotPasswordBody;
 export type ResetPasswordInput = ResetPasswordBody;
 
 export type ChangePasswordInput = ChangePasswordBody;
+
+export type SetPasswordInput = SetPasswordBody;
 
 export type ChangeEmailInput = ChangeEmailBody;
 
@@ -303,6 +306,30 @@ export function createChangePasswordMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: authKeys.me() });
       queryClient.clear();
+    },
+  }));
+}
+
+/**
+ * Mutation to set password (for OAuth-only users who don't have a password).
+ */
+export function createSetPasswordMutation() {
+  const queryClient = useQueryClient();
+
+  return createMutation<unknown, ApiError, SetPasswordInput>(() => ({
+    mutationFn: async (input: SetPasswordInput) => {
+      const response = await api.api.auth["set-password"].post(input, {
+        fetch: { credentials: "include" },
+      });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authKeys.me() });
     },
   }));
 }

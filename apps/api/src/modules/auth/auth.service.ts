@@ -11,6 +11,7 @@ import type {
   RegisterError,
   SafeUser,
   SessionError,
+  SetPasswordError,
   TotpError,
   TokenError,
 } from "./auth.model";
@@ -50,6 +51,7 @@ async function toSafeUser(user: {
   emailVerified: boolean;
   twoFactorEnabled: boolean;
   intraId: number | null;
+  passwordHash: string | null;
   createdAt: Date;
 }): Promise<SafeUser> {
   const userRole = await moderationRepository.getUserRole(user.id);
@@ -63,6 +65,7 @@ async function toSafeUser(user: {
     emailVerified: user.emailVerified,
     twoFactorEnabled: user.twoFactorEnabled,
     intraId: user.intraId,
+    hasPassword: user.passwordHash !== null,
     role,
     createdAt: user.createdAt,
   };
@@ -419,6 +422,40 @@ abstract class AuthService {
         return ok(undefined);
       })(),
       () => ({ type: "INCORRECT_PASSWORD" as const })
+    ).andThen((result) => result);
+  }
+
+  static setPassword(
+    userId: number,
+    password: string
+  ): ResultAsync<void, SetPasswordError> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        const user = await authRepository.findUserById(userId);
+
+        if (!user) {
+          return err({ type: "ALREADY_HAS_PASSWORD" as const });
+        }
+
+        // Only OAuth-only accounts (no password) can use this endpoint
+        if (user.passwordHash) {
+          return err({ type: "ALREADY_HAS_PASSWORD" as const });
+        }
+
+        const validation = validatePasswordStrength(password);
+        if (!validation.valid) {
+          return err({
+            type: "WEAK_PASSWORD" as const,
+            requirements: validation.requirements,
+          });
+        }
+
+        const passwordHash = await hashPassword(password);
+        await authRepository.updatePassword(userId, passwordHash);
+
+        return ok(undefined);
+      })(),
+      () => ({ type: "ALREADY_HAS_PASSWORD" as const })
     ).andThen((result) => result);
   }
 

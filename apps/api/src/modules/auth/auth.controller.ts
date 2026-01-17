@@ -19,6 +19,7 @@ import {
   mapOAuthUnlinkError,
   mapPasswordError,
   mapRegisterError,
+  mapSetPasswordError,
   mapTokenError,
   mapTotpError,
 } from "./auth.model";
@@ -404,6 +405,29 @@ export const authController = new Elysia({ prefix: "/auth" })
     },
     {
       body: AuthModel.changePassword,
+    }
+  )
+  .post(
+    "/set-password",
+    async ({ body, user, request, set }) => {
+      const instance = new URL(request.url).pathname;
+      const result = await AuthService.setPassword(user.id, body.password);
+
+      return result.match(
+        () => ({
+          message:
+            "Password set successfully. You can now use all account features.",
+        }),
+        (error) => {
+          const problem = mapSetPasswordError(error, instance);
+          set.status = problem.status;
+          set.headers["Content-Type"] = "application/problem+json";
+          return problem;
+        }
+      );
+    },
+    {
+      body: AuthModel.setPassword,
     }
   )
   .group("", (app) =>

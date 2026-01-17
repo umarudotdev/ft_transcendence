@@ -1,65 +1,72 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
-	import * as Card from "$lib/components/ui/card";
-	import * as Dialog from "$lib/components/ui/dialog";
-	import { Button } from "$lib/components/ui/button";
-	import { Input } from "$lib/components/ui/input";
-	import { Label } from "$lib/components/ui/label";
-	import { Badge } from "$lib/components/ui/badge";
-	import { Alert, AlertDescription } from "$lib/components/ui/alert";
-	import { Skeleton } from "$lib/components/ui/skeleton";
+	import { goto } from '$app/navigation';
+	import * as Card from '$lib/components/ui/card';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Alert, AlertDescription } from '$lib/components/ui/alert';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import {
 		createChangeEmailMutation,
 		createChangePasswordMutation,
 		createDeleteAccountMutation,
 		createMeQuery,
+		createSetPasswordMutation,
 		createUnlink42Mutation,
-		redirectToLink42,
-	} from "$lib/queries/auth";
-	import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
-	import MailIcon from "@lucide/svelte/icons/mail";
-	import KeyIcon from "@lucide/svelte/icons/key";
-	import LinkIcon from "@lucide/svelte/icons/link";
-	import UnlinkIcon from "@lucide/svelte/icons/unlink";
-	import ShieldIcon from "@lucide/svelte/icons/shield";
-	import LogOutIcon from "@lucide/svelte/icons/log-out";
-	import CheckCircleIcon from "@lucide/svelte/icons/check-circle";
-	import CircleIcon from "@lucide/svelte/icons/circle";
-	import AlertTriangleIcon from "@lucide/svelte/icons/alert-triangle";
-	import TrashIcon from "@lucide/svelte/icons/trash-2";
+		redirectToLink42
+	} from '$lib/queries/auth';
+	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+	import MailIcon from '@lucide/svelte/icons/mail';
+	import KeyIcon from '@lucide/svelte/icons/key';
+	import LinkIcon from '@lucide/svelte/icons/link';
+	import UnlinkIcon from '@lucide/svelte/icons/unlink';
+	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import LogOutIcon from '@lucide/svelte/icons/log-out';
+	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
+	import CircleIcon from '@lucide/svelte/icons/circle';
+	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
+	import TrashIcon from '@lucide/svelte/icons/trash-2';
 
 	const meQuery = createMeQuery();
 	const changePasswordMutation = createChangePasswordMutation();
+	const setPasswordMutation = createSetPasswordMutation();
 	const changeEmailMutation = createChangeEmailMutation();
 	const unlink42Mutation = createUnlink42Mutation();
 	const deleteAccountMutation = createDeleteAccountMutation();
 
-	let currentPassword = $state("");
-	let newPassword = $state("");
-	let confirmPassword = $state("");
-	let successMessage = $state("");
+	let currentPassword = $state('');
+	let newPassword = $state('');
+	let confirmPassword = $state('');
+	let successMessage = $state('');
+
+	// Set password state (for OAuth-only users)
+	let setNewPassword = $state('');
+	let setConfirmPassword = $state('');
+	let setPasswordSuccessMessage = $state('');
 
 	// Email change state
-	let newEmail = $state("");
-	let emailPassword = $state("");
-	let emailSuccessMessage = $state("");
+	let newEmail = $state('');
+	let emailPassword = $state('');
+	let emailSuccessMessage = $state('');
 
 	// 42 Unlink state
 	let unlinkDialogOpen = $state(false);
-	let unlinkPassword = $state("");
-	let unlinkSuccessMessage = $state("");
+	let unlinkPassword = $state('');
+	let unlinkSuccessMessage = $state('');
 
 	// Delete Account state
 	let deleteDialogOpen = $state(false);
-	let deletePassword = $state("");
-	let deleteConfirmText = $state("");
+	let deletePassword = $state('');
+	let deleteConfirmText = $state('');
 
 	const passwordRequirements = $derived({
 		minLength: newPassword.length >= 8,
 		hasUpper: /[A-Z]/.test(newPassword),
 		hasLower: /[a-z]/.test(newPassword),
 		hasNumber: /[0-9]/.test(newPassword),
-		passwordsMatch: newPassword === confirmPassword && newPassword.length > 0,
+		passwordsMatch: newPassword === confirmPassword && newPassword.length > 0
 	});
 
 	const isPasswordValid = $derived(
@@ -70,9 +77,26 @@
 			passwordRequirements.passwordsMatch
 	);
 
+	// Set password requirements (for OAuth-only users)
+	const setPasswordRequirements = $derived({
+		minLength: setNewPassword.length >= 8,
+		hasUpper: /[A-Z]/.test(setNewPassword),
+		hasLower: /[a-z]/.test(setNewPassword),
+		hasNumber: /[0-9]/.test(setNewPassword),
+		passwordsMatch: setNewPassword === setConfirmPassword && setNewPassword.length > 0
+	});
+
+	const isSetPasswordValid = $derived(
+		setPasswordRequirements.minLength &&
+			setPasswordRequirements.hasUpper &&
+			setPasswordRequirements.hasLower &&
+			setPasswordRequirements.hasNumber &&
+			setPasswordRequirements.passwordsMatch
+	);
+
 	async function handleChangePassword(e: Event) {
 		e.preventDefault();
-		successMessage = "";
+		successMessage = '';
 
 		if (!isPasswordValid) {
 			return;
@@ -83,14 +107,35 @@
 			{
 				onSuccess: () => {
 					successMessage =
-						"Password changed successfully. You have been logged out of all sessions.";
-					currentPassword = "";
-					newPassword = "";
-					confirmPassword = "";
+						'Password changed successfully. You have been logged out of all sessions.';
+					currentPassword = '';
+					newPassword = '';
+					confirmPassword = '';
 					setTimeout(() => {
-						goto("/auth/login?message=Password changed. Please log in again.");
+						goto('/auth/login?message=Password changed. Please log in again.');
 					}, 2000);
-				},
+				}
+			}
+		);
+	}
+
+	async function handleSetPassword(e: Event) {
+		e.preventDefault();
+		setPasswordSuccessMessage = '';
+
+		if (!isSetPasswordValid) {
+			return;
+		}
+
+		setPasswordMutation.mutate(
+			{ password: setNewPassword },
+			{
+				onSuccess: () => {
+					setPasswordSuccessMessage =
+						'Password set successfully! You can now change your email, delete your account, and unlink your 42 account.';
+					setNewPassword = '';
+					setConfirmPassword = '';
+				}
 			}
 		);
 	}
@@ -101,7 +146,7 @@
 
 	async function handleChangeEmail(e: Event) {
 		e.preventDefault();
-		emailSuccessMessage = "";
+		emailSuccessMessage = '';
 
 		if (!isEmailValid) {
 			return;
@@ -112,17 +157,17 @@
 			{
 				onSuccess: () => {
 					emailSuccessMessage =
-						"Verification email sent! Please check your new email address and click the link to confirm the change.";
-					newEmail = "";
-					emailPassword = "";
-				},
+						'Verification email sent! Please check your new email address and click the link to confirm the change.';
+					newEmail = '';
+					emailPassword = '';
+				}
 			}
 		);
 	}
 
 	function handleUnlink42(e: Event) {
 		e.preventDefault();
-		unlinkSuccessMessage = "";
+		unlinkSuccessMessage = '';
 
 		if (!unlinkPassword) {
 			return;
@@ -132,17 +177,15 @@
 			{ password: unlinkPassword },
 			{
 				onSuccess: () => {
-					unlinkSuccessMessage = "42 account unlinked successfully.";
-					unlinkPassword = "";
+					unlinkSuccessMessage = '42 account unlinked successfully.';
+					unlinkPassword = '';
 					unlinkDialogOpen = false;
-				},
+				}
 			}
 		);
 	}
 
-	const canDeleteAccount = $derived(
-		deletePassword.length > 0 && deleteConfirmText === "DELETE"
-	);
+	const canDeleteAccount = $derived(deletePassword.length > 0 && deleteConfirmText === 'DELETE');
 
 	function handleDeleteAccount(e: Event) {
 		e.preventDefault();
@@ -155,8 +198,8 @@
 			{ password: deletePassword },
 			{
 				onSuccess: () => {
-					goto("/auth/login?message=Your account has been deleted.");
-				},
+					goto('/auth/login?message=Your account has been deleted.');
+				}
 			}
 		);
 	}
@@ -194,8 +237,7 @@
 		<Alert variant="destructive">
 			<AlertTriangleIcon class="size-4" />
 			<AlertDescription>
-				Please <a href="/auth/login" class="font-medium underline">log in</a> to access security
-				settings.
+				Please <a href="/auth/login" class="font-medium underline">log in</a> to access security settings.
 			</AlertDescription>
 		</Alert>
 	{:else if meQuery.data}
@@ -206,20 +248,143 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<KeyIcon class="size-5" />
-						Change Password
+						{#if !user.hasPassword}
+							Set Password
+						{:else}
+							Change Password
+						{/if}
 					</Card.Title>
-					<Card.Description>Update your password to keep your account secure</Card.Description>
+					<Card.Description>
+						{#if !user.hasPassword}
+							Set a password to enable all account features
+						{:else}
+							Update your password to keep your account secure
+						{/if}
+					</Card.Description>
 				</Card.Header>
 				<Card.Content>
-					{#if user.intraId && !user.email}
-						<p class="text-sm text-muted-foreground">
-							You signed up with 42 OAuth and don't have a password set. To add password
-							authentication, please contact support.
+					{#if !user.hasPassword}
+						<p class="mb-4 text-sm text-muted-foreground">
+							You signed up with 42 OAuth. Set a password to enable email changes, account deletion,
+							and unlinking your 42 account.
 						</p>
+						<form onsubmit={handleSetPassword} class="space-y-4">
+							{#if setPasswordSuccessMessage}
+								<Alert
+									class="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
+								>
+									<CheckCircleIcon class="size-4" />
+									<AlertDescription>{setPasswordSuccessMessage}</AlertDescription>
+								</Alert>
+							{/if}
+
+							{#if setPasswordMutation.error}
+								<Alert variant="destructive">
+									<AlertTriangleIcon class="size-4" />
+									<AlertDescription>{setPasswordMutation.error.message}</AlertDescription>
+								</Alert>
+							{/if}
+
+							<div class="space-y-2">
+								<Label for="set-new-password">New Password</Label>
+								<Input
+									type="password"
+									id="set-new-password"
+									bind:value={setNewPassword}
+									required
+									autocomplete="new-password"
+								/>
+							</div>
+
+							<div class="space-y-2">
+								<Label for="set-confirm-password">Confirm Password</Label>
+								<Input
+									type="password"
+									id="set-confirm-password"
+									bind:value={setConfirmPassword}
+									required
+									autocomplete="new-password"
+								/>
+							</div>
+
+							{#if setNewPassword.length > 0}
+								<div class="rounded-lg bg-muted p-4">
+									<p class="text-sm font-medium">Password requirements:</p>
+									<ul class="mt-2 space-y-1 text-sm">
+										<li
+											class="flex items-center gap-2 {setPasswordRequirements.minLength
+												? 'text-green-600'
+												: 'text-muted-foreground'}"
+										>
+											{#if setPasswordRequirements.minLength}
+												<CheckCircleIcon class="size-4" />
+											{:else}
+												<CircleIcon class="size-4" />
+											{/if}
+											At least 8 characters
+										</li>
+										<li
+											class="flex items-center gap-2 {setPasswordRequirements.hasUpper
+												? 'text-green-600'
+												: 'text-muted-foreground'}"
+										>
+											{#if setPasswordRequirements.hasUpper}
+												<CheckCircleIcon class="size-4" />
+											{:else}
+												<CircleIcon class="size-4" />
+											{/if}
+											One uppercase letter
+										</li>
+										<li
+											class="flex items-center gap-2 {setPasswordRequirements.hasLower
+												? 'text-green-600'
+												: 'text-muted-foreground'}"
+										>
+											{#if setPasswordRequirements.hasLower}
+												<CheckCircleIcon class="size-4" />
+											{:else}
+												<CircleIcon class="size-4" />
+											{/if}
+											One lowercase letter
+										</li>
+										<li
+											class="flex items-center gap-2 {setPasswordRequirements.hasNumber
+												? 'text-green-600'
+												: 'text-muted-foreground'}"
+										>
+											{#if setPasswordRequirements.hasNumber}
+												<CheckCircleIcon class="size-4" />
+											{:else}
+												<CircleIcon class="size-4" />
+											{/if}
+											One number
+										</li>
+										<li
+											class="flex items-center gap-2 {setPasswordRequirements.passwordsMatch
+												? 'text-green-600'
+												: 'text-muted-foreground'}"
+										>
+											{#if setPasswordRequirements.passwordsMatch}
+												<CheckCircleIcon class="size-4" />
+											{:else}
+												<CircleIcon class="size-4" />
+											{/if}
+											Passwords match
+										</li>
+									</ul>
+								</div>
+							{/if}
+
+							<Button type="submit" disabled={!isSetPasswordValid || setPasswordMutation.isPending}>
+								{setPasswordMutation.isPending ? 'Setting Password...' : 'Set Password'}
+							</Button>
+						</form>
 					{:else}
 						<form onsubmit={handleChangePassword} class="space-y-4">
 							{#if successMessage}
-								<Alert class="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+								<Alert
+									class="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
+								>
 									<CheckCircleIcon class="size-4" />
 									<AlertDescription>{successMessage}</AlertDescription>
 								</Alert>
@@ -269,7 +434,11 @@
 								<div class="rounded-lg bg-muted p-4">
 									<p class="text-sm font-medium">Password requirements:</p>
 									<ul class="mt-2 space-y-1 text-sm">
-										<li class="flex items-center gap-2 {passwordRequirements.minLength ? 'text-green-600' : 'text-muted-foreground'}">
+										<li
+											class="flex items-center gap-2 {passwordRequirements.minLength
+												? 'text-green-600'
+												: 'text-muted-foreground'}"
+										>
 											{#if passwordRequirements.minLength}
 												<CheckCircleIcon class="size-4" />
 											{:else}
@@ -277,7 +446,11 @@
 											{/if}
 											At least 8 characters
 										</li>
-										<li class="flex items-center gap-2 {passwordRequirements.hasUpper ? 'text-green-600' : 'text-muted-foreground'}">
+										<li
+											class="flex items-center gap-2 {passwordRequirements.hasUpper
+												? 'text-green-600'
+												: 'text-muted-foreground'}"
+										>
 											{#if passwordRequirements.hasUpper}
 												<CheckCircleIcon class="size-4" />
 											{:else}
@@ -285,7 +458,11 @@
 											{/if}
 											One uppercase letter
 										</li>
-										<li class="flex items-center gap-2 {passwordRequirements.hasLower ? 'text-green-600' : 'text-muted-foreground'}">
+										<li
+											class="flex items-center gap-2 {passwordRequirements.hasLower
+												? 'text-green-600'
+												: 'text-muted-foreground'}"
+										>
 											{#if passwordRequirements.hasLower}
 												<CheckCircleIcon class="size-4" />
 											{:else}
@@ -293,7 +470,11 @@
 											{/if}
 											One lowercase letter
 										</li>
-										<li class="flex items-center gap-2 {passwordRequirements.hasNumber ? 'text-green-600' : 'text-muted-foreground'}">
+										<li
+											class="flex items-center gap-2 {passwordRequirements.hasNumber
+												? 'text-green-600'
+												: 'text-muted-foreground'}"
+										>
 											{#if passwordRequirements.hasNumber}
 												<CheckCircleIcon class="size-4" />
 											{:else}
@@ -301,7 +482,11 @@
 											{/if}
 											One number
 										</li>
-										<li class="flex items-center gap-2 {passwordRequirements.passwordsMatch ? 'text-green-600' : 'text-muted-foreground'}">
+										<li
+											class="flex items-center gap-2 {passwordRequirements.passwordsMatch
+												? 'text-green-600'
+												: 'text-muted-foreground'}"
+										>
 											{#if passwordRequirements.passwordsMatch}
 												<CheckCircleIcon class="size-4" />
 											{:else}
@@ -314,7 +499,7 @@
 							{/if}
 
 							<Button type="submit" disabled={!isPasswordValid || changePasswordMutation.isPending}>
-								{changePasswordMutation.isPending ? "Changing Password..." : "Change Password"}
+								{changePasswordMutation.isPending ? 'Changing Password...' : 'Change Password'}
 							</Button>
 						</form>
 					{/if}
@@ -333,7 +518,9 @@
 				<Card.Content>
 					<form onsubmit={handleChangeEmail} class="space-y-4">
 						{#if emailSuccessMessage}
-							<Alert class="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+							<Alert
+								class="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
+							>
 								<CheckCircleIcon class="size-4" />
 								<AlertDescription>{emailSuccessMessage}</AlertDescription>
 							</Alert>
@@ -348,7 +535,8 @@
 
 						<div class="rounded-lg bg-muted p-3">
 							<p class="text-sm text-muted-foreground">
-								<span class="font-medium">Current email:</span> {user.email}
+								<span class="font-medium">Current email:</span>
+								{user.email}
 							</p>
 						</div>
 
@@ -377,11 +565,12 @@
 						</div>
 
 						<p class="text-sm text-muted-foreground">
-							A verification email will be sent to your new address. Your email won't change until you click the verification link.
+							A verification email will be sent to your new address. Your email won't change until
+							you click the verification link.
 						</p>
 
 						<Button type="submit" disabled={!isEmailValid || changeEmailMutation.isPending}>
-							{changeEmailMutation.isPending ? "Sending Verification..." : "Change Email"}
+							{changeEmailMutation.isPending ? 'Sending Verification...' : 'Change Email'}
 						</Button>
 					</form>
 				</Card.Content>
@@ -398,7 +587,9 @@
 				</Card.Header>
 				<Card.Content>
 					{#if unlinkSuccessMessage}
-						<Alert class="mb-4 border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+						<Alert
+							class="mb-4 border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
+						>
 							<CheckCircleIcon class="size-4" />
 							<AlertDescription>{unlinkSuccessMessage}</AlertDescription>
 						</Alert>
@@ -407,7 +598,10 @@
 					{#if user.intraId}
 						<div class="flex items-center justify-between">
 							<div>
-								<Badge variant="secondary" class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+								<Badge
+									variant="secondary"
+									class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+								>
 									<CheckCircleIcon class="mr-1 size-3" />
 									42 Account Linked
 								</Badge>
@@ -415,11 +609,15 @@
 									Your 42 account is connected. You can use it to sign in.
 								</p>
 							</div>
-							{#if user.email}
+							{#if user.hasPassword}
 								<Dialog.Root bind:open={unlinkDialogOpen}>
 									<Dialog.Trigger>
 										{#snippet child({ props })}
-											<Button variant="outline" class="text-destructive hover:text-destructive" {...props}>
+											<Button
+												variant="outline"
+												class="text-destructive hover:text-destructive"
+												{...props}
+											>
 												<UnlinkIcon class="mr-2 size-4" />
 												Unlink
 											</Button>
@@ -429,7 +627,8 @@
 										<Dialog.Header>
 											<Dialog.Title>Unlink 42 Account</Dialog.Title>
 											<Dialog.Description>
-												Enter your password to confirm unlinking your 42 account. You can re-link it later.
+												Enter your password to confirm unlinking your 42 account. You can re-link it
+												later.
 											</Dialog.Description>
 										</Dialog.Header>
 										<form onsubmit={handleUnlink42} class="space-y-4">
@@ -453,7 +652,11 @@
 											</div>
 
 											<Dialog.Footer>
-												<Button type="button" variant="outline" onclick={() => (unlinkDialogOpen = false)}>
+												<Button
+													type="button"
+													variant="outline"
+													onclick={() => (unlinkDialogOpen = false)}
+												>
 													Cancel
 												</Button>
 												<Button
@@ -461,7 +664,7 @@
 													variant="destructive"
 													disabled={!unlinkPassword || unlink42Mutation.isPending}
 												>
-													{unlink42Mutation.isPending ? "Unlinking..." : "Unlink Account"}
+													{unlink42Mutation.isPending ? 'Unlinking...' : 'Unlink Account'}
 												</Button>
 											</Dialog.Footer>
 										</form>
@@ -469,7 +672,7 @@
 								</Dialog.Root>
 							{/if}
 						</div>
-						{#if !user.email}
+						{#if !user.hasPassword}
 							<p class="mt-2 text-sm text-muted-foreground">
 								Set up a password first to be able to unlink your 42 account.
 							</p>
@@ -495,7 +698,10 @@
 				<Card.Content>
 					{#if user.twoFactorEnabled}
 						<div class="flex items-center justify-between">
-							<Badge variant="secondary" class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+							<Badge
+								variant="secondary"
+								class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+							>
 								<CheckCircleIcon class="mr-1 size-3" />
 								2FA Enabled
 							</Badge>
@@ -525,7 +731,9 @@
 						<LogOutIcon class="size-5" />
 						Active Sessions
 					</Card.Title>
-					<Card.Description>Sign out from all devices if you suspect unauthorized access</Card.Description>
+					<Card.Description
+						>Sign out from all devices if you suspect unauthorized access</Card.Description
+					>
 				</Card.Header>
 				<Card.Content>
 					<Button variant="destructive" href="/auth/logout?all=true">
@@ -542,19 +750,23 @@
 						<TrashIcon class="size-5" />
 						Delete Account
 					</Card.Title>
-					<Card.Description>Permanently delete your account and all associated data</Card.Description>
+					<Card.Description
+						>Permanently delete your account and all associated data</Card.Description
+					>
 				</Card.Header>
 				<Card.Content>
-					{#if user.intraId && !user.email}
+					{#if !user.hasPassword}
 						<Alert variant="destructive">
 							<AlertTriangleIcon class="size-4" />
 							<AlertDescription>
-								OAuth-only accounts cannot be deleted through this interface. Please contact support for assistance.
+								You need to set a password before you can delete your account. Go to the "Set
+								Password" section above.
 							</AlertDescription>
 						</Alert>
 					{:else}
 						<p class="mb-4 text-sm text-muted-foreground">
-							This action is irreversible. All your data, including match history, achievements, and messages will be permanently deleted.
+							This action is irreversible. All your data, including match history, achievements, and
+							messages will be permanently deleted.
 						</p>
 						<Dialog.Root bind:open={deleteDialogOpen}>
 							<Dialog.Trigger>
@@ -605,11 +817,15 @@
 									</div>
 
 									<Dialog.Footer>
-										<Button type="button" variant="outline" onclick={() => {
-											deleteDialogOpen = false;
-											deletePassword = "";
-											deleteConfirmText = "";
-										}}>
+										<Button
+											type="button"
+											variant="outline"
+											onclick={() => {
+												deleteDialogOpen = false;
+												deletePassword = '';
+												deleteConfirmText = '';
+											}}
+										>
 											Cancel
 										</Button>
 										<Button
@@ -617,7 +833,7 @@
 											variant="destructive"
 											disabled={!canDeleteAccount || deleteAccountMutation.isPending}
 										>
-											{deleteAccountMutation.isPending ? "Deleting..." : "Delete Account"}
+											{deleteAccountMutation.isPending ? 'Deleting...' : 'Delete Account'}
 										</Button>
 									</Dialog.Footer>
 								</form>

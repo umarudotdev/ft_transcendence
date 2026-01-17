@@ -31,6 +31,8 @@ services:
       LOG_LEVEL: debug
       SHUTDOWN_TIMEOUT_MS: "10000"
       CHAT_ENCRYPTION_KEY: dev-chat-encryption-key-32bytes!
+    volumes:
+      - uploads:/usr/src/app/apps/api/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -68,3 +70,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:

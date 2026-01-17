@@ -55,6 +55,10 @@ env:
     - RESEND_API_KEY
     - EMAIL_FROM
 
+# Persistent volumes for user uploads
+volumes:
+  - "ft-transcendence-uploads:/usr/src/app/apps/api/uploads"
+
 # Accessories
 accessories:
   db:

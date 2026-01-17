@@ -143,6 +143,20 @@ jobs:
       - name: Deploy API
         run: kamal deploy
 
+      - name: Run database migrations
+        env:
+          EC2_HOST: ${{ vars.AWS_EC2_HOST }}
+        run: |
+          echo "=== Running database migrations ==="
+          # Get the API container name (Kamal uses service name pattern)
+          CONTAINER=$(ssh -i ~/.ssh/ft-transcendence.pem ubuntu@$EC2_HOST \
+            "docker ps --filter 'name=ft-transcendence-api' --format '{{.Names}}' | head -1")
+          echo "Found container: $CONTAINER"
+          # Run migrations inside the container
+          ssh -i ~/.ssh/ft-transcendence.pem ubuntu@$EC2_HOST \
+            "docker exec $CONTAINER bun run migrate"
+          echo "=== Migrations completed successfully ==="
+
   deploy-web:
     name: Deploy Web
     needs: test

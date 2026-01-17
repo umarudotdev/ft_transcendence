@@ -82,21 +82,21 @@ export const EmailService = {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <body style="font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #3d4663; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #eeeff5;">
+            <div style="background-color: #2959aa; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
               <h1 style="color: white; margin: 0; font-size: 28px;">ft_transcendence</h1>
             </div>
-            <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none;">
-              <h2 style="margin-top: 0;">Hey ${displayName}!</h2>
+            <div style="background: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #c4c7d4; border-top: none;">
+              <h2 style="margin-top: 0; color: #3d4663;">Hey ${displayName}!</h2>
               <p>Thanks for signing up. Please verify your email address by clicking the button below:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${verifyUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                <a href="${verifyUrl}" style="background-color: #2959aa; color: white; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: 500; display: inline-block;">
                   Verify Email
                 </a>
               </div>
               <p style="color: #6b7280; font-size: 14px;">
                 Or copy and paste this link in your browser:<br>
-                <a href="${verifyUrl}" style="color: #667eea; word-break: break-all;">${verifyUrl}</a>
+                <a href="${verifyUrl}" style="color: #2959aa; word-break: break-all;">${verifyUrl}</a>
               </p>
               <p style="color: #6b7280; font-size: 14px;">
                 This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.
@@ -125,21 +125,21 @@ export const EmailService = {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <body style="font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #3d4663; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #eeeff5;">
+            <div style="background-color: #2959aa; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
               <h1 style="color: white; margin: 0; font-size: 28px;">ft_transcendence</h1>
             </div>
-            <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none;">
-              <h2 style="margin-top: 0;">Password Reset</h2>
+            <div style="background: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #c4c7d4; border-top: none;">
+              <h2 style="margin-top: 0; color: #3d4663;">Password Reset</h2>
               <p>Hi ${displayName}, we received a request to reset your password. Click the button below to choose a new one:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${resetUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                <a href="${resetUrl}" style="background-color: #2959aa; color: white; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: 500; display: inline-block;">
                   Reset Password
                 </a>
               </div>
               <p style="color: #6b7280; font-size: 14px;">
                 Or copy and paste this link in your browser:<br>
-                <a href="${resetUrl}" style="color: #667eea; word-break: break-all;">${resetUrl}</a>
+                <a href="${resetUrl}" style="color: #2959aa; word-break: break-all;">${resetUrl}</a>
               </p>
               <p style="color: #6b7280; font-size: 14px;">
                 This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
@@ -168,21 +168,21 @@ export const EmailService = {
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
           </head>
-          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <body style="font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #3d4663; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #eeeff5;">
+            <div style="background-color: #2959aa; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
               <h1 style="color: white; margin: 0; font-size: 28px;">ft_transcendence</h1>
             </div>
-            <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none;">
-              <h2 style="margin-top: 0;">Email Change Request</h2>
+            <div style="background: #ffffff; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #c4c7d4; border-top: none;">
+              <h2 style="margin-top: 0; color: #3d4663;">Email Change Request</h2>
               <p>Hi ${displayName}, you requested to change your email address to this one. Please verify by clicking the button below:</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${verifyUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+                <a href="${verifyUrl}" style="background-color: #2959aa; color: white; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: 500; display: inline-block;">
                   Verify New Email
                 </a>
               </div>
               <p style="color: #6b7280; font-size: 14px;">
                 Or copy and paste this link in your browser:<br>
-                <a href="${verifyUrl}" style="color: #667eea; word-break: break-all;">${verifyUrl}</a>
+                <a href="${verifyUrl}" style="color: #2959aa; word-break: break-all;">${verifyUrl}</a>
               </p>
               <p style="color: #6b7280; font-size: 14px;">
                 <strong>Important:</strong> Your email will not change until you click this link. This link will expire in 1 hour.

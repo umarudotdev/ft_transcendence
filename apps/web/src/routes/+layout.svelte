@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { locales, localizeHref } from '$lib/paraglide/runtime';
 	import { createQueryClient } from '$lib/query';
+	import { Toaster } from '$lib/components/ui/sonner';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 
@@ -19,6 +20,8 @@
 <QueryClientProvider client={queryClient}>
 	{@render children()}
 </QueryClientProvider>
+
+<Toaster position="bottom-right" duration={5000} closeButton />
 
 <div style="display:none">
 	{#each locales as locale}

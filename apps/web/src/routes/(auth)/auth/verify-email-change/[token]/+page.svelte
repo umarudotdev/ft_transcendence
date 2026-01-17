@@ -35,7 +35,7 @@
 	});
 </script>
 
-<Card.Root class="w-full max-w-md">
+<Card.Root class="w-full max-w-md border-y">
 	<Card.Header>
 		<Card.Title class="text-2xl">Email Change Verification</Card.Title>
 	</Card.Header>

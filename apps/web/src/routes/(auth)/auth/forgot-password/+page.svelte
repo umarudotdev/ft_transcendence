@@ -30,7 +30,7 @@
 	}
 </script>
 
-<Card.Root class="w-full max-w-md">
+<Card.Root class="w-full max-w-md border-y">
 	<Card.Header>
 		<Card.Title class="text-2xl">Forgot Password</Card.Title>
 		<Card.Description>

@@ -16,8 +16,11 @@
 	} from '$lib/queries/auth';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
+	import ShieldOffIcon from '@lucide/svelte/icons/shield-off';
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
+	import QrCodeIcon from '@lucide/svelte/icons/qr-code';
 
 	const meQuery = createMeQuery();
 	const enable2faMutation = createEnable2faMutation();
@@ -85,31 +88,24 @@
 	</title>
 </svelte:head>
 
-<div class="mx-auto max-w-lg space-y-6">
-	<div>
-		<a
-			href="/settings/security"
-			class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-		>
-			<ArrowLeftIcon class="size-4" />
-			Back to Security Settings
-		</a>
-		<h1 class="mt-4 text-2xl font-bold tracking-tight">
-			{isDisableMode ? 'Disable Two-Factor Authentication' : 'Enable Two-Factor Authentication'}
-		</h1>
-		<p class="text-muted-foreground">
-			{isDisableMode
-				? 'Enter your authenticator code to disable 2FA'
-				: 'Secure your account with time-based one-time passwords'}
-		</p>
-	</div>
+<div class="mx-auto max-w-md space-y-6">
+	<a
+		href="/settings/security"
+		class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+	>
+		<ArrowLeftIcon class="size-4" />
+		Back to Security Settings
+	</a>
 
 	{#if meQuery.isPending}
 		<Card.Root>
-			<Card.Content class="p-6">
-				<Skeleton class="mx-auto mb-4 h-16 w-16 rounded-full" />
-				<Skeleton class="mx-auto mb-2 h-5 w-48" />
+			<Card.Header class="text-center">
+				<Skeleton class="mx-auto mb-2 h-14 w-14 rounded-full" />
+				<Skeleton class="mx-auto mb-2 h-6 w-48" />
 				<Skeleton class="mx-auto h-4 w-64" />
+			</Card.Header>
+			<Card.Content>
+				<Skeleton class="mx-auto h-12 w-full" />
 			</Card.Content>
 		</Card.Root>
 	{:else if meQuery.error}
@@ -121,16 +117,31 @@
 		</Alert>
 	{:else if meQuery.data}
 		{@const user = meQuery.data}
-		<Card.Root>
-			<Card.Content class="p-6">
-				{#if successMessage}
-					<Alert
-						class="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
-					>
-						<CheckCircleIcon class="size-4" />
-						<AlertDescription>{successMessage}</AlertDescription>
-					</Alert>
-				{:else if isDisableMode}
+
+		{#if successMessage}
+			<Card.Root>
+				<Card.Header class="text-center">
+					<div class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+						<CheckCircleIcon class="size-7 text-green-600 dark:text-green-400" />
+					</div>
+					<Card.Title class="text-xl">Success</Card.Title>
+					<Card.Description>{successMessage}</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<p class="text-center text-sm text-muted-foreground">Redirecting to security settings...</p>
+				</Card.Content>
+			</Card.Root>
+
+		{:else if isDisableMode}
+			<Card.Root>
+				<Card.Header class="text-center">
+					<div class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-destructive/10">
+						<ShieldOffIcon class="size-7 text-destructive" />
+					</div>
+					<Card.Title class="text-xl">Disable Two-Factor Authentication</Card.Title>
+					<Card.Description>Enter your authenticator code to disable 2FA</Card.Description>
+				</Card.Header>
+				<Card.Content>
 					{#if !user.twoFactorEnabled}
 						<Alert>
 							<AlertTriangleIcon class="size-4" />
@@ -140,9 +151,7 @@
 						</Alert>
 					{:else}
 						<form onsubmit={handleDisable} class="space-y-6">
-							<Alert
-								class="border-yellow-200 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200"
-							>
+							<Alert class="border-yellow-200 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
 								<AlertTriangleIcon class="size-4" />
 								<AlertDescription>
 									<strong>Warning:</strong> Disabling 2FA will make your account less secure.
@@ -156,32 +165,31 @@
 								</Alert>
 							{/if}
 
-							<div class="space-y-3">
-								<Label for="disable-code">Enter your authenticator code</Label>
+							<div class="flex justify-center">
 								<InputOTP.Root
 									maxlength={6}
 									bind:value={verificationCode}
 									onComplete={() => {
-										// Auto-submit when complete
+										if (verificationCode.length === 6 && !disable2faMutation.isPending) {
+											handleDisable(new Event('submit'));
+										}
 									}}
+									disabled={disable2faMutation.isPending}
 								>
 									{#snippet children({ cells })}
 										<InputOTP.Group>
 											{#each cells.slice(0, 3) as cell (cell)}
-												<InputOTP.Slot {cell} />
+												<InputOTP.Slot {cell} class="size-12 text-lg transition-all duration-200" />
 											{/each}
 										</InputOTP.Group>
 										<InputOTP.Separator />
 										<InputOTP.Group>
 											{#each cells.slice(3, 6) as cell (cell)}
-												<InputOTP.Slot {cell} />
+												<InputOTP.Slot {cell} class="size-12 text-lg transition-all duration-200" />
 											{/each}
 										</InputOTP.Group>
 									{/snippet}
 								</InputOTP.Root>
-								<p class="text-sm text-md3-on-surface-variant">
-									Enter the 6-digit code from your authenticator app
-								</p>
 							</div>
 
 							<div class="flex gap-3">
@@ -197,84 +205,88 @@
 							</div>
 						</form>
 					{/if}
-				{:else if user.twoFactorEnabled}
-					<Alert
-						class="border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
-					>
-						<CheckCircleIcon class="size-4" />
-						<AlertDescription>
-							Two-factor authentication is already enabled on your account.
-							<a
-								href="/settings/security"
-								class="mt-2 block font-medium underline hover:no-underline"
-							>
-								Return to security settings
-							</a>
-						</AlertDescription>
-					</Alert>
-				{:else if step === 'initial'}
-					<div class="space-y-6">
-						<div class="text-center">
-							<div
-								class="mx-auto flex size-16 items-center justify-center rounded-full bg-primary/10"
-							>
-								<ShieldIcon class="size-8 text-primary" />
-							</div>
-							<h3 class="mt-4 text-lg font-medium">Protect your account</h3>
-							<p class="mt-2 text-sm text-muted-foreground">
-								Two-factor authentication adds an extra layer of security. You'll need to enter a
-								code from your authenticator app when signing in.
-							</p>
-						</div>
+				</Card.Content>
+			</Card.Root>
 
-						<div class="rounded-lg bg-muted p-4">
-							<h4 class="text-sm font-medium">You'll need an authenticator app</h4>
-							<ul class="mt-2 space-y-1 text-sm text-muted-foreground">
-								<li>• Google Authenticator</li>
-								<li>• Microsoft Authenticator</li>
-								<li>• Authy</li>
-								<li>• 1Password</li>
-							</ul>
-						</div>
-
-						{#if enable2faMutation.error}
-							<Alert variant="destructive">
-								<AlertTriangleIcon class="size-4" />
-								<AlertDescription>{enable2faMutation.error.message}</AlertDescription>
-							</Alert>
-						{/if}
-
-						<Button
-							class="w-full"
-							onclick={handleEnableSetup}
-							disabled={enable2faMutation.isPending}
-						>
-							{enable2faMutation.isPending ? 'Setting up...' : 'Begin Setup'}
-						</Button>
+		{:else if user.twoFactorEnabled}
+			<Card.Root>
+				<Card.Header class="text-center">
+					<div class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+						<ShieldCheckIcon class="size-7 text-green-600 dark:text-green-400" />
 					</div>
-				{:else if step === 'verify' && qrData}
-					<form onsubmit={handleVerifyAndEnable} class="space-y-6">
-						<div class="text-center">
-							<h3 class="text-lg font-medium">Scan this QR code</h3>
-							<p class="mt-1 text-sm text-muted-foreground">
-								Use your authenticator app to scan the QR code below
-							</p>
-						</div>
+					<Card.Title class="text-xl">Already Enabled</Card.Title>
+					<Card.Description>Two-factor authentication is already enabled on your account.</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<Button variant="outline" class="w-full" href="/settings/security">
+						<ArrowLeftIcon class="mr-2 size-4" />
+						Return to Security Settings
+					</Button>
+				</Card.Content>
+			</Card.Root>
 
+		{:else if step === 'initial'}
+			<Card.Root>
+				<Card.Header class="text-center">
+					<div class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-primary/10">
+						<ShieldIcon class="size-7 text-primary" />
+					</div>
+					<Card.Title class="text-xl">Enable Two-Factor Authentication</Card.Title>
+					<Card.Description>Add an extra layer of security to your account</Card.Description>
+				</Card.Header>
+				<Card.Content class="space-y-6">
+					<p class="text-center text-sm text-muted-foreground">
+						You'll need to enter a code from your authenticator app when signing in.
+					</p>
+
+					<div class="rounded-lg bg-muted p-4">
+						<h4 class="text-sm font-medium">Supported authenticator apps</h4>
+						<ul class="mt-2 grid grid-cols-2 gap-1 text-sm text-muted-foreground">
+							<li>• Google Authenticator</li>
+							<li>• Microsoft Authenticator</li>
+							<li>• Authy</li>
+							<li>• 1Password</li>
+						</ul>
+					</div>
+
+					{#if enable2faMutation.error}
+						<Alert variant="destructive">
+							<AlertTriangleIcon class="size-4" />
+							<AlertDescription>{enable2faMutation.error.message}</AlertDescription>
+						</Alert>
+					{/if}
+
+					<Button class="w-full" onclick={handleEnableSetup} disabled={enable2faMutation.isPending}>
+						{enable2faMutation.isPending ? 'Setting up...' : 'Begin Setup'}
+					</Button>
+				</Card.Content>
+			</Card.Root>
+
+		{:else if step === 'verify' && qrData}
+			<Card.Root>
+				<Card.Header class="text-center">
+					<div class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-primary/10">
+						<QrCodeIcon class="size-7 text-primary" />
+					</div>
+					<Card.Title class="text-xl">Scan QR Code</Card.Title>
+					<Card.Description>Use your authenticator app to scan the code</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<form onsubmit={handleVerifyAndEnable} class="space-y-6">
 						<div class="flex justify-center">
-							<div class="rounded-lg border bg-white p-4 shadow-inner">
-								<img src={qrData.qrCodeUrl} alt="QR Code for 2FA setup" class="size-48" />
+							<div class="rounded-xl border-2 bg-white p-3">
+								<img src={qrData.qrCodeUrl} alt="QR Code for 2FA setup" class="size-44" />
 							</div>
 						</div>
 
-						<div class="rounded-lg bg-muted p-4">
-							<p class="text-sm font-medium">Can't scan the code? Enter this key manually:</p>
-							<code
-								class="mt-2 block rounded bg-background p-2 text-center font-mono text-sm break-all"
-							>
-								{qrData.secret}
-							</code>
-						</div>
+						<details class="rounded-lg bg-muted">
+							<summary class="cursor-pointer p-3 text-sm font-medium">Can't scan? Enter manually</summary>
+							<div class="border-t px-3 pb-3 pt-2">
+								<code class="block rounded bg-background p-2 text-center font-mono text-xs break-all select-all">
+									{qrData.secret}
+								</code>
+							</div>
+						</details>
 
 						{#if verify2faMutation.error}
 							<Alert variant="destructive">
@@ -284,44 +296,47 @@
 						{/if}
 
 						<div class="space-y-3">
-							<Label for="verify-code">Enter verification code</Label>
-							<InputOTP.Root
-								maxlength={6}
-								bind:value={verificationCode}
-								onComplete={() => {
-									// Auto-submit when complete
-								}}
-							>
-								{#snippet children({ cells })}
-									<InputOTP.Group>
-										{#each cells.slice(0, 3) as cell (cell)}
-											<InputOTP.Slot {cell} />
-										{/each}
-									</InputOTP.Group>
-									<InputOTP.Separator />
-									<InputOTP.Group>
-										{#each cells.slice(3, 6) as cell (cell)}
-											<InputOTP.Slot {cell} />
-										{/each}
-									</InputOTP.Group>
-								{/snippet}
-							</InputOTP.Root>
-							<p class="text-sm text-md3-on-surface-variant">
-								Enter the 6-digit code from your authenticator app to verify setup
-							</p>
+							<p class="text-center text-sm font-medium">Enter verification code</p>
+							<div class="flex justify-center">
+								<InputOTP.Root
+									maxlength={6}
+									bind:value={verificationCode}
+									onComplete={() => {
+										if (verificationCode.length === 6 && !verify2faMutation.isPending) {
+											handleVerifyAndEnable(new Event('submit'));
+										}
+									}}
+									disabled={verify2faMutation.isPending}
+								>
+									{#snippet children({ cells })}
+										<InputOTP.Group>
+											{#each cells.slice(0, 3) as cell (cell)}
+												<InputOTP.Slot {cell} class="size-12 text-lg transition-all duration-200" />
+											{/each}
+										</InputOTP.Group>
+										<InputOTP.Separator />
+										<InputOTP.Group>
+											{#each cells.slice(3, 6) as cell (cell)}
+												<InputOTP.Slot {cell} class="size-12 text-lg transition-all duration-200" />
+											{/each}
+										</InputOTP.Group>
+									{/snippet}
+								</InputOTP.Root>
+							</div>
 						</div>
 
 						<div class="flex gap-3">
 							<Button
 								type="button"
-								variant="outline"
-								class="flex-1"
+								variant="ghost"
+								class="flex-1 gap-2"
 								onclick={() => {
 									step = 'initial';
 									qrData = null;
 									verificationCode = '';
 								}}
 							>
+								<ArrowLeftIcon class="size-4" />
 								Back
 							</Button>
 							<Button
@@ -329,12 +344,12 @@
 								class="flex-1"
 								disabled={verificationCode.length !== 6 || verify2faMutation.isPending}
 							>
-								{verify2faMutation.isPending ? 'Verifying...' : 'Verify & Enable'}
+								{verify2faMutation.isPending ? 'Verifying...' : 'Enable 2FA'}
 							</Button>
 						</div>
 					</form>
-				{/if}
-			</Card.Content>
-		</Card.Root>
+				</Card.Content>
+			</Card.Root>
+		{/if}
 	{/if}
 </div>

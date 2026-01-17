@@ -116,12 +116,17 @@
 
 <Card.Root class="w-full max-w-md border-y">
 	<Card.Header class="text-center">
+		{#if requires2fa}
+			<div class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-primary/10">
+				<ShieldCheckIcon class="size-7 text-primary" />
+			</div>
+		{/if}
 		<Card.Title class="text-2xl">
 			{requires2fa ? 'Two-Factor Authentication' : 'Welcome back'}
 		</Card.Title>
 		<Card.Description>
 			{requires2fa
-				? 'Enter the code from your authenticator app'
+				? 'Enter the 6-digit code from your authenticator app'
 				: 'Sign in to your account to continue'}
 		</Card.Description>
 	</Card.Header>
@@ -178,41 +183,29 @@
 		{/if}
 
 		{#if requires2fa}
-			<div transition:slide={{ duration: 300 }} class="space-y-6">
-				<!-- Shield icon -->
-				<div class="flex justify-center">
-					<div class="flex size-16 items-center justify-center rounded-full bg-primary/10">
-						<ShieldCheckIcon class="size-8 text-primary" />
-					</div>
-				</div>
-
+			<div transition:slide={{ duration: 300 }}>
 				<form onsubmit={handleVerify2fa} class="space-y-6">
-					<div class="space-y-4">
-						<div class="flex justify-center">
-							<InputOTP.Root
-								maxlength={6}
-								bind:value={code}
-								onComplete={handleOtpComplete}
-								disabled={verify2faMutation.isPending}
-							>
-								{#snippet children({ cells })}
-									<InputOTP.Group>
-										{#each cells.slice(0, 3) as cell (cell)}
-											<InputOTP.Slot {cell} class="size-12 text-lg transition-all duration-200" />
-										{/each}
-									</InputOTP.Group>
-									<InputOTP.Separator />
-									<InputOTP.Group>
-										{#each cells.slice(3, 6) as cell (cell)}
-											<InputOTP.Slot {cell} class="size-12 text-lg transition-all duration-200" />
-										{/each}
-									</InputOTP.Group>
-								{/snippet}
-							</InputOTP.Root>
-						</div>
-						<p class="text-center text-sm text-muted-foreground">
-							Enter the 6-digit code from your authenticator app
-						</p>
+					<div class="flex justify-center">
+						<InputOTP.Root
+							maxlength={6}
+							bind:value={code}
+							onComplete={handleOtpComplete}
+							disabled={verify2faMutation.isPending}
+						>
+							{#snippet children({ cells })}
+								<InputOTP.Group>
+									{#each cells.slice(0, 3) as cell (cell)}
+										<InputOTP.Slot {cell} class="size-12 text-lg transition-all duration-200" />
+									{/each}
+								</InputOTP.Group>
+								<InputOTP.Separator />
+								<InputOTP.Group>
+									{#each cells.slice(3, 6) as cell (cell)}
+										<InputOTP.Slot {cell} class="size-12 text-lg transition-all duration-200" />
+									{/each}
+								</InputOTP.Group>
+							{/snippet}
+						</InputOTP.Root>
 					</div>
 
 					<div class="space-y-3">

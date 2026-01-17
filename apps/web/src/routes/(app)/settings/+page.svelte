@@ -1,23 +1,23 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
-	import * as Card from "$lib/components/ui/card";
-	import { Button } from "$lib/components/ui/button";
-	import { Avatar, AvatarFallback, AvatarImage } from "$lib/components/ui/avatar";
-	import { Badge } from "$lib/components/ui/badge";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import { createLogoutMutation, createMeQuery } from "$lib/queries/auth";
-	import ShieldIcon from "@lucide/svelte/icons/shield";
-	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
-	import LogOutIcon from "@lucide/svelte/icons/log-out";
+	import { goto } from '$app/navigation';
+	import * as Card from '$lib/components/ui/card';
+	import { Button } from '$lib/components/ui/button';
+	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { createLogoutMutation, createMeQuery } from '$lib/queries/auth';
+	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import LogOutIcon from '@lucide/svelte/icons/log-out';
 
 	const meQuery = createMeQuery();
 	const logoutMutation = createLogoutMutation();
 
 	function getInitials(name: string): string {
 		return name
-			.split(" ")
+			.split(' ')
 			.map((n) => n[0])
-			.join("")
+			.join('')
 			.toUpperCase()
 			.slice(0, 2);
 	}
@@ -25,8 +25,8 @@
 	async function handleLogout() {
 		logoutMutation.mutate(undefined, {
 			onSuccess: () => {
-				goto("/auth/login");
-			},
+				goto('/auth/login');
+			}
 		});
 	}
 </script>
@@ -57,8 +57,8 @@
 		<Card.Root>
 			<Card.Content class="p-6 text-center">
 				<p class="text-muted-foreground">
-					Please <a href="/auth/login" class="font-medium text-primary underline">log in</a> to
-					access settings.
+					Please <a href="/auth/login" class="font-medium text-primary underline">log in</a> to access
+					settings.
 				</p>
 			</Card.Content>
 		</Card.Root>
@@ -80,16 +80,25 @@
 						<p class="text-sm text-muted-foreground">{user.email}</p>
 						<div class="mt-2 flex flex-wrap gap-2">
 							{#if user.emailVerified}
-								<Badge variant="secondary" class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+								<Badge
+									variant="secondary"
+									class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+								>
 									Verified
 								</Badge>
 							{:else}
-								<Badge variant="secondary" class="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+								<Badge
+									variant="secondary"
+									class="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+								>
 									Unverified
 								</Badge>
 							{/if}
 							{#if user.twoFactorEnabled}
-								<Badge variant="secondary" class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+								<Badge
+									variant="secondary"
+									class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+								>
 									2FA
 								</Badge>
 							{/if}
@@ -127,7 +136,7 @@
 				disabled={logoutMutation.isPending}
 			>
 				<LogOutIcon class="mr-2 size-4" />
-				{logoutMutation.isPending ? "Signing out..." : "Sign Out"}
+				{logoutMutation.isPending ? 'Signing out...' : 'Sign Out'}
 			</Button>
 		</div>
 	{/if}

@@ -1,26 +1,26 @@
 <script lang="ts">
-	import { Button } from "$lib/components/ui/button";
-	import * as Card from "$lib/components/ui/card";
-	import * as Table from "$lib/components/ui/table";
-	import * as Dialog from "$lib/components/ui/dialog";
-	import * as Select from "$lib/components/ui/select";
-	import { Badge } from "$lib/components/ui/badge";
-	import { Skeleton } from "$lib/components/ui/skeleton";
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import * as Table from '$lib/components/ui/table';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Select from '$lib/components/ui/select';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import {
 		createSanctionsQuery,
 		createRevokeSanctionMutation,
 		getSanctionColor,
 		type Sanction,
-		type SanctionType,
-	} from "$lib/queries/moderation";
-	import ChevronLeftIcon from "@lucide/svelte/icons/chevron-left";
-	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
-	import XIcon from "@lucide/svelte/icons/x";
+		type SanctionType
+	} from '$lib/queries/moderation';
+	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import XIcon from '@lucide/svelte/icons/x';
 
 	const revokeSanctionMutation = createRevokeSanctionMutation();
 
 	let typeFilter = $state<string | undefined>(undefined);
-	let activeFilter = $state<string | undefined>("true");
+	let activeFilter = $state<string | undefined>('true');
 	let currentPage = $state(0);
 	const pageSize = 20;
 
@@ -29,7 +29,7 @@
 			limit: pageSize,
 			offset: currentPage * pageSize,
 			type: typeFilter ? (typeFilter as SanctionType) : undefined,
-			isActive: activeFilter ? activeFilter === "true" : undefined,
+			isActive: activeFilter ? activeFilter === 'true' : undefined
 		})
 	);
 
@@ -49,25 +49,25 @@
 			onSuccess: () => {
 				revokeDialogOpen = false;
 				selectedSanction = null;
-			},
+			}
 		});
 	}
 
 	function formatDate(date: Date): string {
-		return new Date(date).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
+		return new Date(date).toLocaleDateString('en-US', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
 		});
 	}
 
 	function getSanctionTypeText(type: SanctionType): string {
 		const types: Record<SanctionType, string> = {
-			warning: "Warning",
-			timeout: "Timeout",
-			ban: "Ban",
+			warning: 'Warning',
+			timeout: 'Timeout',
+			ban: 'Ban'
 		};
 		return types[type];
 	}
@@ -77,14 +77,14 @@
 	const canGoNext = $derived(currentPage < totalPages - 1);
 
 	const typeOptions: { value: SanctionType; label: string }[] = [
-		{ value: "warning", label: "Warning" },
-		{ value: "timeout", label: "Timeout" },
-		{ value: "ban", label: "Ban" },
+		{ value: 'warning', label: 'Warning' },
+		{ value: 'timeout', label: 'Timeout' },
+		{ value: 'ban', label: 'Ban' }
 	];
 
 	const activeOptions = [
-		{ value: "true", label: "Active" },
-		{ value: "false", label: "Inactive" },
+		{ value: 'true', label: 'Active' },
+		{ value: 'false', label: 'Inactive' }
 	];
 </script>
 
@@ -109,7 +109,7 @@
 				}}
 			>
 				<Select.Trigger class="w-full sm:w-40">
-					{typeFilter ? getSanctionTypeText(typeFilter as SanctionType) : "All Types"}
+					{typeFilter ? getSanctionTypeText(typeFilter as SanctionType) : 'All Types'}
 				</Select.Trigger>
 				<Select.Content>
 					<Select.Item value="">All Types</Select.Item>
@@ -127,7 +127,11 @@
 				}}
 			>
 				<Select.Trigger class="w-full sm:w-40">
-					{activeFilter === "true" ? "Active" : activeFilter === "false" ? "Inactive" : "All Status"}
+					{activeFilter === 'true'
+						? 'Active'
+						: activeFilter === 'false'
+							? 'Inactive'
+							: 'All Status'}
 				</Select.Trigger>
 				<Select.Content>
 					<Select.Item value="">All Status</Select.Item>
@@ -187,7 +191,7 @@
 									{getSanctionTypeText(sanction.type)}
 								</Badge>
 							</Table.Cell>
-							<Table.Cell class="hidden md:table-cell max-w-[200px] truncate">
+							<Table.Cell class="hidden max-w-[200px] truncate md:table-cell">
 								{sanction.reason}
 							</Table.Cell>
 							<Table.Cell>
@@ -208,7 +212,7 @@
 								{/if}
 							</Table.Cell>
 							<Table.Cell class="text-right">
-								{#if sanction.isActive && sanction.type !== "warning"}
+								{#if sanction.isActive && sanction.type !== 'warning'}
 									<Button
 										variant="ghost"
 										size="icon"
@@ -232,7 +236,10 @@
 		{#if (sanctionsQuery.data?.total ?? 0) > pageSize}
 			<div class="flex items-center justify-between border-t px-4 py-3">
 				<p class="text-sm text-muted-foreground">
-					Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, sanctionsQuery.data?.total ?? 0)} of {sanctionsQuery.data?.total ?? 0} sanctions
+					Showing {currentPage * pageSize + 1} to {Math.min(
+						(currentPage + 1) * pageSize,
+						sanctionsQuery.data?.total ?? 0
+					)} of {sanctionsQuery.data?.total ?? 0} sanctions
 				</p>
 				<div class="flex gap-1">
 					<Button
@@ -266,14 +273,17 @@
 			<Dialog.Title>Revoke Sanction</Dialog.Title>
 			<Dialog.Description>
 				{#if selectedSanction}
-					Are you sure you want to revoke the {getSanctionTypeText(selectedSanction.type).toLowerCase()} for {selectedSanction.userName}?
+					Are you sure you want to revoke the {getSanctionTypeText(
+						selectedSanction.type
+					).toLowerCase()} for {selectedSanction.userName}?
 				{/if}
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="py-4">
 			{#if selectedSanction}
 				<p class="text-sm text-muted-foreground">
-					<strong>Reason:</strong> {selectedSanction.reason}
+					<strong>Reason:</strong>
+					{selectedSanction.reason}
 				</p>
 			{/if}
 		</div>
@@ -284,7 +294,7 @@
 				onclick={handleRevoke}
 				disabled={revokeSanctionMutation.isPending}
 			>
-				{revokeSanctionMutation.isPending ? "Revoking..." : "Revoke Sanction"}
+				{revokeSanctionMutation.isPending ? 'Revoking...' : 'Revoke Sanction'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

@@ -1,9 +1,9 @@
 <script lang="ts">
-	import * as Card from "$lib/components/ui/card";
-	import { Button } from "$lib/components/ui/button";
-	import { setLocale } from "$lib/paraglide/runtime";
-	import { m } from "$lib/paraglide/messages.js";
-	import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
+	import * as Card from '$lib/components/ui/card';
+	import { Button } from '$lib/components/ui/button';
+	import { setLocale } from '$lib/paraglide/runtime';
+	import { m } from '$lib/paraglide/messages.js';
+	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 </script>
 
 <div class="mx-auto max-w-2xl">
@@ -22,17 +22,13 @@
 		</Card.Header>
 		<Card.Content class="space-y-6">
 			<div>
-				<h2 class="text-xl font-semibold">{m.hello_world({ name: "SvelteKit User" })}</h2>
+				<h2 class="text-xl font-semibold">{m.hello_world({ name: 'SvelteKit User' })}</h2>
 			</div>
 
 			<div class="flex gap-2">
-				<Button variant="outline" size="sm" onclick={() => setLocale("en")}>
-					English
-				</Button>
-				<Button variant="outline" size="sm" onclick={() => setLocale("ja")}>
-					Japanese
-				</Button>
-				<Button variant="outline" size="sm" onclick={() => setLocale("pt-br")}>
+				<Button variant="outline" size="sm" onclick={() => setLocale('en')}>English</Button>
+				<Button variant="outline" size="sm" onclick={() => setLocale('ja')}>Japanese</Button>
+				<Button variant="outline" size="sm" onclick={() => setLocale('pt-br')}>
 					Portuguese (BR)
 				</Button>
 			</div>

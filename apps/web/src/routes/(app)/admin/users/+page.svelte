@@ -1,15 +1,15 @@
 <script lang="ts">
-	import { Button } from "$lib/components/ui/button";
-	import * as Card from "$lib/components/ui/card";
-	import * as Table from "$lib/components/ui/table";
-	import * as Dialog from "$lib/components/ui/dialog";
-	import * as Select from "$lib/components/ui/select";
-	import { Input } from "$lib/components/ui/input";
-	import { Label } from "$lib/components/ui/label";
-	import { Textarea } from "$lib/components/ui/textarea";
-	import { Badge } from "$lib/components/ui/badge";
-	import { Avatar, AvatarFallback, AvatarImage } from "$lib/components/ui/avatar";
-	import { Skeleton } from "$lib/components/ui/skeleton";
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import * as Table from '$lib/components/ui/table';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Select from '$lib/components/ui/select';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import { Textarea } from '$lib/components/ui/textarea';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import {
 		createAdminUsersQuery,
 		createUpdateRoleMutation,
@@ -17,21 +17,21 @@
 		getRoleColor,
 		getRoleText,
 		type AdminUser,
-		type UserRole,
-	} from "$lib/queries/moderation";
-	import { createMeQuery } from "$lib/queries/auth";
-	import SearchIcon from "@lucide/svelte/icons/search";
-	import ChevronLeftIcon from "@lucide/svelte/icons/chevron-left";
-	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
-	import UserCogIcon from "@lucide/svelte/icons/user-cog";
-	import TrashIcon from "@lucide/svelte/icons/trash-2";
-	import CheckIcon from "@lucide/svelte/icons/check";
+		type UserRole
+	} from '$lib/queries/moderation';
+	import { createMeQuery } from '$lib/queries/auth';
+	import SearchIcon from '@lucide/svelte/icons/search';
+	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import UserCogIcon from '@lucide/svelte/icons/user-cog';
+	import TrashIcon from '@lucide/svelte/icons/trash-2';
+	import CheckIcon from '@lucide/svelte/icons/check';
 
 	const meQuery = createMeQuery();
 	const updateRoleMutation = createUpdateRoleMutation();
 	const deleteUserMutation = createDeleteUserMutation();
 
-	let search = $state("");
+	let search = $state('');
 	let roleFilter = $state<string | undefined>(undefined);
 	let currentPage = $state(0);
 	const pageSize = 20;
@@ -42,8 +42,8 @@
 			offset: currentPage * pageSize,
 			search: search || undefined,
 			role: roleFilter ? (roleFilter as UserRole) : undefined,
-			sortBy: "createdAt",
-			sortOrder: "desc",
+			sortBy: 'createdAt',
+			sortOrder: 'desc'
 		})
 	);
 
@@ -51,20 +51,20 @@
 	let roleDialogOpen = $state(false);
 	let deleteDialogOpen = $state(false);
 	let selectedUser = $state<AdminUser | null>(null);
-	let newRole = $state<string>("user");
-	let roleReason = $state("");
-	let deleteReason = $state("");
+	let newRole = $state<string>('user');
+	let roleReason = $state('');
+	let deleteReason = $state('');
 
 	function openRoleDialog(user: AdminUser) {
 		selectedUser = user;
 		newRole = user.role;
-		roleReason = "";
+		roleReason = '';
 		roleDialogOpen = true;
 	}
 
 	function openDeleteDialog(user: AdminUser) {
 		selectedUser = user;
-		deleteReason = "";
+		deleteReason = '';
 		deleteDialogOpen = true;
 	}
 
@@ -75,13 +75,13 @@
 			{
 				userId: selectedUser.id,
 				role: newRole as UserRole,
-				reason: roleReason || undefined,
+				reason: roleReason || undefined
 			},
 			{
 				onSuccess: () => {
 					roleDialogOpen = false;
 					selectedUser = null;
-				},
+				}
 			}
 		);
 	}
@@ -92,31 +92,31 @@
 		deleteUserMutation.mutate(
 			{
 				userId: selectedUser.id,
-				reason: deleteReason.trim(),
+				reason: deleteReason.trim()
 			},
 			{
 				onSuccess: () => {
 					deleteDialogOpen = false;
 					selectedUser = null;
-				},
+				}
 			}
 		);
 	}
 
 	function getInitials(name: string): string {
 		return name
-			.split(" ")
+			.split(' ')
 			.map((n) => n[0])
-			.join("")
+			.join('')
 			.toUpperCase()
 			.slice(0, 2);
 	}
 
 	function formatDate(date: Date): string {
-		return new Date(date).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
+		return new Date(date).toLocaleDateString('en-US', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric'
 		});
 	}
 
@@ -125,9 +125,9 @@
 	const canGoNext = $derived(currentPage < totalPages - 1);
 
 	const roleOptions: { value: UserRole; label: string }[] = [
-		{ value: "user", label: "User" },
-		{ value: "moderator", label: "Moderator" },
-		{ value: "admin", label: "Admin" },
+		{ value: 'user', label: 'User' },
+		{ value: 'moderator', label: 'Moderator' },
+		{ value: 'admin', label: 'Admin' }
 	];
 </script>
 
@@ -145,7 +145,7 @@
 	<Card.Root>
 		<Card.Content class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
 			<div class="relative flex-1">
-				<SearchIcon class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+				<SearchIcon class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
 					type="search"
 					placeholder="Search by name or email..."
@@ -161,7 +161,7 @@
 				}}
 			>
 				<Select.Trigger class="w-full sm:w-40">
-					{roleFilter ? getRoleText(roleFilter as UserRole) : "All Roles"}
+					{roleFilter ? getRoleText(roleFilter as UserRole) : 'All Roles'}
 				</Select.Trigger>
 				<Select.Content>
 					<Select.Item value="">All Roles</Select.Item>
@@ -219,7 +219,7 @@
 				{:else}
 					{#each usersQuery.data?.users ?? [] as user}
 						{@const isSelf = user.id === meQuery.data?.id}
-						{@const isAdmin = user.role === "admin"}
+						{@const isAdmin = user.role === 'admin'}
 						<Table.Row>
 							<Table.Cell>
 								<div class="flex items-center gap-3">
@@ -261,8 +261,12 @@
 										variant="ghost"
 										size="icon"
 										onclick={() => openRoleDialog(user)}
-										disabled={isSelf || (isAdmin && meQuery.data?.role !== "admin")}
-										title={isSelf ? "Cannot change own role" : isAdmin ? "Cannot modify admin" : "Change role"}
+										disabled={isSelf || (isAdmin && meQuery.data?.role !== 'admin')}
+										title={isSelf
+											? 'Cannot change own role'
+											: isAdmin
+												? 'Cannot modify admin'
+												: 'Change role'}
 									>
 										<UserCogIcon class="size-4" />
 									</Button>
@@ -272,7 +276,11 @@
 										class="text-destructive hover:text-destructive"
 										onclick={() => openDeleteDialog(user)}
 										disabled={isSelf || isAdmin}
-										title={isSelf ? "Cannot delete yourself" : isAdmin ? "Cannot delete admin" : "Delete user"}
+										title={isSelf
+											? 'Cannot delete yourself'
+											: isAdmin
+												? 'Cannot delete admin'
+												: 'Delete user'}
 									>
 										<TrashIcon class="size-4" />
 									</Button>
@@ -288,7 +296,10 @@
 		{#if (usersQuery.data?.total ?? 0) > pageSize}
 			<div class="flex items-center justify-between border-t px-4 py-3">
 				<p class="text-sm text-muted-foreground">
-					Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, usersQuery.data?.total ?? 0)} of {usersQuery.data?.total ?? 0} users
+					Showing {currentPage * pageSize + 1} to {Math.min(
+						(currentPage + 1) * pageSize,
+						usersQuery.data?.total ?? 0
+					)} of {usersQuery.data?.total ?? 0} users
 				</p>
 				<div class="flex gap-1">
 					<Button
@@ -359,7 +370,7 @@
 		<Dialog.Footer>
 			<Button variant="outline" onclick={() => (roleDialogOpen = false)}>Cancel</Button>
 			<Button onclick={handleRoleChange} disabled={updateRoleMutation.isPending}>
-				{updateRoleMutation.isPending ? "Saving..." : "Save Changes"}
+				{updateRoleMutation.isPending ? 'Saving...' : 'Save Changes'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
@@ -392,7 +403,7 @@
 				onclick={handleDelete}
 				disabled={deleteUserMutation.isPending || !deleteReason.trim()}
 			>
-				{deleteUserMutation.isPending ? "Deleting..." : "Delete User"}
+				{deleteUserMutation.isPending ? 'Deleting...' : 'Delete User'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

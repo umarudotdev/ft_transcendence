@@ -30,37 +30,33 @@
 			onError: (error: Error) => {
 				errorMessage = error.message;
 				isVerifying = false;
-			},
+			}
 		});
 	});
 </script>
 
 <Card.Root class="w-full max-w-md">
-		<Card.Header>
-			<Card.Title class="text-2xl">Email Verification</Card.Title>
-		</Card.Header>
-		<Card.Content>
-			{#if isVerifying}
-				<div class="text-center py-4">
-					<div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-					<p>Verifying your email...</p>
-				</div>
-			{:else if success}
-				<Alert class="mb-4">
-					<AlertDescription>
-						Your email has been verified successfully! You can now log in to your account.
-					</AlertDescription>
-				</Alert>
-				<Button class="w-full" onclick={() => goto('/auth/login?verified=true')}>
-					Go to Login
-				</Button>
-			{:else}
-				<Alert variant="destructive" class="mb-4">
-					<AlertDescription>{errorMessage}</AlertDescription>
-				</Alert>
-				<Button class="w-full" onclick={() => goto('/auth/login')}>
-					Go to Login
-				</Button>
-			{/if}
-		</Card.Content>
+	<Card.Header>
+		<Card.Title class="text-2xl">Email Verification</Card.Title>
+	</Card.Header>
+	<Card.Content>
+		{#if isVerifying}
+			<div class="py-4 text-center">
+				<div class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+				<p>Verifying your email...</p>
+			</div>
+		{:else if success}
+			<Alert class="mb-4">
+				<AlertDescription>
+					Your email has been verified successfully! You can now log in to your account.
+				</AlertDescription>
+			</Alert>
+			<Button class="w-full" onclick={() => goto('/auth/login?verified=true')}>Go to Login</Button>
+		{:else}
+			<Alert variant="destructive" class="mb-4">
+				<AlertDescription>{errorMessage}</AlertDescription>
+			</Alert>
+			<Button class="w-full" onclick={() => goto('/auth/login')}>Go to Login</Button>
+		{/if}
+	</Card.Content>
 </Card.Root>

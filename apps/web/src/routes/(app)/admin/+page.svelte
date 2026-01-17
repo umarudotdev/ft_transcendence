@@ -1,60 +1,60 @@
 <script lang="ts">
-	import * as Card from "$lib/components/ui/card";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import { createAdminDashboardQuery } from "$lib/queries/moderation";
-	import UsersIcon from "@lucide/svelte/icons/users";
-	import ShieldIcon from "@lucide/svelte/icons/shield";
-	import ShieldAlertIcon from "@lucide/svelte/icons/shield-alert";
-	import FlagIcon from "@lucide/svelte/icons/flag";
-	import GavelIcon from "@lucide/svelte/icons/gavel";
-	import ActivityIcon from "@lucide/svelte/icons/activity";
+	import * as Card from '$lib/components/ui/card';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { createAdminDashboardQuery } from '$lib/queries/moderation';
+	import UsersIcon from '@lucide/svelte/icons/users';
+	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert';
+	import FlagIcon from '@lucide/svelte/icons/flag';
+	import GavelIcon from '@lucide/svelte/icons/gavel';
+	import ActivityIcon from '@lucide/svelte/icons/activity';
 
 	const dashboardQuery = createAdminDashboardQuery();
 
 	const statCards = $derived([
 		{
-			label: "Total Users",
+			label: 'Total Users',
 			value: dashboardQuery.data?.totalUsers ?? 0,
 			icon: UsersIcon,
-			color: "text-blue-600",
-			bg: "bg-blue-100 dark:bg-blue-900/30",
+			color: 'text-blue-600',
+			bg: 'bg-blue-100 dark:bg-blue-900/30'
 		},
 		{
-			label: "Moderators",
+			label: 'Moderators',
 			value: dashboardQuery.data?.totalModerators ?? 0,
 			icon: ShieldIcon,
-			color: "text-green-600",
-			bg: "bg-green-100 dark:bg-green-900/30",
+			color: 'text-green-600',
+			bg: 'bg-green-100 dark:bg-green-900/30'
 		},
 		{
-			label: "Admins",
+			label: 'Admins',
 			value: dashboardQuery.data?.totalAdmins ?? 0,
 			icon: ShieldAlertIcon,
-			color: "text-purple-600",
-			bg: "bg-purple-100 dark:bg-purple-900/30",
+			color: 'text-purple-600',
+			bg: 'bg-purple-100 dark:bg-purple-900/30'
 		},
 		{
-			label: "Pending Reports",
+			label: 'Pending Reports',
 			value: dashboardQuery.data?.pendingReports ?? 0,
 			icon: FlagIcon,
-			color: "text-yellow-600",
-			bg: "bg-yellow-100 dark:bg-yellow-900/30",
+			color: 'text-yellow-600',
+			bg: 'bg-yellow-100 dark:bg-yellow-900/30'
 		},
 		{
-			label: "Active Sanctions",
+			label: 'Active Sanctions',
 			value: dashboardQuery.data?.activeSanctions ?? 0,
 			icon: GavelIcon,
-			color: "text-red-600",
-			bg: "bg-red-100 dark:bg-red-900/30",
+			color: 'text-red-600',
+			bg: 'bg-red-100 dark:bg-red-900/30'
 		},
 		{
-			label: "Recent Activity",
+			label: 'Recent Activity',
 			value: dashboardQuery.data?.recentAuditLogs ?? 0,
 			icon: ActivityIcon,
-			color: "text-slate-600",
-			bg: "bg-slate-100 dark:bg-slate-900/30",
-			subtitle: "Last 24h",
-		},
+			color: 'text-slate-600',
+			bg: 'bg-slate-100 dark:bg-slate-900/30',
+			subtitle: 'Last 24h'
+		}
 	]);
 </script>
 
@@ -161,7 +161,7 @@
 					<span class="text-sm text-muted-foreground">Report Resolution Rate</span>
 					<span class="font-medium">
 						{#if dashboardQuery.data}
-							{dashboardQuery.data.pendingReports === 0 ? "100%" : "N/A"}
+							{dashboardQuery.data.pendingReports === 0 ? '100%' : 'N/A'}
 						{:else}
 							--
 						{/if}
@@ -170,13 +170,13 @@
 				<div class="flex items-center justify-between">
 					<span class="text-sm text-muted-foreground">Active Sanctions</span>
 					<span class="font-medium">
-						{dashboardQuery.data?.activeSanctions ?? "--"}
+						{dashboardQuery.data?.activeSanctions ?? '--'}
 					</span>
 				</div>
 				<div class="flex items-center justify-between">
 					<span class="text-sm text-muted-foreground">Admin Activity (24h)</span>
 					<span class="font-medium">
-						{dashboardQuery.data?.recentAuditLogs ?? "--"} actions
+						{dashboardQuery.data?.recentAuditLogs ?? '--'} actions
 					</span>
 				</div>
 			</Card.Content>

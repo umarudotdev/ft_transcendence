@@ -1,19 +1,17 @@
 <script lang="ts">
-	import { goto } from "$app/navigation";
-	import { createMeQuery } from "$lib/queries/auth";
+	import { goto } from '$app/navigation';
+	import { createMeQuery } from '$lib/queries/auth';
 
 	let { children } = $props();
 
 	const meQuery = createMeQuery();
 
-	const isAdmin = $derived(
-		meQuery.data?.role === "admin" || meQuery.data?.role === "moderator"
-	);
+	const isAdmin = $derived(meQuery.data?.role === 'admin' || meQuery.data?.role === 'moderator');
 
 	// Redirect non-admins to home page
 	$effect(() => {
 		if (meQuery.data && !isAdmin) {
-			goto("/");
+			goto('/');
 		}
 	});
 </script>

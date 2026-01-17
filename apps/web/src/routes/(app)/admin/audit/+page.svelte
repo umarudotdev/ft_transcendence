@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { Button } from "$lib/components/ui/button";
-	import * as Card from "$lib/components/ui/card";
-	import * as Table from "$lib/components/ui/table";
-	import * as Select from "$lib/components/ui/select";
-	import { Badge } from "$lib/components/ui/badge";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import { createAuditLogQuery, type AuditLogEntry } from "$lib/queries/moderation";
-	import ChevronLeftIcon from "@lucide/svelte/icons/chevron-left";
-	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import * as Table from '$lib/components/ui/table';
+	import * as Select from '$lib/components/ui/select';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { createAuditLogQuery, type AuditLogEntry } from '$lib/queries/moderation';
+	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 
 	let actionFilter = $state<string | undefined>(undefined);
 	let currentPage = $state(0);
@@ -17,42 +17,42 @@
 		createAuditLogQuery({
 			limit: pageSize,
 			offset: currentPage * pageSize,
-			action: actionFilter || undefined,
+			action: actionFilter || undefined
 		})
 	);
 
 	function formatDate(date: Date): string {
-		return new Date(date).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-			second: "2-digit",
+		return new Date(date).toLocaleDateString('en-US', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit'
 		});
 	}
 
 	function getActionColor(action: string): string {
-		if (action.includes("deleted") || action.includes("revoked")) {
-			return "text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900/30";
+		if (action.includes('deleted') || action.includes('revoked')) {
+			return 'text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900/30';
 		}
-		if (action.includes("ban") || action.includes("sanction")) {
-			return "text-orange-600 bg-orange-100 dark:text-orange-300 dark:bg-orange-900/30";
+		if (action.includes('ban') || action.includes('sanction')) {
+			return 'text-orange-600 bg-orange-100 dark:text-orange-300 dark:bg-orange-900/30';
 		}
-		if (action.includes("role") || action.includes("created")) {
-			return "text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30";
+		if (action.includes('role') || action.includes('created')) {
+			return 'text-blue-600 bg-blue-100 dark:text-blue-300 dark:bg-blue-900/30';
 		}
-		if (action.includes("resolved") || action.includes("approved")) {
-			return "text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900/30";
+		if (action.includes('resolved') || action.includes('approved')) {
+			return 'text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900/30';
 		}
-		return "text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800";
+		return 'text-slate-600 bg-slate-100 dark:text-slate-300 dark:bg-slate-800';
 	}
 
 	function formatAction(action: string): string {
 		return action
-			.split("_")
+			.split('_')
 			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-			.join(" ");
+			.join(' ');
 	}
 
 	function parseDetails(details: string | null): Record<string, unknown> | null {
@@ -69,12 +69,12 @@
 	const canGoNext = $derived(currentPage < totalPages - 1);
 
 	const actionOptions = [
-		{ value: "role_changed", label: "Role Changed" },
-		{ value: "user_deleted", label: "User Deleted" },
-		{ value: "report_created", label: "Report Created" },
-		{ value: "report_resolved", label: "Report Resolved" },
-		{ value: "sanction_issued", label: "Sanction Issued" },
-		{ value: "sanction_revoked", label: "Sanction Revoked" },
+		{ value: 'role_changed', label: 'Role Changed' },
+		{ value: 'user_deleted', label: 'User Deleted' },
+		{ value: 'report_created', label: 'Report Created' },
+		{ value: 'report_resolved', label: 'Report Resolved' },
+		{ value: 'sanction_issued', label: 'Sanction Issued' },
+		{ value: 'sanction_revoked', label: 'Sanction Revoked' }
 	];
 </script>
 
@@ -99,7 +99,7 @@
 				}}
 			>
 				<Select.Trigger class="w-full sm:w-48">
-					{actionFilter ? formatAction(actionFilter) : "All Actions"}
+					{actionFilter ? formatAction(actionFilter) : 'All Actions'}
 				</Select.Trigger>
 				<Select.Content>
 					<Select.Item value="">All Actions</Select.Item>
@@ -195,7 +195,10 @@
 		{#if (auditLogQuery.data?.total ?? 0) > pageSize}
 			<div class="flex items-center justify-between border-t px-4 py-3">
 				<p class="text-sm text-muted-foreground">
-					Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, auditLogQuery.data?.total ?? 0)} of {auditLogQuery.data?.total ?? 0} entries
+					Showing {currentPage * pageSize + 1} to {Math.min(
+						(currentPage + 1) * pageSize,
+						auditLogQuery.data?.total ?? 0
+					)} of {auditLogQuery.data?.total ?? 0} entries
 				</p>
 				<div class="flex gap-1">
 					<Button

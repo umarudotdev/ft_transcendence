@@ -1,13 +1,13 @@
 <script lang="ts">
-	import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
-	import type { Snippet } from "svelte";
+	import { QueryClient, QueryClientProvider } from '@tanstack/svelte-query';
+	import type { Snippet } from 'svelte';
 
 	const queryClient = new QueryClient({
 		defaultOptions: {
 			queries: {
-				retry: false,
-			},
-		},
+				retry: false
+			}
+		}
 	});
 
 	interface Props {

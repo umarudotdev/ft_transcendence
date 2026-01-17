@@ -1,11 +1,11 @@
 <script lang="ts">
-	import * as Card from "$lib/components/ui/card";
-	import { Button } from "$lib/components/ui/button";
-	import { createMeQuery } from "$lib/queries/auth";
-	import PartyPopperIcon from "@lucide/svelte/icons/party-popper";
-	import GamepadIcon from "@lucide/svelte/icons/gamepad-2";
-	import UserIcon from "@lucide/svelte/icons/user";
-	import SettingsIcon from "@lucide/svelte/icons/settings";
+	import * as Card from '$lib/components/ui/card';
+	import { Button } from '$lib/components/ui/button';
+	import { createMeQuery } from '$lib/queries/auth';
+	import PartyPopperIcon from '@lucide/svelte/icons/party-popper';
+	import GamepadIcon from '@lucide/svelte/icons/gamepad-2';
+	import UserIcon from '@lucide/svelte/icons/user';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
 
 	const meQuery = createMeQuery();
 </script>
@@ -44,7 +44,9 @@
 	<div class="grid gap-4 sm:grid-cols-3">
 		<Card.Root class="text-center">
 			<Card.Content class="pt-6">
-				<div class="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10">
+				<div
+					class="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10"
+				>
 					<UserIcon class="size-6 text-primary" />
 				</div>
 				<h3 class="font-semibold">Set Up Profile</h3>
@@ -58,7 +60,9 @@
 
 		<Card.Root class="text-center">
 			<Card.Content class="pt-6">
-				<div class="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10">
+				<div
+					class="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10"
+				>
 					<GamepadIcon class="size-6 text-primary" />
 				</div>
 				<h3 class="font-semibold">Start Playing</h3>
@@ -72,8 +76,16 @@
 
 		<Card.Root class="text-center">
 			<Card.Content class="pt-6">
-				<div class="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10">
-					<svg class="size-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<div
+					class="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10"
+				>
+					<svg
+						class="size-6 text-primary"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+					>
 						<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
 						<circle cx="9" cy="7" r="4" />
 						<path d="M23 21v-2a4 4 0 0 0-3-3.87" />

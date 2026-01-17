@@ -1,9 +1,9 @@
 <script lang="ts">
-	import * as Sidebar from "$lib/components/ui/sidebar";
-	import AppSidebar from "$lib/components/app-sidebar.svelte";
-	import ThemeToggle from "$lib/components/theme-toggle.svelte";
-	import { NotificationBell } from "$lib/components/notifications";
-	import CommandMenu from "$lib/components/command-menu.svelte";
+	import * as Sidebar from '$lib/components/ui/sidebar';
+	import AppSidebar from '$lib/components/app-sidebar.svelte';
+	import ThemeToggle from '$lib/components/theme-toggle.svelte';
+	import { NotificationBell } from '$lib/components/notifications';
+	import CommandMenu from '$lib/components/command-menu.svelte';
 
 	let { children } = $props();
 </script>
@@ -11,7 +11,9 @@
 <Sidebar.Provider>
 	<AppSidebar />
 	<Sidebar.Inset>
-		<header class="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-md3-outline-variant bg-md3-surface px-4">
+		<header
+			class="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b border-md3-outline-variant bg-md3-surface px-4"
+		>
 			<Sidebar.Trigger class="-ml-1"></Sidebar.Trigger>
 			<div class="h-4 w-px bg-md3-outline-variant"></div>
 			<span class="flex-1 text-sm font-medium text-md3-on-surface-variant">ft_transcendence</span>

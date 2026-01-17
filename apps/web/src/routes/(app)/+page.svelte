@@ -1,22 +1,22 @@
 <script lang="ts">
-	import * as Card from "$lib/components/ui/card";
-	import { Button } from "$lib/components/ui/button";
-	import { Badge } from "$lib/components/ui/badge";
-	import { Skeleton } from "$lib/components/ui/skeleton";
-	import { createMeQuery } from "$lib/queries/auth";
-	import { createMyStatsQuery, createMyMatchesQuery } from "$lib/queries/users";
-	import GamepadIcon from "@lucide/svelte/icons/gamepad-2";
-	import TrophyIcon from "@lucide/svelte/icons/trophy";
-	import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
-	import SwordsIcon from "@lucide/svelte/icons/swords";
-	import UserIcon from "@lucide/svelte/icons/user";
+	import * as Card from '$lib/components/ui/card';
+	import { Button } from '$lib/components/ui/button';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { createMeQuery } from '$lib/queries/auth';
+	import { createMyStatsQuery, createMyMatchesQuery } from '$lib/queries/users';
+	import GamepadIcon from '@lucide/svelte/icons/gamepad-2';
+	import TrophyIcon from '@lucide/svelte/icons/trophy';
+	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
+	import SwordsIcon from '@lucide/svelte/icons/swords';
+	import UserIcon from '@lucide/svelte/icons/user';
 
 	const meQuery = createMeQuery();
 	const statsQuery = createMyStatsQuery();
 	const matchesQuery = createMyMatchesQuery({ limit: 5 });
 
 	function formatWinRate(wins: number, total: number): string {
-		if (total === 0) return "0%";
+		if (total === 0) return '0%';
 		return `${Math.round((wins / total) * 100)}%`;
 	}
 </script>
@@ -104,15 +104,18 @@
 						<div class="space-y-1">
 							<div class="flex items-center gap-1">
 								<TrendingUpIcon class="size-4 text-primary" />
-								<span class="text-2xl font-bold">{formatWinRate(stats.wins, stats.wins + stats.losses)}</span>
+								<span class="text-2xl font-bold"
+									>{formatWinRate(stats.wins, stats.wins + stats.losses)}</span
+								>
 							</div>
 							<p class="text-sm text-muted-foreground">Win Rate</p>
 						</div>
 					</div>
-
 				{:else}
 					<div class="py-8 text-center">
-						<p class="text-muted-foreground">No games played yet. Start playing to track your stats!</p>
+						<p class="text-muted-foreground">
+							No games played yet. Start playing to track your stats!
+						</p>
 					</div>
 				{/if}
 			</Card.Content>
@@ -157,10 +160,12 @@
 										{match.playerScore} - {match.opponentScore}
 									</span>
 									<Badge
-										variant={match.result === "win" ? "default" : "secondary"}
-										class={match.result === "win" ? "bg-green-600 hover:bg-green-600" : "bg-red-600 hover:bg-red-600 text-white"}
+										variant={match.result === 'win' ? 'default' : 'secondary'}
+										class={match.result === 'win'
+											? 'bg-green-600 hover:bg-green-600'
+											: 'bg-red-600 text-white hover:bg-red-600'}
 									>
-										{match.result === "win" ? "Win" : "Loss"}
+										{match.result === 'win' ? 'Win' : 'Loss'}
 									</Badge>
 								</div>
 							</div>

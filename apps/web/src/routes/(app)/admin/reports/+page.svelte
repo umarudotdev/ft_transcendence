@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { Button } from "$lib/components/ui/button";
-	import * as Card from "$lib/components/ui/card";
-	import * as Table from "$lib/components/ui/table";
-	import * as Dialog from "$lib/components/ui/dialog";
-	import * as Select from "$lib/components/ui/select";
-	import { Input } from "$lib/components/ui/input";
-	import { Label } from "$lib/components/ui/label";
-	import { Textarea } from "$lib/components/ui/textarea";
-	import { Badge } from "$lib/components/ui/badge";
-	import { Skeleton } from "$lib/components/ui/skeleton";
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import * as Table from '$lib/components/ui/table';
+	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Select from '$lib/components/ui/select';
+	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label';
+	import { Textarea } from '$lib/components/ui/textarea';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Skeleton } from '$lib/components/ui/skeleton';
 	import {
 		createReportsQuery,
 		createResolveReportMutation,
@@ -17,11 +17,11 @@
 		getStatusColor,
 		type Report,
 		type ReportStatus,
-		type Resolution,
-	} from "$lib/queries/moderation";
-	import ChevronLeftIcon from "@lucide/svelte/icons/chevron-left";
-	import ChevronRightIcon from "@lucide/svelte/icons/chevron-right";
-	import CheckIcon from "@lucide/svelte/icons/check";
+		type Resolution
+	} from '$lib/queries/moderation';
+	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import CheckIcon from '@lucide/svelte/icons/check';
 
 	const resolveReportMutation = createResolveReportMutation();
 
@@ -33,22 +33,22 @@
 		createReportsQuery({
 			limit: pageSize,
 			offset: currentPage * pageSize,
-			status: statusFilter ? (statusFilter as ReportStatus) : undefined,
+			status: statusFilter ? (statusFilter as ReportStatus) : undefined
 		})
 	);
 
 	// Dialog state
 	let resolveDialogOpen = $state(false);
 	let selectedReport = $state<Report | null>(null);
-	let resolution = $state<string>("no_action");
-	let sanctionDuration = $state("");
-	let notes = $state("");
+	let resolution = $state<string>('no_action');
+	let sanctionDuration = $state('');
+	let notes = $state('');
 
 	function openResolveDialog(report: Report) {
 		selectedReport = report;
-		resolution = "no_action";
-		sanctionDuration = "";
-		notes = "";
+		resolution = 'no_action';
+		sanctionDuration = '';
+		notes = '';
 		resolveDialogOpen = true;
 	}
 
@@ -63,25 +63,25 @@
 				data: {
 					resolution: resolution as Resolution,
 					sanctionDuration: durationHours,
-					notes: notes || undefined,
-				},
+					notes: notes || undefined
+				}
 			},
 			{
 				onSuccess: () => {
 					resolveDialogOpen = false;
 					selectedReport = null;
-				},
+				}
 			}
 		);
 	}
 
 	function formatDate(date: Date): string {
-		return new Date(date).toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
+		return new Date(date).toLocaleDateString('en-US', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
 		});
 	}
 
@@ -90,20 +90,20 @@
 	const canGoNext = $derived(currentPage < totalPages - 1);
 
 	const statusOptions: { value: ReportStatus; label: string }[] = [
-		{ value: "pending", label: "Pending" },
-		{ value: "reviewed", label: "Reviewed" },
-		{ value: "resolved", label: "Resolved" },
-		{ value: "dismissed", label: "Dismissed" },
+		{ value: 'pending', label: 'Pending' },
+		{ value: 'reviewed', label: 'Reviewed' },
+		{ value: 'resolved', label: 'Resolved' },
+		{ value: 'dismissed', label: 'Dismissed' }
 	];
 
 	const resolutionOptions: { value: Resolution; label: string; description: string }[] = [
-		{ value: "no_action", label: "No Action", description: "Dismiss the report without action" },
-		{ value: "warning", label: "Warning", description: "Issue a warning to the user" },
-		{ value: "timeout", label: "Timeout", description: "Temporarily suspend the user" },
-		{ value: "ban", label: "Ban", description: "Permanently ban the user" },
+		{ value: 'no_action', label: 'No Action', description: 'Dismiss the report without action' },
+		{ value: 'warning', label: 'Warning', description: 'Issue a warning to the user' },
+		{ value: 'timeout', label: 'Timeout', description: 'Temporarily suspend the user' },
+		{ value: 'ban', label: 'Ban', description: 'Permanently ban the user' }
 	];
 
-	const needsDuration = $derived(resolution as Resolution === "timeout");
+	const needsDuration = $derived((resolution as Resolution) === 'timeout');
 </script>
 
 <svelte:head>
@@ -127,7 +127,7 @@
 				}}
 			>
 				<Select.Trigger class="w-full sm:w-40">
-					{statusFilter ? getStatusText(statusFilter as ReportStatus) : "All Statuses"}
+					{statusFilter ? getStatusText(statusFilter as ReportStatus) : 'All Statuses'}
 				</Select.Trigger>
 				<Select.Content>
 					<Select.Item value="">All Statuses</Select.Item>
@@ -193,13 +193,11 @@
 								{formatDate(report.createdAt)}
 							</Table.Cell>
 							<Table.Cell class="text-right">
-								{#if report.status === "pending"}
-									<Button size="sm" onclick={() => openResolveDialog(report)}>
-										Resolve
-									</Button>
+								{#if report.status === 'pending'}
+									<Button size="sm" onclick={() => openResolveDialog(report)}>Resolve</Button>
 								{:else}
 									<span class="text-sm text-muted-foreground">
-										{report.resolution ?? "No action"}
+										{report.resolution ?? 'No action'}
 									</span>
 								{/if}
 							</Table.Cell>
@@ -213,7 +211,10 @@
 		{#if (reportsQuery.data?.total ?? 0) > pageSize}
 			<div class="flex items-center justify-between border-t px-4 py-3">
 				<p class="text-sm text-muted-foreground">
-					Showing {currentPage * pageSize + 1} to {Math.min((currentPage + 1) * pageSize, reportsQuery.data?.total ?? 0)} of {reportsQuery.data?.total ?? 0} reports
+					Showing {currentPage * pageSize + 1} to {Math.min(
+						(currentPage + 1) * pageSize,
+						reportsQuery.data?.total ?? 0
+					)} of {reportsQuery.data?.total ?? 0} reports
 				</p>
 				<div class="flex gap-1">
 					<Button
@@ -247,7 +248,9 @@
 			<Dialog.Title>Resolve Report</Dialog.Title>
 			<Dialog.Description>
 				{#if selectedReport}
-					Report against {selectedReport.reportedUserName} for {getReasonText(selectedReport.reason)}
+					Report against {selectedReport.reportedUserName} for {getReasonText(
+						selectedReport.reason
+					)}
 				{/if}
 			</Dialog.Description>
 		</Dialog.Header>
@@ -255,7 +258,7 @@
 			{#if selectedReport?.description}
 				<div class="space-y-2">
 					<Label>Description</Label>
-					<p class="text-sm text-muted-foreground rounded-md border p-3">
+					<p class="rounded-md border p-3 text-sm text-muted-foreground">
 						{selectedReport.description}
 					</p>
 				</div>
@@ -265,7 +268,7 @@
 				<Label>Resolution</Label>
 				<Select.Root type="single" bind:value={resolution}>
 					<Select.Trigger>
-						{resolutionOptions.find((o) => o.value === resolution)?.label ?? "Select resolution"}
+						{resolutionOptions.find((o) => o.value === resolution)?.label ?? 'Select resolution'}
 					</Select.Trigger>
 					<Select.Content>
 						{#each resolutionOptions as option}
@@ -315,7 +318,7 @@
 				onclick={handleResolve}
 				disabled={resolveReportMutation.isPending || (needsDuration && !sanctionDuration)}
 			>
-				{resolveReportMutation.isPending ? "Resolving..." : "Resolve Report"}
+				{resolveReportMutation.isPending ? 'Resolving...' : 'Resolve Report'}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

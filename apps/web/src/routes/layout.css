@@ -75,9 +75,9 @@
   --md3-on-background: var(--md3-on-surface);
 
   /* ===== MD3 TYPOGRAPHY ===== */
-  --md3-font-brand: "Roboto", sans-serif;
-  --md3-font-plain: "Roboto", sans-serif;
-  --md3-font-code: "Roboto Mono", monospace;
+  --md3-font-brand: "Geist Sans", system-ui, sans-serif;
+  --md3-font-plain: "Geist Sans", system-ui, sans-serif;
+  --md3-font-code: "Geist Mono", ui-monospace, monospace;
 
   /* Display */
   --md3-typescale-display-large-size: 57px;
@@ -113,9 +113,9 @@
 
   /* Title */
   --md3-typescale-title-large-size: 22px;
-  --md3-typescale-title-large-line-height: 28px;
-  --md3-typescale-title-large-weight: 400;
-  --md3-typescale-title-large-tracking: 0;
+  --md3-typescale-title-large-line-height: 30px;
+  --md3-typescale-title-large-weight: 500;
+  --md3-typescale-title-large-tracking: -0.01em;
 
   --md3-typescale-title-medium-size: 16px;
   --md3-typescale-title-medium-line-height: 24px;
@@ -129,35 +129,35 @@
 
   /* Body */
   --md3-typescale-body-large-size: 16px;
-  --md3-typescale-body-large-line-height: 24px;
+  --md3-typescale-body-large-line-height: 26px;
   --md3-typescale-body-large-weight: 400;
-  --md3-typescale-body-large-tracking: 0.5px;
+  --md3-typescale-body-large-tracking: 0;
 
   --md3-typescale-body-medium-size: 14px;
-  --md3-typescale-body-medium-line-height: 20px;
+  --md3-typescale-body-medium-line-height: 22px;
   --md3-typescale-body-medium-weight: 400;
-  --md3-typescale-body-medium-tracking: 0.25px;
+  --md3-typescale-body-medium-tracking: 0;
 
   --md3-typescale-body-small-size: 12px;
-  --md3-typescale-body-small-line-height: 16px;
+  --md3-typescale-body-small-line-height: 18px;
   --md3-typescale-body-small-weight: 400;
-  --md3-typescale-body-small-tracking: 0.4px;
+  --md3-typescale-body-small-tracking: 0.01em;
 
   /* Label */
   --md3-typescale-label-large-size: 14px;
   --md3-typescale-label-large-line-height: 20px;
   --md3-typescale-label-large-weight: 500;
-  --md3-typescale-label-large-tracking: 0.1px;
+  --md3-typescale-label-large-tracking: 0;
 
   --md3-typescale-label-medium-size: 12px;
   --md3-typescale-label-medium-line-height: 16px;
   --md3-typescale-label-medium-weight: 500;
-  --md3-typescale-label-medium-tracking: 0.5px;
+  --md3-typescale-label-medium-tracking: 0.02em;
 
   --md3-typescale-label-small-size: 11px;
   --md3-typescale-label-small-line-height: 16px;
   --md3-typescale-label-small-weight: 500;
-  --md3-typescale-label-small-tracking: 0.5px;
+  --md3-typescale-label-small-tracking: 0.02em;
 
   /* ===== MD3 ELEVATION ===== */
   --md3-elevation-level0: none;
@@ -259,7 +259,7 @@
 
   /* Typography */
   --font-sans: var(--md3-font-plain);
-  --font-serif: "Lora", serif;
+  --font-serif: Georgia, "Times New Roman", serif;
   --font-mono: var(--md3-font-code);
 
   /* Shape */

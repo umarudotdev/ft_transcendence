@@ -5,6 +5,8 @@
 	import { locales, localizeHref } from '$lib/paraglide/runtime';
 	import { createQueryClient } from '$lib/query';
 	import { Toaster } from '$lib/components/ui/sonner';
+	import '@fontsource/geist-sans';
+	import '@fontsource/geist-mono';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 

@@ -28,6 +28,7 @@
     createMyStatsQuery,
     createPendingRequestsQuery,
     createRejectFriendRequestMutation,
+    createRemoveAvatarMutation,
     createRemoveFriendMutation,
     createUpdateProfileMutation,
     createUploadAvatarMutation,
@@ -44,6 +45,7 @@
   // Mutations
   const updateProfileMutation = createUpdateProfileMutation();
   const uploadAvatarMutation = createUploadAvatarMutation();
+  const removeAvatarMutation = createRemoveAvatarMutation();
   const removeFriendMutation = createRemoveFriendMutation();
   const acceptRequestMutation = createAcceptFriendRequestMutation();
   const rejectRequestMutation = createRejectFriendRequestMutation();
@@ -87,6 +89,10 @@
 
   async function handleAvatarUpload(file: File) {
     await uploadAvatarMutation.mutateAsync(file);
+  }
+
+  async function handleAvatarRemove() {
+    await removeAvatarMutation.mutateAsync();
   }
 
   function handleFilterChange(filter: string) {
@@ -169,7 +175,8 @@
                 avatarUrl={user.avatarUrl}
                 displayName={user.displayName}
                 onUpload={handleAvatarUpload}
-                loading={uploadAvatarMutation.isPending}
+                onRemove={handleAvatarRemove}
+                loading={uploadAvatarMutation.isPending || removeAvatarMutation.isPending}
               />
             </div>
 

@@ -110,6 +110,36 @@ export const usersController = new Elysia({ prefix: "/users" })
       body: UsersModel.uploadAvatar,
     }
   )
+  .delete("/me/avatar", async ({ user, request, set }) => {
+    const instance = new URL(request.url).pathname;
+
+    // Try to delete the file from disk
+    const filename = `${user.id}.webp`;
+    const filepath = join(UPLOADS_DIR, filename);
+
+    try {
+      await unlink(filepath);
+    } catch {
+      // File might not exist, that's fine
+    }
+
+    // Update database to remove avatar URL
+    const result = await UsersService.removeAvatarUrl(user.id);
+
+    return result.match(
+      () => ({
+        message: "Avatar removed successfully",
+      }),
+      () => {
+        const problem = internalError("Failed to remove avatar", {
+          instance,
+        });
+        set.status = problem.status;
+        set.headers["Content-Type"] = "application/problem+json";
+        return problem;
+      }
+    );
+  })
   .get(
     "/me/stats",
     async ({ user, query }) => {

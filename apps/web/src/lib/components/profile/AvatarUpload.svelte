@@ -7,6 +7,7 @@
     avatarUrl: string | null;
     displayName: string;
     onUpload: (file: File) => Promise<void>;
+    onRemove?: () => Promise<void>;
     loading?: boolean;
     editable?: boolean;
   }
@@ -15,9 +16,12 @@
     avatarUrl,
     displayName,
     onUpload,
+    onRemove,
     loading = false,
     editable = true,
   }: Props = $props();
+
+  let isRemoving = $state(false);
 
   let fileInput: HTMLInputElement | undefined = $state();
   let previewUrl = $state<string | null>(null);
@@ -73,6 +77,23 @@
     }
   }
 
+  async function handleRemove(event: Event) {
+    event.stopPropagation();
+    if (!onRemove || isRemoving) return;
+
+    isRemoving = true;
+    try {
+      await onRemove();
+      previewUrl = null;
+      toast.success("Avatar removed successfully!");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to remove avatar";
+      toast.error(message);
+    } finally {
+      isRemoving = false;
+    }
+  }
+
   // Cleanup preview URL on unmount
   $effect(() => {
     return () => {
@@ -87,7 +108,7 @@
   <button
     type="button"
     onclick={handleClick}
-    disabled={loading || !editable}
+    disabled={loading || isRemoving || !editable}
     class="group relative cursor-pointer disabled:cursor-default"
     aria-label={editable ? "Change avatar" : "User avatar"}
   >
@@ -129,7 +150,7 @@
       </div>
     {/if}
 
-    {#if loading}
+    {#if loading || isRemoving}
       <div
         class="absolute inset-0 flex items-center justify-center rounded-full bg-black/50"
       >
@@ -139,6 +160,19 @@
       </div>
     {/if}
   </button>
+
+  {#if editable && onRemove && avatarUrl && !loading && !isRemoving}
+    <button
+      type="button"
+      onclick={handleRemove}
+      class="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-md transition-transform hover:scale-110"
+      aria-label="Remove avatar"
+    >
+      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  {/if}
 
   <input
     bind:this={fileInput}

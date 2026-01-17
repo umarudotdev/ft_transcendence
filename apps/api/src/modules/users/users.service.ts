@@ -186,6 +186,23 @@ abstract class UsersService {
     ).andThen((result) => result);
   }
 
+  static removeAvatarUrl(userId: number): ResultAsync<void, AvatarUploadError> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        const user = await usersRepository.findById(userId);
+
+        if (!user) {
+          return err({ type: "USER_NOT_FOUND" as const });
+        }
+
+        await usersRepository.updateAvatarUrl(userId, null);
+
+        return ok(undefined);
+      })(),
+      () => ({ type: "UPLOAD_FAILED" as const })
+    ).andThen((result) => result);
+  }
+
   static getMatchHistory(
     userId: number,
     viewerId: number,

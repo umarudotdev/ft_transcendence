@@ -31,6 +31,9 @@ services:
       LOG_LEVEL: debug
       SHUTDOWN_TIMEOUT_MS: "10000"
       CHAT_ENCRYPTION_KEY: dev-chat-encryption-key-32bytes!
+      FRONTEND_URL: http://localhost:5173
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@transcendence.umaru.dev}
     volumes:
       - uploads:/usr/src/app/apps/api/uploads
     depends_on:

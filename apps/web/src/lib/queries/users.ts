@@ -340,6 +340,29 @@ export function createUploadAvatarMutation() {
   }));
 }
 
+export function createRemoveAvatarMutation() {
+  const queryClient = useQueryClient();
+
+  return createMutation<{ message: string }, ApiError, void>(() => ({
+    mutationFn: async () => {
+      const response = await fetch("/api/users/me/avatar", {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw createApiError(data);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+    },
+  }));
+}
+
 export function createSendFriendRequestMutation() {
   const queryClient = useQueryClient();
 

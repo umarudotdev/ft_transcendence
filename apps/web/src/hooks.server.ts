@@ -18,7 +18,7 @@ function isProtectedRoute(pathname: string): boolean {
  * Check if path is an API route (should be proxied, not handled by SvelteKit)
  */
 function isApiRoute(pathname: string): boolean {
-  return pathname.startsWith("/api");
+  return pathname.startsWith("/api") || pathname.startsWith("/uploads");
 }
 
 /**

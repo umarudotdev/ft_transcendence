@@ -1,10 +1,10 @@
 <script lang="ts">
 	import * as Command from "$lib/components/ui/command";
-	import { Button } from "$lib/components/ui/button";
 	import { goto } from "$app/navigation";
 	import { setMode, resetMode } from "mode-watcher";
 	import { createLogoutMutation } from "$lib/queries/auth";
 	import { api } from "$lib/api";
+	import { getInitials } from "$lib/utils";
 
 	import SearchIcon from "@lucide/svelte/icons/search";
 	import GamepadIcon from "@lucide/svelte/icons/gamepad-2";
@@ -101,33 +101,22 @@
 			},
 		});
 	}
-
-	function getInitials(name: string): string {
-		return name
-			.split(" ")
-			.map((n) => n[0])
-			.join("")
-			.toUpperCase()
-			.slice(0, 2);
-	}
 </script>
 
 <svelte:document onkeydown={handleKeydown} />
 
-<Button
-	variant="outline"
-	size="sm"
-	class="gap-2 text-muted-foreground"
+<button
 	onclick={() => (open = true)}
+	class="flex h-10 w-full max-w-md items-center gap-3 rounded-full bg-md3-surface-container-highest px-4 text-md3-on-surface-variant transition-colors hover:bg-md3-surface-container-high"
 >
-	<SearchIcon class="size-4" />
-	<span class="hidden sm:inline-flex">Search...</span>
+	<SearchIcon class="size-5 shrink-0" />
+	<span class="flex-1 text-left text-sm">Search...</span>
 	<kbd
-		class="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs font-medium opacity-100 sm:flex"
+		class="hidden rounded-md bg-md3-surface-container px-2 py-0.5 font-mono text-xs text-md3-on-surface-variant sm:inline-flex"
 	>
-		<span class="text-xs">⌘</span>K
+		⌘K
 	</kbd>
-</Button>
+</button>
 
 <Command.Dialog bind:open>
 	<Command.Input placeholder="Type a command or search users..." bind:value={searchValue} />

@@ -6,6 +6,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { createLogoutMutation, createMeQuery } from '$lib/queries/auth';
+	import { getInitials } from '$lib/utils';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
@@ -13,16 +14,7 @@
 	const meQuery = createMeQuery();
 	const logoutMutation = createLogoutMutation();
 
-	function getInitials(name: string): string {
-		return name
-			.split(' ')
-			.map((n) => n[0])
-			.join('')
-			.toUpperCase()
-			.slice(0, 2);
-	}
-
-	async function handleLogout() {
+	function handleLogout() {
 		logoutMutation.mutate(undefined, {
 			onSuccess: () => {
 				goto('/auth/login');

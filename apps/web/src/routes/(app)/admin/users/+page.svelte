@@ -20,6 +20,7 @@
 		type UserRole
 	} from '$lib/queries/moderation';
 	import { createMeQuery } from '$lib/queries/auth';
+	import { getInitials } from '$lib/utils';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
@@ -101,15 +102,6 @@
 				}
 			}
 		);
-	}
-
-	function getInitials(name: string): string {
-		return name
-			.split(' ')
-			.map((n) => n[0])
-			.join('')
-			.toUpperCase()
-			.slice(0, 2);
 	}
 
 	function formatDate(date: Date): string {

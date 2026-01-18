@@ -2,6 +2,7 @@
   import { Avatar, AvatarFallback, AvatarImage } from "$lib/components/ui/avatar";
   import { Button } from "$lib/components/ui/button";
   import { toast } from "svelte-sonner";
+  import { getInitials } from "$lib/utils";
 
   interface Props {
     avatarUrl: string | null;
@@ -25,15 +26,6 @@
 
   let fileInput: HTMLInputElement | undefined = $state();
   let previewUrl = $state<string | null>(null);
-
-  function getInitials(name: string): string {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  }
 
   function handleClick() {
     if (editable && !loading) {

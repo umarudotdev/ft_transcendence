@@ -13,13 +13,19 @@
 <Popover.Root bind:open>
   <Popover.Trigger>
     {#snippet child({ props })}
-      <Button variant="ghost" size="icon-sm" class="relative" {...props}>
-        <BellIcon class="size-4" />
+      <Button
+        variant="ghost"
+        size="icon"
+        class="relative size-10 rounded-full text-md3-on-surface-variant transition-colors hover:bg-md3-surface-container-highest hover:text-md3-on-surface"
+        aria-label="Notifications"
+        {...props}
+      >
+        <BellIcon class="size-5" />
         {#if unreadQuery.data && unreadQuery.data > 0}
           <span
-            class="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-md3-error text-[10px] font-bold text-md3-on-error"
+            class="absolute right-1 top-1 flex size-[18px] items-center justify-center rounded-full bg-md3-error text-[10px] font-bold text-md3-on-error shadow-sm"
           >
-            {unreadQuery.data > 99 ? "99+" : unreadQuery.data}
+            {unreadQuery.data > 99 ? "+" : unreadQuery.data}
           </span>
         {/if}
       </Button>

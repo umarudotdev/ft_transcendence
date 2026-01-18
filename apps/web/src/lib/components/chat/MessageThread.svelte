@@ -4,6 +4,7 @@
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { createMessagesQuery, type Message } from "$lib/queries/chat";
   import { getChatStore } from "$lib/stores/chat.svelte";
+  import { getInitials } from "$lib/utils";
   import { onMount } from "svelte";
   import TypingIndicator from "./TypingIndicator.svelte";
 
@@ -94,15 +95,6 @@
       month: "short",
       day: "numeric",
     });
-  }
-
-  function getInitials(name: string): string {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
   }
 
   function shouldShowDateSeparator(

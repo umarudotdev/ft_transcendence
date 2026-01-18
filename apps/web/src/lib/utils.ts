@@ -42,3 +42,22 @@ export function formatDisplayName(displayName: string): string {
 export function formatUsername(username: string): string {
   return `@${username}`;
 }
+
+/**
+ * Generates initials from a name (max 2 characters).
+ * Example: "John Doe" → "JD", "Alice" → "A"
+ */
+export function getInitials(name: string): string {
+  if (!name || !name.trim()) {
+    return "??";
+  }
+
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}

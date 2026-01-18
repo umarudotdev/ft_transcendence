@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Avatar, AvatarFallback, AvatarImage } from "$lib/components/ui/avatar";
+  import { getInitials } from "$lib/utils";
   import type { Conversation } from "$lib/queries/chat";
 
   interface Props {
@@ -30,15 +31,6 @@
       return conversation.participant.displayName;
     }
     return conversation.name ?? "Unnamed Channel";
-  }
-
-  function getInitials(name: string): string {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
   }
 </script>
 

@@ -5,6 +5,7 @@
   import { Button } from "$lib/components/ui/button";
   import { Card, CardContent, CardHeader, CardTitle } from "$lib/components/ui/card";
   import { Skeleton } from "$lib/components/ui/skeleton";
+  import { getInitials } from "$lib/utils";
   import type { Friend, FriendRequest } from "$lib/queries/users";
 
   interface Props {
@@ -26,15 +27,6 @@
     onAcceptRequest,
     onRejectRequest,
   }: Props = $props();
-
-  function getInitials(name: string): string {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  }
 
   function formatDate(date: Date): string {
     return new Intl.DateTimeFormat("en-US", {

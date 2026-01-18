@@ -18,6 +18,7 @@
     TableHeader,
     TableRow,
   } from "$lib/components/ui/table";
+  import { getInitials } from "$lib/utils";
   import type { MatchHistoryItem } from "$lib/queries/users";
 
   interface Props {
@@ -64,15 +65,6 @@
       case "draw":
         return "secondary" as const;
     }
-  }
-
-  function getInitials(name: string): string {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
   }
 </script>
 

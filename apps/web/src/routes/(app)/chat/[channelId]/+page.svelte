@@ -7,6 +7,7 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { createMeQuery } from '$lib/queries/auth';
 	import { createChannelQuery } from '$lib/queries/chat';
+	import { getInitials } from '$lib/utils';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 
 	let channelId = $derived(Number(page.params.channelId));
@@ -22,15 +23,6 @@
 			return channelQuery.data.participant.displayName;
 		}
 		return channelQuery.data.name ?? 'Channel';
-	}
-
-	function getInitials(name: string): string {
-		return name
-			.split(' ')
-			.map((n) => n[0])
-			.join('')
-			.toUpperCase()
-			.slice(0, 2);
 	}
 
 	function handleBack() {

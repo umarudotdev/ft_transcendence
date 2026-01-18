@@ -19,6 +19,7 @@
 		type FriendshipStatus
 	} from '$lib/queries/users';
 	import { createDMMutation } from '$lib/queries/chat';
+	import { getInitials } from '$lib/utils';
 	import { toast } from 'svelte-sonner';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
@@ -52,15 +53,6 @@
 
 	// Check if viewing own profile
 	const isOwnProfile = $derived(meQuery.data?.id === userId);
-
-	function getInitials(name: string): string {
-		return name
-			.split(' ')
-			.map((n) => n[0])
-			.join('')
-			.toUpperCase()
-			.slice(0, 2);
-	}
 
 	function formatJoinDate(date: Date): string {
 		return new Intl.DateTimeFormat('en-US', {

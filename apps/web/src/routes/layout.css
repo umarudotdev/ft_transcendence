@@ -447,6 +447,16 @@
     font-size: var(--md3-typescale-body-medium-size);
     line-height: var(--md3-typescale-body-medium-line-height);
     letter-spacing: var(--md3-typescale-body-medium-tracking);
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Allow selection in form inputs and text areas */
+  input,
+  textarea,
+  [contenteditable="true"] {
+    user-select: text;
+    -webkit-user-select: text;
   }
 }
 

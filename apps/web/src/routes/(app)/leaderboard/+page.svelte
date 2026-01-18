@@ -19,6 +19,7 @@
 		type LeaderboardEntry,
 		type PlayerTier
 	} from '$lib/queries/rankings';
+	import { getInitials } from '$lib/utils';
 	import TrophyIcon from '@lucide/svelte/icons/trophy';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
@@ -28,15 +29,6 @@
 
 	const leaderboardQuery = $derived(createLeaderboardQuery({ limit, offset }));
 	const myRankingQuery = createMyRankingQuery();
-
-	function getInitials(name: string): string {
-		return name
-			.split(' ')
-			.map((n) => n[0])
-			.join('')
-			.toUpperCase()
-			.slice(0, 2);
-	}
 
 	function getRankDisplay(rank: number): string {
 		if (rank === 1) return '🥇';

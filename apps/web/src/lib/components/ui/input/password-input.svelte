@@ -16,32 +16,31 @@
 
 	let showPassword = $state(false);
 
-	// MD3 Input base styles (same as Input component)
+	// Input base styles (same as Input component)
 	const inputBase = [
 		// Layout
 		"flex h-14 w-full min-w-0 px-4 py-4 pr-12",
 		// Shape
 		"rounded-[var(--md3-shape-extra-small)]",
 		// Colors
-		"bg-md3-surface-container-highest text-md3-on-surface",
-		"border border-md3-outline",
+		"bg-transparent text-foreground",
+		"border border-input",
 		// Typography
-		"md3-body-large",
+		"text-base",
 		// Placeholder
-		"placeholder:text-md3-on-surface-variant",
+		"placeholder:text-muted-foreground",
 		// Selection
 		"selection:bg-primary selection:text-primary-foreground",
 		// Transition
-		"transition-all duration-[var(--md3-duration-short2)] ease-[var(--md3-easing-standard)]",
+		"transition-[color,box-shadow]",
 		// Focus
-		"outline-none focus-visible:border-md3-primary focus-visible:border-2",
-		"focus-visible:ring-0",
+		"outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
 		// Invalid
-		"aria-invalid:border-md3-error aria-invalid:border-2",
+		"aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
 		// Disabled
-		"disabled:cursor-not-allowed disabled:opacity-38",
+		"disabled:cursor-not-allowed disabled:opacity-50",
 		// Dark mode
-		"dark:bg-md3-surface-container-high",
+		"dark:bg-input/30",
 	];
 </script>
 
@@ -59,10 +58,10 @@
 		class={cn(
 			"absolute right-3 top-1/2 -translate-y-1/2",
 			"flex size-8 items-center justify-center rounded-full",
-			"text-md3-on-surface-variant hover:text-md3-on-surface",
-			"hover:bg-md3-on-surface/8 active:bg-md3-on-surface/12",
-			"transition-colors duration-[var(--md3-duration-short2)]",
-			"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md3-primary"
+			"text-muted-foreground hover:text-foreground",
+			"hover:bg-accent active:bg-accent/80",
+			"transition-colors",
+			"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 		)}
 		onclick={() => (showPassword = !showPassword)}
 		aria-label={showPassword ? "Hide password" : "Show password"}

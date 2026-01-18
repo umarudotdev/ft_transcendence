@@ -19,32 +19,31 @@
 		...restProps
 	}: Props = $props();
 
-	// MD3 Input base styles
+	// Input base styles
 	const inputBase = [
 		// Layout
 		"flex h-14 w-full min-w-0 px-4 py-4",
 		// Shape
 		"rounded-[var(--md3-shape-extra-small)]",
 		// Colors
-		"bg-md3-surface-container-highest text-md3-on-surface",
-		"border border-md3-outline",
+		"bg-transparent text-foreground",
+		"border border-input",
 		// Typography
-		"md3-body-large",
+		"text-base",
 		// Placeholder
-		"placeholder:text-md3-on-surface-variant",
+		"placeholder:text-muted-foreground",
 		// Selection
 		"selection:bg-primary selection:text-primary-foreground",
 		// Transition
-		"transition-all duration-[var(--md3-duration-short2)] ease-[var(--md3-easing-standard)]",
+		"transition-[color,box-shadow]",
 		// Focus
-		"outline-none focus-visible:border-md3-primary focus-visible:border-2",
-		"focus-visible:ring-0",
+		"outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
 		// Invalid
-		"aria-invalid:border-md3-error aria-invalid:border-2",
+		"aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
 		// Disabled
-		"disabled:cursor-not-allowed disabled:opacity-38",
+		"disabled:cursor-not-allowed disabled:opacity-50",
 		// Dark mode
-		"dark:bg-md3-surface-container-high",
+		"dark:bg-input/30",
 	];
 </script>
 

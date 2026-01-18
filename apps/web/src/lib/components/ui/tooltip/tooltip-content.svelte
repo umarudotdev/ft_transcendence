@@ -8,14 +8,12 @@
 	let {
 		ref = $bindable(null),
 		class: className,
-		sideOffset = 0,
+		sideOffset = 8,
 		side = "top",
 		children,
-		arrowClasses,
 		portalProps,
 		...restProps
 	}: TooltipPrimitive.ContentProps & {
-		arrowClasses?: string;
 		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof TooltipPortal>>;
 	} = $props();
 </script>
@@ -31,7 +29,7 @@
 			"z-50 w-fit max-w-[200px]",
 			"origin-(--bits-tooltip-content-transform-origin)",
 			// Colors
-			"bg-md3-inverse-surface text-md3-inverse-on-surface",
+			"bg-md3-surface-container-highest text-md3-on-surface",
 			// Shape
 			"rounded-[var(--md3-shape-extra-small)] px-2 py-1",
 			// Typography
@@ -46,20 +44,5 @@
 		{...restProps}
 	>
 		{@render children?.()}
-		<TooltipPrimitive.Arrow>
-			{#snippet child({ props })}
-				<div
-					class={cn(
-						"bg-md3-inverse-surface z-50 size-2.5 rotate-45 rounded-[2px]",
-						"data-[side=top]:translate-x-1/2 data-[side=top]:translate-y-[calc(-50%_+_2px)]",
-						"data-[side=bottom]:-translate-x-1/2 data-[side=bottom]:-translate-y-[calc(-50%_+_1px)]",
-						"data-[side=right]:translate-x-[calc(50%_+_2px)] data-[side=right]:translate-y-1/2",
-						"data-[side=left]:-translate-y-[calc(50%_-_3px)]",
-						arrowClasses
-					)}
-					{...props}
-				></div>
-			{/snippet}
-		</TooltipPrimitive.Arrow>
 	</TooltipPrimitive.Content>
 </TooltipPortal>

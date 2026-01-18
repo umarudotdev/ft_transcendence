@@ -21,7 +21,6 @@
 	} from '$lib/queries/moderation';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import CheckIcon from '@lucide/svelte/icons/check';
 
 	const resolveReportMutation = createResolveReportMutation();
 
@@ -273,16 +272,9 @@
 					<Select.Content>
 						{#each resolutionOptions as option}
 							<Select.Item value={option.value}>
-								<div class="flex items-center gap-2">
-									{#if option.value === resolution}
-										<CheckIcon class="size-4" />
-									{:else}
-										<span class="size-4"></span>
-									{/if}
-									<div>
-										<p>{option.label}</p>
-										<p class="text-xs text-muted-foreground">{option.description}</p>
-									</div>
+								<div>
+									<p>{option.label}</p>
+									<p class="text-xs text-muted-foreground">{option.description}</p>
 								</div>
 							</Select.Item>
 						{/each}

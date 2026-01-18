@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
+	import { Button } from "$lib/components/ui/button";
 	import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
 	import { Avatar, AvatarFallback, AvatarImage } from "$lib/components/ui/avatar";
 	import { createLogoutMutation, createMeQuery } from "$lib/queries/auth";
@@ -25,12 +26,14 @@
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<button
-					{...props}
+				<Button
+					variant="ghost"
+					size="icon"
+					class="size-10"
 					aria-label="User menu"
-					class="flex items-center gap-2 rounded-full p-1.5 transition-colors hover:bg-md3-surface-container-highest"
+					{...props}
 				>
-					<Avatar class="size-8 ring-2 ring-md3-outline-variant">
+					<Avatar class="size-7 ring-2 ring-md3-outline-variant corner-squircle">
 						{#if user.avatarUrl}
 							<AvatarImage src={user.avatarUrl} alt={user.displayName} />
 						{/if}
@@ -38,7 +41,7 @@
 							{getInitials(user.displayName)}
 						</AvatarFallback>
 					</Avatar>
-				</button>
+				</Button>
 			{/snippet}
 		</DropdownMenu.Trigger>
 		<DropdownMenu.Content align="end" class="w-56">
@@ -65,11 +68,8 @@
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
 {:else}
-	<a
-		href="/auth/login"
-		class="md3-state-layer flex items-center gap-2 rounded-full p-2 text-sm font-medium transition-colors"
-	>
+	<Button variant="ghost" href="/auth/login">
 		<UserIcon class="size-5" />
-		<span>Sign In</span>
-	</a>
+		Sign in
+	</Button>
 {/if}

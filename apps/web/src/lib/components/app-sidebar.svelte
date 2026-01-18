@@ -6,7 +6,7 @@
 	import { createMeQuery } from "$lib/queries/auth";
 	import PlayIcon from "@lucide/svelte/icons/play";
 	import TrophyIcon from "@lucide/svelte/icons/trophy";
-	import UsersIcon from "@lucide/svelte/icons/users";
+	import MedalIcon from "@lucide/svelte/icons/medal";
 	import MessageSquareIcon from "@lucide/svelte/icons/message-square";
 	import UserIcon from "@lucide/svelte/icons/user";
 	import SettingsIcon from "@lucide/svelte/icons/settings";
@@ -18,7 +18,7 @@
 
 	const navItems = [
 		{ href: "/leaderboard", label: "Leaderboard", icon: TrophyIcon },
-		{ href: "/friends", label: "Friends", icon: UsersIcon },
+		{ href: "/achievements", label: "Achievements", icon: MedalIcon },
 		{ href: "/chat", label: "Chat", icon: MessageSquareIcon },
 		{ href: "/profile", label: "Profile", icon: UserIcon },
 		{ href: "/settings", label: "Settings", icon: SettingsIcon },

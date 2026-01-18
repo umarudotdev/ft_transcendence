@@ -1,5 +1,6 @@
 <script lang="ts">
 	import * as Command from "$lib/components/ui/command";
+	import * as Kbd from "$lib/components/ui/kbd";
 	import { goto } from "$app/navigation";
 	import { setMode, resetMode } from "mode-watcher";
 	import { createLogoutMutation } from "$lib/queries/auth";
@@ -111,11 +112,10 @@
 >
 	<SearchIcon class="size-5 shrink-0" />
 	<span class="flex-1 text-left text-sm">Search...</span>
-	<kbd
-		class="hidden rounded-md bg-md3-surface-container px-2 py-0.5 font-mono text-xs text-md3-on-surface-variant sm:inline-flex"
-	>
-		⌘K
-	</kbd>
+	<Kbd.Group class="hidden sm:inline-flex">
+		<Kbd.Root>Ctrl</Kbd.Root>
+		<Kbd.Root>K</Kbd.Root>
+	</Kbd.Group>
 </button>
 
 <Command.Dialog bind:open>

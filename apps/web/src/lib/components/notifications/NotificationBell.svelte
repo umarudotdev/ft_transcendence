@@ -16,7 +16,7 @@
       <Button
         variant="ghost"
         size="icon"
-        class="relative size-10 rounded-full text-md3-on-surface-variant transition-colors hover:bg-md3-surface-container-highest hover:text-md3-on-surface"
+        class="relative size-10"
         aria-label="Notifications"
         {...props}
       >

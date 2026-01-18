@@ -2,6 +2,7 @@
 	import * as Sidebar from "$lib/components/ui/sidebar";
 	import AppSidebar from "$lib/components/app-sidebar.svelte";
 	import { NotificationBell } from "$lib/components/notifications";
+	import { DailyRewardButton } from "$lib/components/gamification";
 	import CommandMenu from "$lib/components/command-menu.svelte";
 	import HeaderUserMenu from "$lib/components/header-user-menu.svelte";
 
@@ -12,7 +13,7 @@
 	<AppSidebar />
 	<Sidebar.Inset>
 		<header
-			class="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 bg-md3-surface-container px-4 shadow-sm"
+			class="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 bg-gradient-to-b from-md3-surface-container/90 to-md3-surface-container-high/90 px-4 shadow-sm backdrop-blur-md"
 		>
 			<!-- Search (left) -->
 			<CommandMenu />
@@ -22,6 +23,7 @@
 
 			<!-- Actions (right) -->
 			<div class="flex items-center gap-1">
+				<DailyRewardButton />
 				<NotificationBell />
 				<div class="ml-2 h-8 w-px bg-md3-outline-variant"></div>
 				<HeaderUserMenu />

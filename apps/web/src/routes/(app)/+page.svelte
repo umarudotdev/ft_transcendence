@@ -10,6 +10,7 @@
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import SwordsIcon from '@lucide/svelte/icons/swords';
 	import UserIcon from '@lucide/svelte/icons/user';
+	import RocketIcon from '@lucide/svelte/icons/rocket';
 
 	const meQuery = createMeQuery();
 	const statsQuery = createMyStatsQuery();
@@ -54,6 +55,10 @@
 					<Button size="lg" variant="outline" class="gap-2">
 						<UserIcon class="size-5" />
 						Play vs AI
+					</Button>
+					<Button size="lg" variant="secondary" class="gap-2" href="/game">
+						<RocketIcon class="size-5" />
+						SuperCluster
 					</Button>
 				</div>
 			</div>

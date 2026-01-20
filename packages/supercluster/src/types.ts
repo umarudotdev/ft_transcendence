@@ -1,0 +1,167 @@
+// ============================================================================
+// Shared Types for SuperCluster
+// Used by both client (renderer) and server (game logic)
+// ============================================================================
+
+// ============================================================================
+// Spherical Position
+// ============================================================================
+export interface SphericalPosition {
+	phi: number;    // Polar angle from Y-axis (0 to PI)
+	theta: number;  // Azimuthal angle in XZ plane (0 to 2*PI)
+}
+
+// ============================================================================
+// Game Entities
+// ============================================================================
+export interface ShipState {
+	position: SphericalPosition;
+	aimAngle: number;  // Direction of aim on tangent plane (radians)
+	lives: number;
+	invincible: boolean;  // After taking damage
+}
+
+export interface ProjectileState {
+	id: number;
+	position: SphericalPosition;
+	direction: number;  // Movement direction on sphere (radians)
+	age: number;        // Ticks since spawn
+}
+
+export interface EnemyState {
+	id: number;
+	position: SphericalPosition;
+	type: EnemyType;
+	health: number;
+	velocity: SphericalPosition;  // Angular velocity
+}
+
+export type EnemyType = 'asteroid' | 'chaser' | 'shooter';
+
+// ============================================================================
+// Game State (Server → Client)
+// ============================================================================
+export interface GameState {
+	tick: number;
+	ship: ShipState;
+	projectiles: ProjectileState[];
+	enemies: EnemyState[];
+	score: number;
+	wave: number;
+	gameStatus: GameStatus;
+}
+
+export type GameStatus = 'waiting' | 'countdown' | 'playing' | 'paused' | 'gameOver';
+
+// ============================================================================
+// Player Input (Client → Server)
+// ============================================================================
+export interface InputState {
+	forward: boolean;   // W or Up
+	backward: boolean;  // S or Down
+	left: boolean;      // A or Left
+	right: boolean;     // D or Right
+}
+
+export interface PlayerInput {
+	type: 'input';
+	keys: InputState;
+}
+
+export interface AimInput {
+	type: 'aim';
+	angle: number;  // Radians
+}
+
+export interface ShootInput {
+	type: 'shoot';
+}
+
+export interface ReadyInput {
+	type: 'ready';
+}
+
+export type ClientMessage = PlayerInput | AimInput | ShootInput | ReadyInput;
+
+// ============================================================================
+// Server Messages (Server → Client)
+// ============================================================================
+export interface StateMessage {
+	type: 'state';
+	state: GameState;
+}
+
+export interface CountdownMessage {
+	type: 'countdown';
+	seconds: number;
+}
+
+export interface HitMessage {
+	type: 'hit';
+	targetId: number;
+	points: number;
+}
+
+export interface DamageMessage {
+	type: 'damage';
+	lives: number;
+}
+
+export interface GameOverMessage {
+	type: 'gameOver';
+	finalScore: number;
+	wave: number;
+}
+
+export interface WaveMessage {
+	type: 'wave';
+	waveNumber: number;
+}
+
+export type ServerMessage =
+	| StateMessage
+	| CountdownMessage
+	| HitMessage
+	| DamageMessage
+	| GameOverMessage
+	| WaveMessage;
+
+// ============================================================================
+// Configuration
+// ============================================================================
+export interface GameConfig {
+	gameSphereRadius: number;
+	forceFieldRadius: number;
+	planetRadius: number;
+	shipSpeed: number;          // Angular velocity (rad/tick)
+	projectileSpeed: number;    // Angular velocity (rad/tick)
+	projectileLifetime: number; // Ticks
+	tickRate: number;           // Ticks per second (60)
+}
+
+export const DEFAULT_CONFIG: GameConfig = {
+	gameSphereRadius: 100,
+	forceFieldRadius: 95,
+	planetRadius: 70,
+	shipSpeed: 0.02,
+	projectileSpeed: 0.05,
+	projectileLifetime: 120,  // 2 seconds at 60 ticks
+	tickRate: 60,
+};
+
+// ============================================================================
+// Renderer Config (Client-only)
+// ============================================================================
+export interface RendererConfig {
+	forceFieldOpacity: number;
+	forceFieldBackFade: number;
+	showAxes: boolean;
+	showDebugInfo: boolean;
+}
+
+export const DEFAULT_RENDERER_CONFIG: RendererConfig = {
+	forceFieldOpacity: 0.4,
+	forceFieldBackFade: 0.1,
+	showAxes: false,
+	showDebugInfo: false,
+};

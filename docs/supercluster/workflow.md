@@ -59,12 +59,13 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [x] lil-gui controls for ship position (phi, theta, aimAngle)
 **Test**: See red triangle on sphere surface, adjustable via GUI
 
-### Step 1.4: Camera Setup
+### Step 1.4: Camera Setup ✓
 **Goal**: Camera fixed behind ship, looking at sphere center
 **Tasks**:
-- [ ] Position camera behind ship (along ship's "up" from sphere)
-- [ ] Camera looks at sphere center (0,0,0)
-- [ ] Adjust FOV and distance for good view
+- [x] Position camera behind ship (along ship's "up" from sphere)
+- [x] Camera looks at sphere center (0,0,0)
+- [x] Adjust FOV and distance for good view
+- [x] Ship uses fixed visual position (planet rotates under it)
 **Test**: Ship visible in lower-center of screen, planet curves away
 
 ### Step 1.5: Input Handling ✓
@@ -77,22 +78,26 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [x] Click for shoot (sends message)
 **Test**: Input events captured and logged
 
-### Step 1.6: Planet Rotation (Movement)
+### Step 1.6: Planet Rotation (Movement) ✓
 **Goal**: WASD rotates planet, ship appears to move
 **Tasks**:
-- [ ] On W/S: rotate planet around X-axis (forward/backward)
-- [ ] On A/D: rotate planet around Z-axis (left/right)
-- [ ] Smooth rotation (delta time based)
-- [ ] Track ship's logical position (phi, theta) as planet rotates
-**Test**: Planet visibly rotates, ship stays in place but "moves" over surface
+- [x] On W/S: rotate planet around X-axis (forward/backward)
+- [x] On A/D: rotate planet around Y-axis (left/right)
+- [x] Smooth rotation (delta time based)
+- [x] Track ship's logical position as planet rotates
+- [x] Connect input from component to renderer
+- [x] **Quaternion-based rotation** (no gimbal lock, smooth pole crossing)
+- [x] **Unit vector position tracking** (for collision detection)
+**Test**: Planet visibly rotates, ship stays in place but "moves" over surface, can cross poles smoothly
 
 ### Step 1.7: Polish & Debug Helpers
 **Goal**: Clean up iteration 1
 **Tasks**:
 - [x] Add AxesHelper for debugging orientation
-- [ ] Adjust rotation speed for good feel
+- [x] Adjust rotation speed for good feel (configurable via GameConfig.shipSpeed)
 - [x] lil-gui debug panel
 - [ ] Clean up code structure
+- [ ] Add camera distance/angle to debug controls
 **Test**: Smooth movement, no jitter, good visual feel
 
 ---

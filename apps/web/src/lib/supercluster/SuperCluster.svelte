@@ -230,6 +230,8 @@
 
 		if (changed) {
 			sendMessage({ type: 'input', keys: { ...inputState } });
+			// Also update local renderer for immediate feedback
+			renderer?.setInput(inputState);
 		}
 	}
 
@@ -270,6 +272,8 @@
 
 		if (changed) {
 			sendMessage({ type: 'input', keys: { ...inputState } });
+			// Also update local renderer for immediate feedback
+			renderer?.setInput(inputState);
 		}
 	}
 
@@ -285,6 +289,8 @@
 		aimAngle = Math.atan2(dy, dx);
 
 		sendMessage({ type: 'aim', angle: aimAngle });
+		// Also update local renderer for immediate feedback
+		renderer?.setAimAngle(aimAngle);
 	}
 
 	function handleClick(_event: MouseEvent): void {

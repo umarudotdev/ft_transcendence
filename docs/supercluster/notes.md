@@ -57,7 +57,73 @@ z = radius * sin(phi) * sin(theta)
 
 Instead of moving the ship, we rotate all spheres together. Ship stays fixed relative to camera. This simplifies camera logic significantly.
 
-The ship mesh is positioned at its spherical coordinates, but visually the planet rotates under it to create the illusion of movement.
+The ship mesh is positioned at a fixed visual location `(0, 0, gameSphereRadius)`, and the planet rotates under it to create the illusion of movement.
+
+---
+
+## Quaternion-Based Rotation (2026-01-21)
+
+### The Problem with Spherical Coordinates
+
+Initially we used spherical coordinates (phi, theta) to track ship position and Euler angles for planet rotation. This caused issues at the poles:
+
+- **Singularity**: At phi=0 (north pole) or phi=π (south pole), all theta values map to the same point
+- **Gimbal-like behavior**: Approaching poles caused discontinuous jumps in theta
+- **No smooth pole crossing**: Ship would "bounce" at poles instead of crossing smoothly
+
+### The Solution: Quaternions + Unit Vectors
+
+We now use a dual-representation system:
+
+1. **Planet Quaternion** (`THREE.Quaternion`): Stores the planet's rotation state
+   - No gimbal lock
+   - Smooth interpolation everywhere
+   - Accumulates rotations via multiplication
+
+2. **Ship Position** (`THREE.Vector3`): Unit vector on sphere surface (x² + y² + z² = 1)
+   - Instant access to ship position
+   - Natural for collision detection: `angularDist = acos(dot(v1, v2))`
+   - Convert to phi/theta when needed for compatibility
+
+### How Movement Works
+
+```typescript
+// On WASD input, create rotation quaternions:
+pitchQuat.setFromAxisAngle(X_AXIS, pitchAngle);  // Forward/backward
+yawQuat.setFromAxisAngle(Y_AXIS, yawAngle);      // Left/right
+
+// Apply to planet (pre-multiply for local-space rotation):
+planetQuaternion.premultiply(pitchQuat);
+planetQuaternion.premultiply(yawQuat);
+
+// Track ship position (inverse rotation):
+shipPosition.applyQuaternion(pitchQuat.invert());
+shipPosition.applyQuaternion(yawQuat.invert());
+```
+
+### Coordinate Conversion
+
+When we need spherical coordinates (for server sync, debug GUI):
+
+```typescript
+// Unit vector → Spherical
+phi = acos(y);              // 0 to π
+theta = atan2(z, x);        // -π to π (adjust to 0 to 2π)
+
+// Spherical → Unit vector
+x = sin(phi) * cos(theta)
+y = cos(phi)
+z = sin(phi) * sin(theta)
+```
+
+### Trade-offs
+
+| Aspect | Spherical Only | Quaternion + Unit Vector |
+|--------|----------------|--------------------------|
+| Pole crossing | Broken | Smooth |
+| Memory | 2 floats | 7 floats (4 + 3) |
+| Collision check | Convert first | Direct dot product |
+| Server sync | Native | Convert when needed |
 
 ---
 

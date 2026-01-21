@@ -84,14 +84,16 @@ export class DebugGui {
 	}
 
 	private setupShipControls(): void {
-		const folder = this.gui.addFolder('Ship Position');
+		const folder = this.gui.addFolder('Ship State');
 
-		folder.add(this.state, 'shipPhi', 0.1, Math.PI - 0.1, 0.05)
-			.name('Phi (latitude)')
+		// Phi/Theta control the planet rotation (ship is visually fixed)
+		// This simulates where the ship is "logically" on the planet surface
+		folder.add(this.state, 'shipPhi', 0.01, Math.PI - 0.01, 0.05)
+			.name('Phi (rotates planet X)')
 			.onChange(() => this.updateShipPosition());
 
 		folder.add(this.state, 'shipTheta', 0, Math.PI * 2, 0.05)
-			.name('Theta (longitude)')
+			.name('Theta (rotates planet Y)')
 			.onChange(() => this.updateShipPosition());
 
 		folder.add(this.state, 'shipAimAngle', -Math.PI, Math.PI, 0.05)
@@ -102,14 +104,7 @@ export class DebugGui {
 	}
 
 	private applyGameConfig(): void {
-		const config: Partial<GameConfig> = {
-			gameSphereRadius: this.state.gameSphereRadius,
-			forceFieldRadius: this.state.forceFieldRadius,
-			planetRadius: this.state.planetRadius,
-		};
-
-		// GameRenderer.updateConfig expects full config, so we merge with defaults
-		// For now, just update what we can
+		// GameRenderer.updateConfig expects full config, so we provide all values
 		this.renderer.updateConfig({
 			gameSphereRadius: this.state.gameSphereRadius,
 			forceFieldRadius: this.state.forceFieldRadius,

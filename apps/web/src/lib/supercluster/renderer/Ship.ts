@@ -24,11 +24,41 @@ export class ShipRenderer {
 	}
 
 	private createTriangleGeometry(): THREE.BufferGeometry {
-		const size = 3;  // Ship size
+		// 3D wedge shape: tip at front (flat), back raised up
+		// Ship lies on XY plane (tangent to sphere at (0,0,radius))
+		// Tip points toward -Y (forward/north on sphere)
+		// Back is raised in +Z (up from surface)
+		const size = 6;
+		const height = 3; // Height of the back of the ship
+
+		// Define vertices for a 3D wedge (2 triangles)
 		const vertices = new Float32Array([
-			0, size, 0,           // Top point (forward)
-			-size * 0.6, -size * 0.5, 0,  // Bottom left
-			size * 0.6, -size * 0.5, 0,   // Bottom right
+			// Bottom triangle (on the surface)
+			0, -size, 0, // Tip (forward)
+			-size * 0.6, size * 0.5, 0, // Back left bottom
+			size * 0.6, size * 0.5, 0, // Back right bottom
+
+			// Top triangle (raised)
+			0, -size, 0, // Tip (same as bottom - flat at front)
+			size * 0.6, size * 0.5, 0, // Back right bottom
+			size * 0.6, size * 0.5, height, // Back right top
+
+			0, -size, 0, // Tip
+			size * 0.6, size * 0.5, height, // Back right top
+			-size * 0.6, size * 0.5, height, // Back left top
+
+			0, -size, 0, // Tip
+			-size * 0.6, size * 0.5, height, // Back left top
+			-size * 0.6, size * 0.5, 0, // Back left bottom
+
+			// Back face (closes the wedge)
+			-size * 0.6, size * 0.5, 0, // Back left bottom
+			-size * 0.6, size * 0.5, height, // Back left top
+			size * 0.6, size * 0.5, height, // Back right top
+
+			-size * 0.6, size * 0.5, 0, // Back left bottom
+			size * 0.6, size * 0.5, height, // Back right top
+			size * 0.6, size * 0.5, 0, // Back right bottom
 		]);
 
 		const geometry = new THREE.BufferGeometry();
@@ -42,41 +72,22 @@ export class ShipRenderer {
 	// Update from Game State
 	// ========================================================================
 	updateFromState(state: ShipState): void {
-		// Convert spherical coordinates to Cartesian position
+		// Ship is visually FIXED at (0, 0, gameSphereRadius) - front of sphere
+		// The planet rotates under the ship to create movement illusion
+		// Only aimAngle affects ship's visual rotation
 		const radius = this.config.gameSphereRadius;
-		const { phi, theta } = state.position;
 
-		// Calculate position on sphere surface
-		const x = radius * Math.sin(phi) * Math.cos(theta);
-		const y = radius * Math.cos(phi);
-		const z = radius * Math.sin(phi) * Math.sin(theta);
+		// Fixed position: always at the front of the sphere (facing camera)
+		this.mesh.position.set(0, 0, radius);
 
-		this.mesh.position.set(x, y, z);
+		// Ship geometry is already defined in the XY plane (tangent to sphere):
+		// - Tip points toward -Y (forward/north on sphere)
+		// - Back is raised in +Z (up from surface)
+		// No base rotation needed - geometry is pre-aligned
 
-		// Orient ship: normal is "up" for the ship (perpendicular to sphere surface)
-		const normal = new THREE.Vector3(x, y, z).normalize();
-
-		// The ship's local Y (forward/tip) should point along the sphere surface
-		// toward the "north pole" by default, then rotated by aimAngle
-		// Calculate the "north" direction on the tangent plane
-		const worldUp = new THREE.Vector3(0, 1, 0);
-
-		// Tangent pointing toward increasing theta (east)
-		const east = new THREE.Vector3().crossVectors(worldUp, normal).normalize();
-
-		// Tangent pointing toward north (decreasing phi)
-		const north = new THREE.Vector3().crossVectors(normal, east).normalize();
-
-		// Build orientation: ship lies on tangent plane, tip points north
-		// local X = east (right), local Y = north (forward), local Z = normal (up from surface)
-		const rotationMatrix = new THREE.Matrix4();
-		rotationMatrix.makeBasis(east, north, normal);
-		this.mesh.quaternion.setFromRotationMatrix(rotationMatrix);
-
-		// Rotate ship around normal by aim angle
-		const aimRotation = new THREE.Quaternion();
-		aimRotation.setFromAxisAngle(normal, -state.aimAngle);
-		this.mesh.quaternion.premultiply(aimRotation);
+		// Apply aim rotation around the ship's up axis (Z axis = normal to sphere)
+		// Positive aim angle rotates clockwise when viewed from above
+		this.mesh.rotation.set(0, 0, -state.aimAngle);
 
 		// Handle invincibility visual (blinking)
 		if (state.invincible) {

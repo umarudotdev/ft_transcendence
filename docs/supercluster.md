@@ -14,35 +14,35 @@ Players control a spaceship on the surface of a spherical planet, shooting enemi
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    CLIENT (Browser)                      │
+│                    CLIENT (Browser)                     │
 │  ┌───────────────────────────────────────────────────┐  │
 │  │  apps/web/src/lib/supercluster/                   │  │
-│  │  - Three.js renderer (planet, ship, projectiles) │  │
+│  │  - Three.js renderer (planet, ship, projectiles)  │  │
 │  │  - Svelte component wrapper                       │  │
-│  │  - Input capture (keyboard, mouse)               │  │
-│  │  - lil-gui debug controls                        │  │
+│  │  - Input capture (keyboard, mouse)                │  │
+│  │  - lil-gui debug controls                         │  │
 │  └───────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────┐  │
 │  │  packages/supercluster (shared types)             │  │
-│  │  - GameState, SphericalPosition, Messages        │  │
-│  │  - Engine logic (for client-side prediction)     │  │
+│  │  - GameState, SphericalPosition, Messages         │  │
+│  │  - Engine logic (for client-side prediction)      │  │
 │  └───────────────────────────────────────────────────┘  │
 │                         ↑↓ WebSocket (60 Hz)            │
 └─────────────────────────────────────────────────────────┘
                           ↑↓
 ┌─────────────────────────────────────────────────────────┐
-│                    SERVER (apps/api)                     │
+│                    SERVER (apps/api)                    │
 │  ┌───────────────────────────────────────────────────┐  │
 │  │  modules/supercluster/ (TODO)                     │  │
-│  │  - Game engine (physics, state management)       │  │
-│  │  - Collision detection (angular distance)        │  │
-│  │  - Enemy AI and spawning                         │  │
-│  │  - WebSocket gateway                             │  │
+│  │  - Game engine (physics, state management)        │  │
+│  │  - Collision detection (angular distance)         │  │
+│  │  - Enemy AI and spawning                          │  │
+│  │  - WebSocket gateway                              │  │
 │  └───────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────┐  │
 │  │  packages/supercluster (shared types)             │  │
-│  │  - Reuses same types as client                   │  │
-│  │  - Engine logic (authoritative)                  │  │
+│  │  - Reuses same types as client                    │  │
+│  │  - Engine logic (authoritative)                   │  │
 │  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
 ```

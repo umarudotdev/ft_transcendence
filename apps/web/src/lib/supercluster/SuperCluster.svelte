@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import { browser } from '$app/environment';
 	import { GameRenderer } from './renderer';
+	import { DebugGui } from './debug';
 	import {
 		DEFAULT_CONFIG,
 		DEFAULT_RENDERER_CONFIG,
@@ -34,6 +36,7 @@
 	// ========================================================================
 	let canvas: HTMLCanvasElement;
 	let renderer: GameRenderer | null = null;
+	let debugGui: DebugGui | null = null;
 	let ws: WebSocket | null = null;
 	let connected = $state(false);
 	let gameState = $state<GameState | null>(null);
@@ -56,6 +59,11 @@
 		renderer = new GameRenderer(canvas, config, rendererConfig);
 		renderer.start();
 
+		// Setup debug GUI if enabled
+		if (debug && renderer) {
+			debugGui = new DebugGui(renderer);
+		}
+
 		// Setup input handlers
 		setupInputHandlers();
 
@@ -74,6 +82,11 @@
 		cleanupInputHandlers();
 		disconnectWebSocket();
 
+		if (debugGui) {
+			debugGui.dispose();
+			debugGui = null;
+		}
+
 		if (renderer) {
 			renderer.dispose();
 			renderer = null;
@@ -88,7 +101,7 @@
 	// WebSocket
 	// ========================================================================
 	function connectWebSocket(): void {
-		if (!wsUrl) return;
+		if (!browser || !wsUrl) return;
 
 		ws = new WebSocket(wsUrl);
 
@@ -165,6 +178,7 @@
 	// Input Handling
 	// ========================================================================
 	function setupInputHandlers(): void {
+		if (!browser) return;
 		window.addEventListener('keydown', handleKeyDown);
 		window.addEventListener('keyup', handleKeyUp);
 		canvas.addEventListener('mousemove', handleMouseMove);
@@ -172,10 +186,11 @@
 	}
 
 	function cleanupInputHandlers(): void {
+		if (!browser) return;
 		window.removeEventListener('keydown', handleKeyDown);
 		window.removeEventListener('keyup', handleKeyUp);
-		canvas.removeEventListener('mousemove', handleMouseMove);
-		canvas.removeEventListener('click', handleClick);
+		canvas?.removeEventListener('mousemove', handleMouseMove);
+		canvas?.removeEventListener('click', handleClick);
 	}
 
 	function handleKeyDown(event: KeyboardEvent): void {

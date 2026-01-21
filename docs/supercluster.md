@@ -16,10 +16,16 @@ Players control a spaceship on the surface of a spherical planet, shooting enemi
 ┌─────────────────────────────────────────────────────────┐
 │                    CLIENT (Browser)                      │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │  packages/supercluster                            │  │
+│  │  apps/web/src/lib/supercluster/                   │  │
 │  │  - Three.js renderer (planet, ship, projectiles) │  │
+│  │  - Svelte component wrapper                       │  │
 │  │  - Input capture (keyboard, mouse)               │  │
-│  │  - WebSocket client                              │  │
+│  │  - lil-gui debug controls                        │  │
+│  └───────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  packages/supercluster (shared types)             │  │
+│  │  - GameState, SphericalPosition, Messages        │  │
+│  │  - Engine logic (for client-side prediction)     │  │
 │  └───────────────────────────────────────────────────┘  │
 │                         ↑↓ WebSocket (60 Hz)            │
 └─────────────────────────────────────────────────────────┘
@@ -27,11 +33,16 @@ Players control a spaceship on the surface of a spherical planet, shooting enemi
 ┌─────────────────────────────────────────────────────────┐
 │                    SERVER (apps/api)                     │
 │  ┌───────────────────────────────────────────────────┐  │
-│  │  modules/supercluster/                            │  │
+│  │  modules/supercluster/ (TODO)                     │  │
 │  │  - Game engine (physics, state management)       │  │
 │  │  - Collision detection (angular distance)        │  │
 │  │  - Enemy AI and spawning                         │  │
 │  │  - WebSocket gateway                             │  │
+│  └───────────────────────────────────────────────────┘  │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  packages/supercluster (shared types)             │  │
+│  │  - Reuses same types as client                   │  │
+│  │  - Engine logic (authoritative)                  │  │
 │  └───────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -143,8 +154,10 @@ apps/web/src/lib/supercluster/   # Three.js renderer (client-only)
 │   ├── GameRenderer.ts          # Main renderer orchestrator
 │   ├── Planet.ts                # Planet + force-field meshes
 │   └── Ship.ts                  # Player ship mesh
-└── shaders/
-    └── forceField.ts            # Force-field fade shader
+├── shaders/
+│   └── forceField.ts            # Force-field fade shader
+└── debug/
+    └── DebugGui.ts              # lil-gui debug controls
 ```
 
 ### Using the Component
@@ -181,9 +194,11 @@ cd apps/web && bun run dev
 ### Iteration 1: Basic Scene ✓
 - [x] Package structure
 - [x] Planet renderer (3-layer spheres)
-- [x] Ship renderer
+- [x] Ship renderer (triangle on sphere surface)
 - [x] Svelte component wrapper
 - [x] WebSocket integration
+- [x] lil-gui debug controls
+- [x] Input handling (keyboard, mouse)
 
 ### Iteration 2: Server Game Logic
 - [ ] Game engine (physics, state)
@@ -202,3 +217,18 @@ cd apps/web && bun run dev
 - [ ] Sound effects
 - [ ] UI overlay (score, lives, wave)
 - [ ] Post-processing effects
+
+## Debug Mode
+
+When `debug={true}` is passed to the component, a lil-gui panel appears with controls for:
+
+| Folder | Controls |
+|--------|----------|
+| Renderer | Show Axes, Force Field opacity (front/back) |
+| Game Config | Sphere radii (game, force-field, planet) |
+| Ship Position | Phi, Theta, Aim Angle |
+
+## Additional Documentation
+
+- [Workflow](./supercluster/workflow.md) - Detailed iteration steps and progress
+- [Notes](./supercluster/notes.md) - Development notes and technical decisions

@@ -7,6 +7,7 @@ import {
 	type GameState,
 	type GameConfig,
 	type RendererConfig,
+	type ShipState,
 } from '@ft/supercluster';
 
 // ============================================================================
@@ -64,6 +65,16 @@ export class GameRenderer {
 		// Create ship
 		this.ship = new ShipRenderer(config);
 		this.scene.add(this.ship.mesh);
+
+		// Initialize ship facing camera (on +Z side of sphere)
+		// phi = PI/2 (equator), theta = PI/2 (facing +Z)
+		// This puts ship at (0, 0, radius) - directly in front of camera
+		this.ship.updateFromState({
+			position: { phi: Math.PI / 2, theta: Math.PI / 2 },
+			aimAngle: 0,
+			lives: 3,
+			invincible: false,
+		});
 
 		// Handle window resize
 		this.handleResize = this.handleResize.bind(this);
@@ -153,6 +164,11 @@ export class GameRenderer {
 
 	setForceFieldOpacity(front: number, back: number): void {
 		this.planet.setForceFieldOpacity(front, back);
+	}
+
+	// Debug method to update ship position directly (for lil-gui controls)
+	updateShipDebug(state: ShipState): void {
+		this.ship.updateFromState(state);
 	}
 
 	// ========================================================================

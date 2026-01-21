@@ -53,26 +53,29 @@ export class ShipRenderer {
 
 		this.mesh.position.set(x, y, z);
 
-		// Orient ship to face outward from sphere center
-		// The "up" direction for the ship is the normal (away from center)
+		// Orient ship: normal is "up" for the ship (perpendicular to sphere surface)
 		const normal = new THREE.Vector3(x, y, z).normalize();
 
-		// Calculate tangent vectors for orientation
-		// We want the ship to point in the direction of movement/aim
-		const up = new THREE.Vector3(0, 1, 0);
-		const tangent = new THREE.Vector3().crossVectors(up, normal).normalize();
-		const bitangent = new THREE.Vector3().crossVectors(normal, tangent).normalize();
+		// The ship's local Y (forward/tip) should point along the sphere surface
+		// toward the "north pole" by default, then rotated by aimAngle
+		// Calculate the "north" direction on the tangent plane
+		const worldUp = new THREE.Vector3(0, 1, 0);
 
-		// Create rotation matrix to orient ship
+		// Tangent pointing toward increasing theta (east)
+		const east = new THREE.Vector3().crossVectors(worldUp, normal).normalize();
+
+		// Tangent pointing toward north (decreasing phi)
+		const north = new THREE.Vector3().crossVectors(normal, east).normalize();
+
+		// Build orientation: ship lies on tangent plane, tip points north
+		// local X = east (right), local Y = north (forward), local Z = normal (up from surface)
 		const rotationMatrix = new THREE.Matrix4();
-		rotationMatrix.makeBasis(tangent, normal, bitangent);
-
-		// Apply base orientation
+		rotationMatrix.makeBasis(east, north, normal);
 		this.mesh.quaternion.setFromRotationMatrix(rotationMatrix);
 
-		// Rotate ship based on aim angle
+		// Rotate ship around normal by aim angle
 		const aimRotation = new THREE.Quaternion();
-		aimRotation.setFromAxisAngle(normal, state.aimAngle);
+		aimRotation.setFromAxisAngle(normal, -state.aimAngle);
 		this.mesh.quaternion.premultiply(aimRotation);
 
 		// Handle invincibility visual (blinking)

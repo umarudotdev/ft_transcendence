@@ -16,6 +16,8 @@ export class DebugGui {
 		showAxes: false,
 		forceFieldOpacityFront: 0.4,
 		forceFieldOpacityBack: 0.1,
+		forceFieldDetail: 2,
+		forceFieldColor: '#00ffaa',
 
 		// Game config
 		gameSphereRadius: 100,
@@ -33,6 +35,7 @@ export class DebugGui {
 		this.gui = new GUI({ container, title: 'SuperCluster Debug' });
 
 		this.setupRendererControls();
+		this.setupForceFieldControls();
 		this.setupGameConfigControls();
 		this.setupShipControls();
 	}
@@ -44,8 +47,28 @@ export class DebugGui {
 			this.renderer.setAxesVisible(value);
 		});
 
+		folder.open();
+	}
+
+	private setupForceFieldControls(): void {
+		const folder = this.gui.addFolder('Force Field');
+
+		folder.add(this.state, 'forceFieldDetail', 0, 5, 1)
+			.name('Detail (0-5)')
+			.onChange((value: number) => {
+				this.renderer.setForceFieldDetail(value);
+			});
+
+		folder.addColor(this.state, 'forceFieldColor')
+			.name('Color')
+			.onChange((value: string) => {
+				// Convert hex string to number
+				const colorNum = Number.parseInt(value.replace('#', ''), 16);
+				this.renderer.setForceFieldColor(colorNum);
+			});
+
 		folder.add(this.state, 'forceFieldOpacityFront', 0, 1, 0.05)
-			.name('Force Field Front')
+			.name('Opacity Front')
 			.onChange(() => {
 				this.renderer.setForceFieldOpacity(
 					this.state.forceFieldOpacityFront,
@@ -54,7 +77,7 @@ export class DebugGui {
 			});
 
 		folder.add(this.state, 'forceFieldOpacityBack', 0, 1, 0.05)
-			.name('Force Field Back')
+			.name('Opacity Back')
 			.onChange(() => {
 				this.renderer.setForceFieldOpacity(
 					this.state.forceFieldOpacityFront,

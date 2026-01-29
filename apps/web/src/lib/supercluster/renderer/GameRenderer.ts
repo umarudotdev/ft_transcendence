@@ -354,6 +354,22 @@ export class GameRenderer {
 		this.planet.setForceFieldOpacity(front, back);
 	}
 
+	setForceFieldDetail(detail: number): void {
+		this.planet.setForceFieldDetail(detail);
+	}
+
+	setForceFieldColor(color: number): void {
+		this.planet.setForceFieldColor(color);
+	}
+
+	getForceFieldDetail(): number {
+		return this.planet.getForceFieldDetail();
+	}
+
+	getForceFieldColor(): number {
+		return this.planet.getForceFieldColor();
+	}
+
 	// Debug method to update ship state directly (for lil-gui controls)
 	// Sets the planet quaternion from spherical coordinates
 	updateShipDebug(state: ShipState): void {

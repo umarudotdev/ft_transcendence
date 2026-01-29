@@ -6,6 +6,7 @@ import type { GameConfig, RendererConfig } from '@ft/supercluster';
 // Constants
 // ============================================================================
 const SPHERE_SEGMENTS = 64;
+const DEFAULT_ICOSPHERE_DETAIL = 2; // 0=20 faces, 1=80, 2=320, 3=1280
 
 // ============================================================================
 // Planet Renderer
@@ -20,11 +21,14 @@ export class PlanetRenderer {
 	private axes: THREE.AxesHelper;
 	private config: GameConfig;
 	private rendererConfig: RendererConfig;
+	private forceFieldDetail: number = DEFAULT_ICOSPHERE_DETAIL;
+	private forceFieldColor: THREE.Color;
 
 	constructor(camera: THREE.Camera, config: GameConfig, rendererConfig: RendererConfig) {
 		this.config = config;
 		this.rendererConfig = rendererConfig;
 		this.group = new THREE.Object3D();
+		this.forceFieldColor = new THREE.Color(0x00ffaa);
 
 		// Create planet (solid sphere - innermost)
 		const planetGeometry = new THREE.SphereGeometry(
@@ -39,11 +43,11 @@ export class PlanetRenderer {
 		this.planet = new THREE.Mesh(planetGeometry, planetMaterial);
 		this.group.add(this.planet);
 
-		// Create force-field (wireframe with fading shader)
-		const forceFieldGeometry = new THREE.SphereGeometry(
+		// Create force-field (icosphere wireframe with fading shader)
+		// Using IcosahedronGeometry for uniform triangle distribution
+		const forceFieldGeometry = new THREE.IcosahedronGeometry(
 			config.forceFieldRadius,
-			SPHERE_SEGMENTS / 2,
-			SPHERE_SEGMENTS / 2
+			this.forceFieldDetail
 		);
 		const wireframe = new THREE.WireframeGeometry(forceFieldGeometry);
 		this.forceFieldMaterial = this.createForceFieldMaterial(camera);
@@ -61,7 +65,7 @@ export class PlanetRenderer {
 	private createForceFieldMaterial(camera: THREE.Camera): THREE.ShaderMaterial {
 		return new THREE.ShaderMaterial({
 			uniforms: {
-				uColor: { value: new THREE.Color(0x00ffaa) },
+				uColor: { value: this.forceFieldColor },
 				uOpacityFront: { value: this.rendererConfig.forceFieldOpacity },
 				uOpacityBack: { value: this.rendererConfig.forceFieldBackFade },
 				uCameraPos: { value: camera.position },
@@ -97,6 +101,24 @@ export class PlanetRenderer {
 		this.forceFieldMaterial.uniforms['uOpacityBack']!.value = back;
 	}
 
+	setForceFieldDetail(detail: number): void {
+		this.forceFieldDetail = detail;
+		this.rebuildForceField();
+	}
+
+	setForceFieldColor(color: number): void {
+		this.forceFieldColor.setHex(color);
+		this.forceFieldMaterial.uniforms['uColor']!.value = this.forceFieldColor;
+	}
+
+	getForceFieldDetail(): number {
+		return this.forceFieldDetail;
+	}
+
+	getForceFieldColor(): number {
+		return this.forceFieldColor.getHex();
+	}
+
 	// ========================================================================
 	// Rebuild Geometry
 	// ========================================================================
@@ -109,14 +131,8 @@ export class PlanetRenderer {
 			SPHERE_SEGMENTS
 		);
 
-		// Update force-field geometry
-		this.forceField.geometry.dispose();
-		const forceFieldGeometry = new THREE.SphereGeometry(
-			this.config.forceFieldRadius,
-			SPHERE_SEGMENTS / 2,
-			SPHERE_SEGMENTS / 2
-		);
-		this.forceField.geometry = new THREE.WireframeGeometry(forceFieldGeometry);
+		// Update force-field geometry (icosphere)
+		this.rebuildForceField();
 
 		// Update axes size
 		this.axes.dispose();
@@ -127,6 +143,15 @@ export class PlanetRenderer {
 		this.group.remove(this.axes);
 		this.group.add(newAxes);
 		this.axes = newAxes;
+	}
+
+	private rebuildForceField(): void {
+		this.forceField.geometry.dispose();
+		const forceFieldGeometry = new THREE.IcosahedronGeometry(
+			this.config.forceFieldRadius,
+			this.forceFieldDetail
+		);
+		this.forceField.geometry = new THREE.WireframeGeometry(forceFieldGeometry);
 	}
 
 	// ========================================================================

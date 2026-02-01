@@ -7,6 +7,7 @@ import {
   serial,
   text,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core";
 export const users = pgTable(
   "users",
@@ -600,6 +601,10 @@ export const userAchievements = pgTable(
   (table) => [
     index("user_achievements_user_id_idx").on(table.userId),
     index("user_achievements_achievement_id_idx").on(table.achievementId),
+    unique("user_achievements_user_achievement_unique").on(
+      table.userId,
+      table.achievementId
+    ),
   ]
 );
 
@@ -1060,7 +1065,10 @@ export const channelMembers = pgTable(
   (table) => [
     index("channel_members_channel_id_idx").on(table.channelId),
     index("channel_members_user_id_idx").on(table.userId),
-    index("channel_members_unique_idx").on(table.channelId, table.userId),
+    unique("channel_members_channel_user_unique").on(
+      table.channelId,
+      table.userId
+    ),
   ]
 );
 

@@ -24,7 +24,8 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 ├── renderer/
 │   ├── GameRenderer.ts             # Main renderer orchestrator
 │   ├── Planet.ts                   # Planet + force-field meshes
-│   └── Ship.ts                     # Player ship mesh
+│   ├── Ship.ts                     # Player ship mesh
+│   └── Asteroid.ts                 # Asteroid renderer (InstancedMesh)
 ├── shaders/
 │   └── forceField.ts               # Force-field fade shader
 └── debug/
@@ -113,11 +114,131 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 
 ---
 
-## Iteration 2: Networking Foundation
+## Iteration 2: Shooting Mechanics
+
+### Step 2.1: Mouse Tracking ✓
+**Goal**: Track mouse position for aiming
+**Tasks**:
+- [x] Add mousemove event listener
+- [x] Convert mouse position to angle from canvas center
+- [x] Aim dot visual indicator (orbits ship)
+**Test**: Aim dot follows mouse direction
+
+### Step 2.2: Projectile Creation
+**Goal**: Click spawns projectile
+**Tasks**:
+- [ ] Create `BulletRenderer` class using InstancedMesh
+- [ ] Bullet geometry: small elongated shape (capsule or cylinder)
+- [ ] Spawn at ship position in aim direction
+- [ ] Store bullet data: position (unit vector), velocity (tangent vector), lifetime
+- [ ] Bullets are children of planet group (same coordinate space as asteroids)
+**Test**: Click creates visible projectile
+
+### Step 2.3: Projectile Movement
+**Goal**: Projectiles travel along sphere surface
+**Tasks**:
+- [ ] Move bullet along great circle path (same math as asteroids)
+- [ ] Update bullet position each frame using quaternion rotation
+- [ ] Remove bullet after traveling set distance or time (lifetime)
+- [ ] Bullet speed configurable via GameConfig
+**Test**: Projectiles travel and disappear
+
+### Step 2.4: Ship Shooting Cooldown
+**Goal**: Prevent bullet spam
+**Tasks**:
+- [ ] Add `shootCooldown` to GameConfig (e.g., 0.2 seconds)
+- [ ] Track time since last shot
+- [ ] Ignore click if cooldown not elapsed
+- [ ] Visual feedback when ready to shoot (optional)
+**Test**: Can't shoot faster than cooldown allows
+
+---
+
+## Iteration 3: Moving Objects (Asteroids) ✓
+
+### Step 3.1: Object Spawning ✓
+**Goal**: Spawn objects on planet surface
+**Tasks**:
+- [x] Create asteroid geometry (IcosahedronGeometry for rocky look)
+- [x] Spawn at random position on planet (uniform sphere distribution)
+- [x] Orient to surface normal (using tangent/bitangent/normal basis)
+- [x] MeshStandardMaterial with flatShading for faceted rocky appearance
+**Test**: Objects appear on planet
+
+### Step 3.2: Object Self-Rotation ✓
+**Goal**: Objects spin around their own axis
+**Tasks**:
+- [x] Add rotation component to objects (rotationX, rotationY speeds)
+- [x] Update rotation each frame (applied via instance matrix)
+**Test**: Objects visibly spinning
+
+### Step 3.3: Object Movement on Surface ✓
+**Goal**: Objects move along planet surface
+**Tasks**:
+- [x] Give objects velocity (random tangent vector)
+- [x] Update position along sphere surface (great circle movement)
+- [x] Keep oriented to surface (recalculate basis each frame)
+**Test**: Objects move around planet
+
+### Step 3.4: Use InstancedMesh ✓
+**Goal**: Optimize for many objects
+**Tasks**:
+- [x] Convert to InstancedMesh (AsteroidRenderer class)
+- [x] Manage instance transforms (per-asteroid matrix updates)
+- [x] Support different sizes via scale in matrix (SIZE_MULTIPLIERS: 2, 4, 6, 8)
+- [x] breakAsteroid() method for splitting into smaller pieces
+**Test**: Smooth performance with many objects
+
+### Step 3.5: Planet Integration ✓
+**Goal**: Asteroids rotate with planet
+**Tasks**:
+- [x] Add asteroid group as child of planet group (not scene)
+- [x] Asteroids automatically rotate when planet rotates
+- [x] Ship appears to fly past asteroids when moving
+**Test**: WASD movement shows asteroids sliding past ship
+
+---
+
+## Iteration 4: Collision Detection
+
+> **Architecture Reference**: See [collision.md](./collision.md) for detailed design, algorithms, and implementation guide.
+
+### Step 4.1: Basic Bullet vs Asteroid Collision
+**Goal**: Bullets destroy asteroids on contact
+**Tasks**:
+- [ ] Create `CollisionSystem` class
+- [ ] Each frame, check all bullets against all asteroids
+- [ ] Use dot product collision: `dot > cos(bulletRadius + asteroidRadius)`
+- [ ] On hit: remove bullet, call `breakAsteroid()` or remove asteroid
+- [ ] No coordinate transform needed (both in planet local space)
+**Test**: Shooting asteroid makes it break or disappear
+
+### Step 4.2: Ship vs Asteroid Collision
+**Goal**: Ship takes damage when hitting asteroids
+**Tasks**:
+- [ ] Transform ship position to planet local space once per frame
+- [ ] Check ship against all asteroids
+- [ ] Use angular radius for ship collision size
+- [ ] On hit: trigger damage event (for future lives system)
+- [ ] Brief invincibility after hit (iframes)
+**Test**: Flying into asteroid triggers damage
+
+### Step 4.3: Spatial Partitioning (Optional)
+**Goal**: Optimize collision for many objects
+**Tasks**:
+- [ ] Implement Icosahedral Grid (20-face base)
+- [ ] Assign objects to grid cells based on position
+- [ ] Only check collisions within same/adjacent cells
+- [ ] Rebuild spatial index each frame or on object move
+**Test**: Performance stays smooth with 100+ asteroids
+
+---
+
+## Iteration 5: Networking Foundation
 
 > **Architecture Reference**: See [networking.md](./networking.md) for detailed diagrams and message formats.
 
-### Step 2.1: Shared Types & Message Formats
+### Step 5.1: Shared Types & Message Formats
 **Goal**: Define shared types used by both client and server
 **Tasks**:
 - [ ] Define `InputMessage` type in `packages/supercluster/src/types.ts`
@@ -147,7 +268,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Export all types from package
 **Test**: Types compile without errors, importable from both apps
 
-### Step 2.2: Server Game Loop (60 Hz Tick)
+### Step 5.2: Server Game Loop (60 Hz Tick)
 **Goal**: Server runs authoritative game simulation at fixed timestep
 **Tasks**:
 - [ ] Create `GameServer` class in `apps/api/src/modules/supercluster/`
@@ -160,7 +281,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Queue state snapshots for broadcasting
 **Test**: Server logs tick numbers, consistent 60 Hz timing
 
-### Step 2.3: WebSocket Infrastructure
+### Step 5.3: WebSocket Infrastructure
 **Goal**: Establish real-time communication channel
 **Tasks**:
 - [ ] Create Elysia WebSocket route `/ws/supercluster/:gameId`
@@ -172,7 +293,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Add heartbeat/ping-pong for connection health
 **Test**: Client connects, server logs connection, reconnect works
 
-### Step 2.4: Client Input Transmission
+### Step 5.4: Client Input Transmission
 **Goal**: Client sends inputs to server with sequence numbers
 **Tasks**:
 - [ ] Create WebSocket connection in `SuperCluster.svelte`
@@ -184,7 +305,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Send `shoot: true` on mouse click
 **Test**: Server receives inputs, logs seq numbers incrementing
 
-### Step 2.5: Server Input Processing
+### Step 5.5: Server Input Processing
 **Goal**: Server applies client inputs to authoritative state
 **Tasks**:
 - [ ] Queue incoming inputs per-player (handle out-of-order)
@@ -195,7 +316,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Validate inputs (rate limiting, bounds checking)
 **Test**: Player moves on server when client sends WASD inputs
 
-### Step 2.6: State Broadcasting
+### Step 5.6: State Broadcasting
 **Goal**: Server sends authoritative state to all clients
 **Tasks**:
 - [ ] Build `StateMessage` after each tick
@@ -205,7 +326,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Consider delta compression later (send only changes)
 **Test**: Client receives state messages at ~60 Hz
 
-### Step 2.7: Client State Reception
+### Step 5.7: Client State Reception
 **Goal**: Client receives and applies server state
 **Tasks**:
 - [ ] Parse incoming `StateMessage` in WebSocket handler
@@ -215,7 +336,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Calculate approximate latency (RTT/2)
 **Test**: Other player's ship visible and moving based on server state
 
-### Step 2.8: Client-Side Prediction
+### Step 5.8: Client-Side Prediction
 **Goal**: Local player sees immediate response to input
 **Tasks**:
 - [ ] Apply own inputs locally IMMEDIATELY (don't wait for server)
@@ -225,7 +346,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Local projectile spawning for immediate visual feedback
 **Test**: Zero input lag - ship responds instantly to WASD
 
-### Step 2.9: Server Reconciliation
+### Step 5.9: Server Reconciliation
 **Goal**: Correct client prediction when it diverges from server
 **Tasks**:
 - [ ] When receiving `StateMessage`, compare own position with server's
@@ -236,7 +357,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] For large corrections (cheating/lag), snap immediately
 **Test**: Simulate lag - client eventually matches server state
 
-### Step 2.10: Entity Interpolation
+### Step 5.10: Entity Interpolation
 **Goal**: Smooth movement for entities we don't predict
 **Tasks**:
 - [ ] Buffer last 2-3 state snapshots for other players
@@ -246,7 +367,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Handle missing snapshots gracefully (extrapolate briefly)
 **Test**: Other player moves smoothly even with network jitter
 
-### Step 2.11: Anti-Cheat Validation
+### Step 5.11: Anti-Cheat Validation
 **Goal**: Server validates all inputs and rejects invalid ones
 **Tasks**:
 - [ ] Rate limit inputs (max 120 inputs/sec per player)
@@ -257,7 +378,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Kick players with repeated violations
 **Test**: Modified client can't move faster or shoot faster
 
-### Step 2.12: Game Session Management
+### Step 5.12: Game Session Management
 **Goal**: Support different game modes and lobbies
 **Tasks**:
 - [ ] Create `GameSession` class to manage one game instance
@@ -271,100 +392,22 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 
 ---
 
-## Iteration 3: Shooting Mechanics
-
-### Step 3.1: Mouse Tracking
-**Goal**: Track mouse position for aiming
-**Tasks**:
-- [x] Add mousemove event listener
-- [x] Convert mouse position to angle from canvas center
-- [ ] Calculate aim direction on tangent plane
-**Test**: Console shows aim angle updating
-
-### Step 3.2: Aim Indicator
-**Goal**: Visual line showing aim direction
-**Tasks**:
-- [ ] Create line geometry from ship position
-- [ ] Line follows tangent plane
-- [ ] Length = visible arc on sphere
-- [ ] Updates with mouse movement
-**Test**: Line rotates around ship as mouse moves
-
-### Step 3.3: Projectile Creation
-**Goal**: Click spawns projectile
-**Tasks**:
-- [ ] Create projectile geometry (small sphere or line)
-- [ ] Spawn at ship position with aim direction
-- [ ] Store projectile data (position, velocity, lifetime)
-**Test**: Click creates visible projectile
-
-### Step 3.4: Projectile Movement
-**Goal**: Projectiles travel along sphere surface
-**Tasks**:
-- [ ] Move projectile along great circle path
-- [ ] Update projectile position each frame
-- [ ] Remove projectile after traveling set distance or time
-**Test**: Projectiles travel and disappear
-
----
-
-## Iteration 5: Moving Objects
-
-### Step 5.1: Object Spawning
-**Goal**: Spawn objects on planet surface
-**Tasks**:
-- [ ] Create simple object geometry (cube or sphere)
-- [ ] Spawn at random position on planet
-- [ ] Orient to surface normal
-**Test**: Objects appear on planet
-
-### Step 5.2: Object Self-Rotation
-**Goal**: Objects spin around their own axis
-**Tasks**:
-- [ ] Add rotation component to objects
-- [ ] Update rotation each frame
-**Test**: Objects visibly spinning
-
-### Step 5.3: Object Movement on Surface
-**Goal**: Objects move along planet surface
-**Tasks**:
-- [ ] Give objects velocity (angular)
-- [ ] Update position along sphere surface
-- [ ] Keep oriented to surface
-**Test**: Objects move around planet
-
-### Step 5.4: Use InstancedMesh
-**Goal**: Optimize for many objects
-**Tasks**:
-- [ ] Convert to InstancedMesh
-- [ ] Manage instance transforms
-- [ ] Test with 100+ objects
-**Test**: Smooth performance with many objects
-
----
-
 ## Future Iterations (outline)
 
-### Iteration 6: Collision Detection
-- Projectile vs Object collision
-- Ship vs Object collision
-- Angular distance calculations on sphere surface
-- Hit detection using dot product of unit vectors
-
-### Iteration 7: Game Logic
+### Iteration 6: Game Logic
 - Score system
 - Lives/health
 - Object destruction effects
 - Power-ups
 - Wave progression
 
-### Iteration 8: Enemy AI
+### Iteration 7: Enemy AI (optional)
 - Enemies that chase ship
 - Different enemy types
 - Spawn waves
 - AI difficulty scaling
 
-### Iteration 9: Polish
+### Iteration 8: Polish
 - Visual effects (particles, explosions)
 - Sound effects
 - UI overlay (HUD, score, lives)

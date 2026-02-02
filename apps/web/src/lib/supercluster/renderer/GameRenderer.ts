@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { PlanetRenderer } from './Planet';
 import { ShipRenderer } from './Ship';
+import { AsteroidRenderer } from './Asteroid';
 import {
 	DEFAULT_CONFIG,
 	DEFAULT_RENDERER_CONFIG,
@@ -22,6 +23,7 @@ export class GameRenderer {
 
 	private planet: PlanetRenderer;
 	private ship: ShipRenderer;
+	private asteroids: AsteroidRenderer;
 
 	private config: GameConfig;
 	private rendererConfig: RendererConfig;
@@ -98,6 +100,13 @@ export class GameRenderer {
 		// Create ship (now includes aim dot)
 		this.ship = new ShipRenderer(config, rendererConfig);
 		this.scene.add(this.ship.group);
+
+		// Create asteroids (as children of planet so they rotate with it)
+		this.asteroids = new AsteroidRenderer(config);
+		this.planet.group.add(this.asteroids.group);
+
+		// Spawn initial asteroids: 8 small (size 1), 4 large (size 2)
+		this.asteroids.spawnMultiple([1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2]);
 
 		// Initialize ship facing camera (on +Z side of sphere)
 		// phi = PI/2 (equator), theta = PI/2 (facing +Z)
@@ -230,6 +239,9 @@ export class GameRenderer {
 			if (!this.lastState) {
 				this.updateLocalMovement(deltaTime);
 			}
+
+			// Update asteroids (rotation and movement)
+			this.asteroids.update(deltaTime);
 
 			this.render();
 		};
@@ -397,6 +409,7 @@ export class GameRenderer {
 		this.config = config;
 		this.planet.updateConfig(config);
 		this.ship.updateConfig(config);
+		this.asteroids.updateConfig(config);
 
 		// Update camera position when sphere radius changes
 		this.setupCamera();
@@ -516,6 +529,14 @@ export class GameRenderer {
 
 		this.planet.dispose();
 		this.ship.dispose();
+		this.asteroids.dispose();
 		this.renderer.dispose();
+	}
+
+	// ========================================================================
+	// Asteroid Controls
+	// ========================================================================
+	getAsteroidRenderer(): AsteroidRenderer {
+		return this.asteroids;
 	}
 }

@@ -244,7 +244,8 @@ For comprehensive documentation on:
 
 ## Ideas for Later
 
-- Asteroid breaking into smaller pieces (like original Super Stardust)
+- ~~Asteroid breaking into smaller pieces~~ ✓ Implemented via `breakAsteroid()`
+- Different asteroid shapes using BatchedMesh (varied geometries)
 - Different weapon types (spread, focused, beam)
 - Boost/dash ability with cooldown
 - Shield power-up
@@ -254,12 +255,113 @@ For comprehensive documentation on:
 
 ---
 
+## Asteroid System
+
+### AsteroidRenderer Class
+
+Uses `THREE.InstancedMesh` for efficient rendering of many asteroids with a single draw call.
+
+```typescript
+// AsteroidData structure
+interface AsteroidData {
+  id: number;
+  position: THREE.Vector3;      // Unit vector on sphere (x² + y² + z² = 1)
+  velocity: THREE.Vector3;      // Tangent direction for movement
+  rotationSpeedX: number;       // Self-rotation speed (rad/s)
+  rotationSpeedY: number;
+  rotationX: number;            // Current rotation angle
+  rotationY: number;
+  size: number;                 // 1-4 (visual size multiplier: 2, 4, 6, 8)
+  speed: number;                // Movement speed (rad/s on sphere)
+}
+```
+
+### Movement on Sphere Surface
+
+Asteroids move along great circles using quaternion rotation:
+
+```typescript
+// Axis perpendicular to position and velocity
+const axis = new THREE.Vector3().crossVectors(position, velocity).normalize();
+
+// Rotate position and velocity together
+const quat = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+position.applyQuaternion(quat);
+velocity.applyQuaternion(quat);  // Keep velocity tangent
+```
+
+### Instance Matrix Composition
+
+Each asteroid's transform is composed from:
+1. **Position**: Unit vector × gameSphereRadius
+2. **Orientation**: Basis matrix from (tangent, bitangent, normal)
+3. **Self-rotation**: Euler angles applied after orientation
+4. **Scale**: Based on size (SIZE_MULTIPLIERS array)
+
+```typescript
+const rotMatrix = new THREE.Matrix4().makeBasis(tangent, bitangent, normal);
+quaternion.setFromRotationMatrix(rotMatrix);
+quaternion.multiply(selfRotationQuaternion);
+matrix.compose(position, quaternion, scale);
+instancedMesh.setMatrixAt(index, matrix);
+```
+
+### Planet Parenting
+
+Asteroids are children of the planet group, not the scene:
+
+```typescript
+this.planet.group.add(this.asteroids.group);
+```
+
+This means when the planet rotates (via WASD), asteroids automatically rotate with it, creating the illusion that the ship is flying past them.
+
+---
+
 ## Performance Notes
 
 ### When to Use InstancedMesh/BatchedMesh
 - **InstancedMesh**: For many identical objects (asteroids, same enemy type)
-- **BatchedMesh**: If we need different geometries with same material
-- For now (few objects), regular Mesh is fine
+  - Single draw call for all instances
+  - Each instance has its own transform matrix
+  - All share same geometry and material
+- **BatchedMesh**: If we need different geometries with same material (future: different asteroid shapes)
+- Regular Mesh is fine for unique objects (ship, planet)
+
+---
+
+## Collision Detection
+
+### Quick Reference
+
+**Unit Vector**: A vector with length = 1. All positions on the sphere are stored as unit vectors.
+```typescript
+position = (x, y, z) where x² + y² + z² = 1
+worldPosition = position × gameSphereRadius
+```
+
+**Angular Radius**: How much of the sphere an object covers (in radians).
+```typescript
+angularRadius = visualRadius / gameSphereRadius
+// Size 1 asteroid (diameter=2): ≈ 0.01 rad
+// Size 4 asteroid (diameter=8): ≈ 0.04 rad
+```
+
+**Collision Check**: Two objects collide when `dot product > cos(sum of radii)`
+```typescript
+const dot = posA.dot(posB);
+const threshold = Math.cos(radiusA + radiusB);
+if (dot > threshold) // Collision!
+```
+
+**Coordinate Spaces**: Keep everything in planet local space for efficiency.
+- Asteroids: planet local (no transform needed)
+- Bullets: planet local (no transform needed)
+- Ship: transform once from world to planet local
+
+For comprehensive documentation including spatial partitioning and implementation details:
+
+**See: [collision.md](./collision.md)**
 
 ---
 

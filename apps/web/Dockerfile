@@ -13,6 +13,7 @@ COPY package.json bun.lock ./
 # Copy workspace package.json files
 COPY apps/web/package.json ./apps/web/
 COPY apps/api/package.json ./apps/api/
+COPY packages/supercluster/package.json ./packages/supercluster/
 
 # Install dependencies (skip prepare script - no git in container)
 RUN bun install --frozen-lockfile --ignore-scripts

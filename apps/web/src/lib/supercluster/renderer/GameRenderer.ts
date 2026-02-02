@@ -41,8 +41,9 @@ export class GameRenderer {
 	// Initial position: (0, 0, 1) = front of sphere, in front of camera
 	private shipPosition = new THREE.Vector3(0, 0, 1);
 
-	// Ship aim angle and other state (non-positional)
-	private shipAimAngle = 0;
+	// Ship direction and aim angles
+	private targetShipDirection = 0;  // Where ship tip should point (from WASD)
+	private shipAimAngle = 0;         // Where aim dot is (from mouse)
 	private shipLives = 3;
 	private shipInvincible = false;
 
@@ -94,19 +95,23 @@ export class GameRenderer {
 		this.planet = new PlanetRenderer(this.camera, config, rendererConfig);
 		this.scene.add(this.planet.group);
 
-		// Create ship
-		this.ship = new ShipRenderer(config);
-		this.scene.add(this.ship.mesh);
+		// Create ship (now includes aim dot)
+		this.ship = new ShipRenderer(config, rendererConfig);
+		this.scene.add(this.ship.group);
 
 		// Initialize ship facing camera (on +Z side of sphere)
 		// phi = PI/2 (equator), theta = PI/2 (facing +Z)
 		// This puts ship at (0, 0, radius) - directly in front of camera
-		this.ship.updateFromState({
-			position: { phi: Math.PI / 2, theta: Math.PI / 2 },
-			aimAngle: 0,
-			lives: 3,
-			invincible: false,
-		});
+		this.ship.updateFromState(
+			{
+				position: { phi: Math.PI / 2, theta: Math.PI / 2 },
+				aimAngle: 0,
+				lives: 3,
+				invincible: false,
+			},
+			0,  // direction angle
+			0   // aim angle
+		);
 
 		// Handle window resize
 		this.handleResize = this.handleResize.bind(this);
@@ -158,7 +163,11 @@ export class GameRenderer {
 
 		// Apply to visuals
 		this.planet.group.quaternion.copy(this.planetQuaternion);
-		this.ship.updateFromState(state.ship);
+		this.ship.updateFromState(
+			state.ship,
+			this.ship.getCurrentDirectionAngle(),
+			this.shipAimAngle
+		);
 
 		// TODO: Update projectiles
 		// TODO: Update enemies
@@ -174,6 +183,33 @@ export class GameRenderer {
 	setAimAngle(angle: number): void {
 		this.shipAimAngle = angle;
 		this.updateShipVisuals();
+	}
+
+	/**
+	 * Update aim angle from relative mouse movement
+	 * Uses tangent-based calculation so aiming feels natural at all positions
+	 * @param deltaX - horizontal mouse movement (pixels, right is positive)
+	 * @param deltaY - vertical mouse movement (pixels, down is positive)
+	 * @param sensitivity - how fast the aim moves (radians per pixel)
+	 */
+	updateAimFromMouseDelta(deltaX: number, deltaY: number, sensitivity = 0.005): void {
+		// Calculate tangent direction at current aim position
+		// Tangent points in the direction of increasing angle (clockwise)
+		const tangentX = Math.cos(this.shipAimAngle);
+		const tangentY = Math.sin(this.shipAimAngle);
+
+		// Project mouse movement onto tangent to get angle change
+		const deltaAngle = (deltaX * tangentX + deltaY * tangentY) * sensitivity;
+
+		this.shipAimAngle += deltaAngle;
+
+		// Normalize to -PI to PI
+		while (this.shipAimAngle > Math.PI) this.shipAimAngle -= Math.PI * 2;
+		while (this.shipAimAngle < -Math.PI) this.shipAimAngle += Math.PI * 2;
+	}
+
+	getAimAngle(): number {
+		return this.shipAimAngle;
 	}
 
 	// ========================================================================
@@ -219,53 +255,75 @@ export class GameRenderer {
 			this.currentInput.left ||
 			this.currentInput.right;
 
-		if (!hasInput) return;
+		if (hasInput) {
+			// ====================================================================
+			// Calculate target ship direction from WASD input
+			// ====================================================================
+			let inputX = 0;  // Left/right component
+			let inputY = 0;  // Forward/backward component
 
-		// ====================================================================
-		// Quaternion-based movement (no gimbal lock, smooth pole crossing)
-		// ====================================================================
-		// We rotate the planet quaternion based on input.
-		// The ship position (unit vector) is rotated inversely to track
-		// where the ship "actually" is on the planet surface.
+			if (this.currentInput.forward) inputY -= 1;
+			if (this.currentInput.backward) inputY += 1;
+			if (this.currentInput.left) inputX += 1;
+			if (this.currentInput.right) inputX -= 1;
 
-		// Calculate rotation angles for this frame
-		let pitchAngle = 0; // Forward/backward (rotate around X)
-		let yawAngle = 0;   // Left/right (rotate around Y)
+			// Calculate target direction angle from input vector
+			// 0 = forward (-Y in ship space), PI/2 = right (+X), etc.
+			if (inputX !== 0 || inputY !== 0) {
+				this.targetShipDirection = Math.atan2(inputX, inputY);
+			}
 
-		if (this.currentInput.forward) pitchAngle += speed * deltaTime;
-		if (this.currentInput.backward) pitchAngle -= speed * deltaTime;
-		if (this.currentInput.left) yawAngle += speed * deltaTime;
-		if (this.currentInput.right) yawAngle -= speed * deltaTime;
+			// ====================================================================
+			// Quaternion-based movement (no gimbal lock, smooth pole crossing)
+			// ====================================================================
+			// We rotate the planet quaternion based on input.
+			// The ship position (unit vector) is rotated inversely to track
+			// where the ship "actually" is on the planet surface.
 
-		// Create rotation quaternions for pitch and yaw
-		// Pitch: rotate around X-axis (forward/backward movement)
-		if (pitchAngle !== 0) {
-			this._tempQuat.setFromAxisAngle(this._pitchAxis, pitchAngle);
-			this.planetQuaternion.premultiply(this._tempQuat);
+			// Calculate rotation angles for this frame
+			let pitchAngle = 0; // Forward/backward (rotate around X)
+			let yawAngle = 0;   // Left/right (rotate around Y)
 
-			// Rotate ship position inversely (ship moves opposite to planet rotation)
-			this._tempQuat.invert();
-			this.shipPosition.applyQuaternion(this._tempQuat);
+			if (this.currentInput.forward) pitchAngle += speed * deltaTime;
+			if (this.currentInput.backward) pitchAngle -= speed * deltaTime;
+			if (this.currentInput.left) yawAngle += speed * deltaTime;
+			if (this.currentInput.right) yawAngle -= speed * deltaTime;
+
+			// Create rotation quaternions for pitch and yaw
+			// Pitch: rotate around X-axis (forward/backward movement)
+			if (pitchAngle !== 0) {
+				this._tempQuat.setFromAxisAngle(this._pitchAxis, pitchAngle);
+				this.planetQuaternion.premultiply(this._tempQuat);
+
+				// Rotate ship position inversely (ship moves opposite to planet rotation)
+				this._tempQuat.invert();
+				this.shipPosition.applyQuaternion(this._tempQuat);
+			}
+
+			// Yaw: rotate around Y-axis (left/right movement)
+			if (yawAngle !== 0) {
+				this._tempQuat.setFromAxisAngle(this._yawAxis, yawAngle);
+				this.planetQuaternion.premultiply(this._tempQuat);
+
+				// Rotate ship position inversely
+				this._tempQuat.invert();
+				this.shipPosition.applyQuaternion(this._tempQuat);
+			}
+
+			// Normalize to prevent drift from floating point errors
+			this.planetQuaternion.normalize();
+			this.shipPosition.normalize();
+
+			// Apply planet rotation to the visual
+			this.planet.group.quaternion.copy(this.planetQuaternion);
 		}
 
-		// Yaw: rotate around Y-axis (left/right movement)
-		if (yawAngle !== 0) {
-			this._tempQuat.setFromAxisAngle(this._yawAxis, yawAngle);
-			this.planetQuaternion.premultiply(this._tempQuat);
+		// ====================================================================
+		// Lerp ship direction toward target (always, even without input)
+		// ====================================================================
+		this.ship.lerpDirection(this.targetShipDirection, deltaTime);
 
-			// Rotate ship position inversely
-			this._tempQuat.invert();
-			this.shipPosition.applyQuaternion(this._tempQuat);
-		}
-
-		// Normalize to prevent drift from floating point errors
-		this.planetQuaternion.normalize();
-		this.shipPosition.normalize();
-
-		// Apply planet rotation to the visual
-		this.planet.group.quaternion.copy(this.planetQuaternion);
-
-		// Update ship visuals (aim angle)
+		// Update ship visuals
 		this.updateShipVisuals();
 	}
 
@@ -277,12 +335,16 @@ export class GameRenderer {
 		// Convert unit vector position to spherical for compatibility
 		const spherical = this.unitVectorToSpherical(this.shipPosition);
 
-		this.ship.updateFromState({
-			position: spherical,
-			aimAngle: this.shipAimAngle,
-			lives: this.shipLives,
-			invincible: this.shipInvincible,
-		});
+		this.ship.updateFromState(
+			{
+				position: spherical,
+				aimAngle: this.shipAimAngle,
+				lives: this.shipLives,
+				invincible: this.shipInvincible,
+			},
+			this.ship.getCurrentDirectionAngle(),
+			this.shipAimAngle
+		);
 	}
 
 	// ========================================================================
@@ -370,6 +432,23 @@ export class GameRenderer {
 		return this.planet.getForceFieldColor();
 	}
 
+	// Ship rotation and aim dot controls
+	setShipRotationSpeed(speed: number): void {
+		this.ship.setRotationSpeed(speed);
+	}
+
+	setAimDotColor(color: number): void {
+		this.ship.setAimDotColor(color);
+	}
+
+	setAimDotSize(size: number): void {
+		this.ship.setAimDotSize(size);
+	}
+
+	setAimDotOrbitRadius(radius: number): void {
+		this.ship.setAimDotOrbitRadius(radius);
+	}
+
 	// Debug method to update ship state directly (for lil-gui controls)
 	// Sets the planet quaternion from spherical coordinates
 	updateShipDebug(state: ShipState): void {
@@ -395,7 +474,11 @@ export class GameRenderer {
 		this.planet.group.quaternion.copy(this.planetQuaternion);
 
 		// Update ship visual
-		this.ship.updateFromState(state);
+		this.ship.updateFromState(
+			state,
+			this.ship.getCurrentDirectionAngle(),
+			this.shipAimAngle
+		);
 	}
 
 	// ========================================================================

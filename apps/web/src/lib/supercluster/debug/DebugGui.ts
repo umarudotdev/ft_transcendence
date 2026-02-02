@@ -19,6 +19,12 @@ export class DebugGui {
 		forceFieldDetail: 2,
 		forceFieldColor: '#00ffaa',
 
+		// Ship visual config
+		shipRotationSpeed: 10,
+		aimDotSize: 1.5,
+		aimDotColor: '#ffff00',
+		aimDotOrbitRadius: 12,
+
 		// Game config
 		gameSphereRadius: 100,
 		forceFieldRadius: 95,
@@ -36,6 +42,7 @@ export class DebugGui {
 
 		this.setupRendererControls();
 		this.setupForceFieldControls();
+		this.setupShipVisualControls();
 		this.setupGameConfigControls();
 		this.setupShipControls();
 	}
@@ -83,6 +90,37 @@ export class DebugGui {
 					this.state.forceFieldOpacityFront,
 					this.state.forceFieldOpacityBack
 				);
+			});
+
+		folder.open();
+	}
+
+	private setupShipVisualControls(): void {
+		const folder = this.gui.addFolder('Ship & Aim');
+
+		folder.add(this.state, 'shipRotationSpeed', 1, 30, 1)
+			.name('Rotation Speed')
+			.onChange((value: number) => {
+				this.renderer.setShipRotationSpeed(value);
+			});
+
+		folder.add(this.state, 'aimDotSize', 0.5, 5, 0.5)
+			.name('Aim Dot Size')
+			.onChange((value: number) => {
+				this.renderer.setAimDotSize(value);
+			});
+
+		folder.addColor(this.state, 'aimDotColor')
+			.name('Aim Dot Color')
+			.onChange((value: string) => {
+				const colorNum = Number.parseInt(value.replace('#', ''), 16);
+				this.renderer.setAimDotColor(colorNum);
+			});
+
+		folder.add(this.state, 'aimDotOrbitRadius', 8, 30, 1)
+			.name('Aim Dot Orbit')
+			.onChange((value: number) => {
+				this.renderer.setAimDotOrbitRadius(value);
 			});
 
 		folder.open();

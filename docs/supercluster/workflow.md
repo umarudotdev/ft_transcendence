@@ -5,11 +5,22 @@
 ```
 packages/supercluster/src/          # Shared types (client & server)
 ├── index.ts                        # Package exports
-├── types.ts                        # GameState, SphericalPosition, Messages
+├── types.ts                        # GameState, SphericalPosition, InputMessage, StateMessage
+
+apps/api/src/modules/supercluster/  # Server-side game logic (authoritative)
+├── supercluster.controller.ts      # WebSocket route handlers
+├── supercluster.service.ts         # Game session management
+├── game-server.ts                  # 60 Hz tick loop, physics, state
+├── game-session.ts                 # Individual game instance
+└── input-validator.ts              # Anti-cheat input validation
 
 apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 ├── index.ts                        # Module exports
-├── SuperCluster.svelte             # Svelte wrapper component
+├── SuperCluster.svelte             # Svelte wrapper + WebSocket client
+├── network/
+│   ├── client.ts                   # WebSocket connection, input sending
+│   ├── prediction.ts               # Client-side prediction logic
+│   └── reconciliation.ts           # Server reconciliation logic
 ├── renderer/
 │   ├── GameRenderer.ts             # Main renderer orchestrator
 │   ├── Planet.ts                   # Planet + force-field meshes
@@ -102,9 +113,167 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 
 ---
 
-## Iteration 2: Shooting Mechanics
+## Iteration 2: Networking Foundation
 
-### Step 2.1: Mouse Tracking
+> **Architecture Reference**: See [networking.md](./networking.md) for detailed diagrams and message formats.
+
+### Step 2.1: Shared Types & Message Formats
+**Goal**: Define shared types used by both client and server
+**Tasks**:
+- [ ] Define `InputMessage` type in `packages/supercluster/src/types.ts`
+  ```typescript
+  interface InputMessage {
+    seq: number;           // Sequence number for reconciliation
+    tick: number;          // Client's local tick when input was made
+    forward: boolean;
+    backward: boolean;
+    left: boolean;
+    right: boolean;
+    aimAngle: number;      // Radians
+    shoot: boolean;
+  }
+  ```
+- [ ] Define `StateMessage` type
+  ```typescript
+  interface StateMessage {
+    tick: number;          // Server tick
+    lastProcessedSeq: number;  // Last input seq server processed for this client
+    players: PlayerState[];
+    projectiles: ProjectileState[];
+    asteroids: AsteroidState[];
+  }
+  ```
+- [ ] Define `PlayerState`, `ProjectileState`, `AsteroidState` types
+- [ ] Export all types from package
+**Test**: Types compile without errors, importable from both apps
+
+### Step 2.2: Server Game Loop (60 Hz Tick)
+**Goal**: Server runs authoritative game simulation at fixed timestep
+**Tasks**:
+- [ ] Create `GameServer` class in `apps/api/src/modules/supercluster/`
+- [ ] Implement fixed 60 Hz tick loop using `setInterval` (16.67ms)
+- [ ] Track `currentTick` number (incrementing each tick)
+- [ ] Store authoritative `GameState` on server
+- [ ] Process pending inputs from all connected players each tick
+- [ ] Update all entity positions (players, projectiles, asteroids)
+- [ ] Run collision detection
+- [ ] Queue state snapshots for broadcasting
+**Test**: Server logs tick numbers, consistent 60 Hz timing
+
+### Step 2.3: WebSocket Infrastructure
+**Goal**: Establish real-time communication channel
+**Tasks**:
+- [ ] Create Elysia WebSocket route `/ws/supercluster/:gameId`
+- [ ] Handle `open` event - register player, assign playerId
+- [ ] Handle `close` event - remove player from game
+- [ ] Handle `message` event - parse and queue InputMessage
+- [ ] Store WebSocket connections mapped to playerId
+- [ ] Create `broadcast()` helper to send to all players in game
+- [ ] Add heartbeat/ping-pong for connection health
+**Test**: Client connects, server logs connection, reconnect works
+
+### Step 2.4: Client Input Transmission
+**Goal**: Client sends inputs to server with sequence numbers
+**Tasks**:
+- [ ] Create WebSocket connection in `SuperCluster.svelte`
+- [ ] Assign incrementing `seq` number to each input
+- [ ] Send `InputMessage` on every keydown/keyup (not just state changes)
+- [ ] Also send input at fixed rate (60 Hz) while keys held
+- [ ] Store sent inputs in local buffer (for reconciliation later)
+- [ ] Include current `aimAngle` in every message
+- [ ] Send `shoot: true` on mouse click
+**Test**: Server receives inputs, logs seq numbers incrementing
+
+### Step 2.5: Server Input Processing
+**Goal**: Server applies client inputs to authoritative state
+**Tasks**:
+- [ ] Queue incoming inputs per-player (handle out-of-order)
+- [ ] Process inputs in seq order during tick
+- [ ] Apply movement: rotate player's position on sphere
+- [ ] Apply shooting: spawn projectile at player position + aimAngle
+- [ ] Track `lastProcessedSeq` per player
+- [ ] Validate inputs (rate limiting, bounds checking)
+**Test**: Player moves on server when client sends WASD inputs
+
+### Step 2.6: State Broadcasting
+**Goal**: Server sends authoritative state to all clients
+**Tasks**:
+- [ ] Build `StateMessage` after each tick
+- [ ] Include all player positions, projectiles, asteroids
+- [ ] Include `lastProcessedSeq` for each receiving player
+- [ ] Broadcast to all connected players via WebSocket
+- [ ] Consider delta compression later (send only changes)
+**Test**: Client receives state messages at ~60 Hz
+
+### Step 2.7: Client State Reception
+**Goal**: Client receives and applies server state
+**Tasks**:
+- [ ] Parse incoming `StateMessage` in WebSocket handler
+- [ ] Update `GameRenderer` with server positions for OTHER players
+- [ ] Update projectiles and asteroids from server state
+- [ ] Store received `serverTick` and `lastProcessedSeq`
+- [ ] Calculate approximate latency (RTT/2)
+**Test**: Other player's ship visible and moving based on server state
+
+### Step 2.8: Client-Side Prediction
+**Goal**: Local player sees immediate response to input
+**Tasks**:
+- [ ] Apply own inputs locally IMMEDIATELY (don't wait for server)
+- [ ] Run local physics simulation for own ship
+- [ ] Render own ship at predicted position
+- [ ] Keep buffer of unacknowledged inputs (seq > lastProcessedSeq)
+- [ ] Local projectile spawning for immediate visual feedback
+**Test**: Zero input lag - ship responds instantly to WASD
+
+### Step 2.9: Server Reconciliation
+**Goal**: Correct client prediction when it diverges from server
+**Tasks**:
+- [ ] When receiving `StateMessage`, compare own position with server's
+- [ ] If mismatch: reset own position to server's authoritative position
+- [ ] Re-apply all unacknowledged inputs (seq > lastProcessedSeq)
+- [ ] Remove acknowledged inputs from buffer (seq <= lastProcessedSeq)
+- [ ] Smooth small corrections (lerp) to avoid visual "snap"
+- [ ] For large corrections (cheating/lag), snap immediately
+**Test**: Simulate lag - client eventually matches server state
+
+### Step 2.10: Entity Interpolation
+**Goal**: Smooth movement for entities we don't predict
+**Tasks**:
+- [ ] Buffer last 2-3 state snapshots for other players
+- [ ] Render other players slightly in the past (interpolation delay)
+- [ ] Lerp between buffered positions for smooth movement
+- [ ] Same for projectiles and asteroids
+- [ ] Handle missing snapshots gracefully (extrapolate briefly)
+**Test**: Other player moves smoothly even with network jitter
+
+### Step 2.11: Anti-Cheat Validation
+**Goal**: Server validates all inputs and rejects invalid ones
+**Tasks**:
+- [ ] Rate limit inputs (max 120 inputs/sec per player)
+- [ ] Validate movement speed (can't move faster than max)
+- [ ] Validate shoot rate (respect cooldown)
+- [ ] Validate aim angle bounds (-π to π)
+- [ ] Log suspicious activity for review
+- [ ] Kick players with repeated violations
+**Test**: Modified client can't move faster or shoot faster
+
+### Step 2.12: Game Session Management
+**Goal**: Support different game modes and lobbies
+**Tasks**:
+- [ ] Create `GameSession` class to manage one game instance
+- [ ] Support 1v1 mode: 2 players, competitive
+- [ ] Support Co-op mode: 1-2 players vs AI asteroids
+- [ ] Implement lobby/matchmaking (simple: first 2 players matched)
+- [ ] Handle player disconnect (pause or AI takeover)
+- [ ] Game over conditions (lives depleted, time limit)
+- [ ] Score tracking per session
+**Test**: Two browsers can join same game, play together
+
+---
+
+## Iteration 3: Shooting Mechanics
+
+### Step 3.1: Mouse Tracking
 **Goal**: Track mouse position for aiming
 **Tasks**:
 - [x] Add mousemove event listener
@@ -112,7 +281,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Calculate aim direction on tangent plane
 **Test**: Console shows aim angle updating
 
-### Step 2.2: Aim Indicator
+### Step 3.2: Aim Indicator
 **Goal**: Visual line showing aim direction
 **Tasks**:
 - [ ] Create line geometry from ship position
@@ -121,7 +290,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Updates with mouse movement
 **Test**: Line rotates around ship as mouse moves
 
-### Step 2.3: Projectile Creation
+### Step 3.3: Projectile Creation
 **Goal**: Click spawns projectile
 **Tasks**:
 - [ ] Create projectile geometry (small sphere or line)
@@ -129,7 +298,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Store projectile data (position, velocity, lifetime)
 **Test**: Click creates visible projectile
 
-### Step 2.4: Projectile Movement
+### Step 3.4: Projectile Movement
 **Goal**: Projectiles travel along sphere surface
 **Tasks**:
 - [ ] Move projectile along great circle path
@@ -139,9 +308,9 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 
 ---
 
-## Iteration 3: Moving Objects
+## Iteration 5: Moving Objects
 
-### Step 3.1: Object Spawning
+### Step 5.1: Object Spawning
 **Goal**: Spawn objects on planet surface
 **Tasks**:
 - [ ] Create simple object geometry (cube or sphere)
@@ -149,14 +318,14 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Orient to surface normal
 **Test**: Objects appear on planet
 
-### Step 3.2: Object Self-Rotation
+### Step 5.2: Object Self-Rotation
 **Goal**: Objects spin around their own axis
 **Tasks**:
 - [ ] Add rotation component to objects
 - [ ] Update rotation each frame
 **Test**: Objects visibly spinning
 
-### Step 3.3: Object Movement on Surface
+### Step 5.3: Object Movement on Surface
 **Goal**: Objects move along planet surface
 **Tasks**:
 - [ ] Give objects velocity (angular)
@@ -164,7 +333,7 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 - [ ] Keep oriented to surface
 **Test**: Objects move around planet
 
-### Step 3.4: Use InstancedMesh
+### Step 5.4: Use InstancedMesh
 **Goal**: Optimize for many objects
 **Tasks**:
 - [ ] Convert to InstancedMesh
@@ -176,27 +345,31 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 
 ## Future Iterations (outline)
 
-### Iteration 4: Collision Detection
+### Iteration 6: Collision Detection
 - Projectile vs Object collision
 - Ship vs Object collision
-- Angular distance calculations
+- Angular distance calculations on sphere surface
+- Hit detection using dot product of unit vectors
 
-### Iteration 5: Game Logic
+### Iteration 7: Game Logic
 - Score system
 - Lives/health
 - Object destruction effects
 - Power-ups
+- Wave progression
 
-### Iteration 6: Enemy AI
+### Iteration 8: Enemy AI
 - Enemies that chase ship
 - Different enemy types
 - Spawn waves
+- AI difficulty scaling
 
-### Iteration 7: Polish
+### Iteration 9: Polish
 - Visual effects (particles, explosions)
 - Sound effects
-- UI overlay
-- Post-processing
+- UI overlay (HUD, score, lives)
+- Post-processing (bloom, color grading)
+- Screen shake on hits
 
 ---
 

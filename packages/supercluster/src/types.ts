@@ -157,6 +157,12 @@ export interface RendererConfig {
 	forceFieldBackFade: number;
 	showAxes: boolean;
 	showDebugInfo: boolean;
+	// Ship rotation
+	shipRotationSpeed: number;    // Lerp speed (0-1, higher = faster)
+	// Aim dot
+	aimDotSize: number;           // Radius of the dot
+	aimDotColor: number;          // Hex color
+	aimDotOrbitRadius: number;    // Distance from ship center
 }
 
 export const DEFAULT_RENDERER_CONFIG: RendererConfig = {
@@ -164,4 +170,10 @@ export const DEFAULT_RENDERER_CONFIG: RendererConfig = {
 	forceFieldBackFade: 0.1,
 	showAxes: false,
 	showDebugInfo: false,
+	// Ship rotation
+	shipRotationSpeed: 10,        // ~0.3s to rotate at 60fps
+	// Aim dot
+	aimDotSize: 1.5,
+	aimDotColor: 0xffff00,        // Yellow
+	aimDotOrbitRadius: 12,        // Slightly larger than ship
 };

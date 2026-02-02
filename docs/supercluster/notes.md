@@ -127,28 +127,79 @@ z = sin(phi) * sin(theta)
 
 ---
 
-## Force-Field Shader
+## Force Field and Shaders
 
-Custom ShaderMaterial for force-field wireframe that fades lines facing away from camera:
+The force field uses a custom GLSL shader to fade lines based on their orientation relative to the camera.
 
-- Vertex shader passes world position to fragment shader
-- Fragment shader calculates normal (for sphere: `normalize(position)`)
-- Dot product with view direction determines facing: 1=toward camera, -1=away
-- Interpolates between front opacity and back opacity based on facing
+For comprehensive documentation on:
+- GLSL language basics
+- Vertex and Fragment shaders
+- Three.js ShaderMaterial
+- Force field shader implementation details
+- How uniforms, attributes, and varyings work
 
-For wireframe `LineSegments`, normals aren't available directly, but for a sphere centered at origin, the normal at any point equals the normalized position vector.
+**See: [shaders.md](./shaders.md)**
 
 ---
 
-## Ship Orientation
+## Ship Orientation and Aiming
 
-The ship's orientation on the sphere surface:
+The ship has **two independent angles**:
 
-1. **Normal** = direction away from sphere center (local Z up)
-2. **East** = cross(worldUp, normal) - tangent pointing toward increasing theta
-3. **North** = cross(normal, east) - tangent pointing toward decreasing phi (toward north pole)
+### 1. Direction Angle (WASD Input)
 
-The ship's triangle tip points "north" by default, then rotates by aimAngle around the normal.
+Controls where the ship tip points. Updated based on movement input:
+- W = 0° (forward)
+- W+D = 45° (forward-right)
+- D = 90° (right)
+- etc.
+
+**Smooth rotation:** Ship direction lerps toward target angle using exponential smoothing:
+```typescript
+// Lerp factor based on speed and deltaTime
+const lerpFactor = 1 - Math.exp(-rotationSpeed * deltaTime);
+currentAngle += (targetAngle - currentAngle) * lerpFactor;
+```
+
+This creates a smooth ~0.3s rotation when changing direction.
+
+### 2. Aim Angle (Mouse Input)
+
+Controls where the aim dot is positioned, which determines shooting direction.
+
+- Aim dot points **toward mouse cursor** on screen
+- Calculated from mouse position relative to canvas center
+- Aim dot orbits ship at fixed radius on the orbit circle
+- Independent from ship direction - can move left while aiming right
+
+```typescript
+// Mouse position → aim angle
+const dx = mouseX - canvasCenterX;
+const dy = mouseY - canvasCenterY;
+aimAngle = Math.atan2(dx, -dy);  // -dy because screen Y is inverted
+```
+
+### Visual Structure
+
+```
+        Ship Group (at gameSphereRadius on Z axis)
+            │
+            ├── Ship Mesh (rotated by directionAngle)
+            │       └── 3D wedge shape, tip points -Y
+            │
+            ├── Aim Orbit (cosmetic circle)
+            │       └── LineLoop showing aim dot path (30% opacity)
+            │
+            └── Aim Dot (positioned by aimAngle)
+                    └── Small sphere on the orbit circle
+```
+
+### GUI Controls
+
+- **Rotation Speed**: How fast ship rotates to new direction (1-30)
+- **Aim Dot Size**: Radius of the aim dot (0.5-5)
+- **Aim Dot Color**: Color picker
+- **Aim Dot Orbit**: Distance from ship center (8-30)
 
 ---
 
@@ -165,6 +216,29 @@ if (browser) {
 ```
 
 The `onMount` callback only runs on the client, but cleanup in `onDestroy` can run during SSR if component construction fails.
+
+---
+
+## Networking Architecture
+
+SuperCluster uses **Client-side Prediction with Server Reconciliation** for multiplayer gameplay.
+
+Key concepts:
+- **Server is authoritative** - Server's game state is the "truth"
+- **Client predicts locally** - Immediate visual feedback, no input lag
+- **Reconciliation** - Client accepts server state and re-applies unacknowledged inputs
+- **60 Hz tick rate** - Server updates 60 times per second
+
+For comprehensive documentation on:
+- Data flow diagrams
+- Message formats (InputMessage, StateMessage)
+- Tick rate and network rate
+- Interpolation and smooth correction
+- Anti-cheat validation
+- Game modes (1v1 and Co-op)
+- Implementation checklist
+
+**See: [networking.md](./networking.md)**
 
 ---
 

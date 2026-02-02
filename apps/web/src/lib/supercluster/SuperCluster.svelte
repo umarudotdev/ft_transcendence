@@ -279,6 +279,7 @@
 
 	function handleMouseMove(event: MouseEvent): void {
 		// Calculate aim angle based on mouse position relative to canvas center
+		// The aim dot points toward where the mouse cursor is on screen
 		const rect = canvas.getBoundingClientRect();
 		const centerX = rect.width / 2;
 		const centerY = rect.height / 2;
@@ -286,10 +287,13 @@
 		const dx = event.clientX - rect.left - centerX;
 		const dy = event.clientY - rect.top - centerY;
 
-		aimAngle = Math.atan2(dy, dx);
+		// atan2(dx, dy) because:
+		// - dx: positive = right on screen
+		// - dy: positive = down on screen = forward (angle 0)
+		// This gives: 0 = down/forward, PI/2 = right, PI = up, -PI/2 = left
+		aimAngle = Math.atan2(dx, dy);
 
 		sendMessage({ type: 'aim', angle: aimAngle });
-		// Also update local renderer for immediate feedback
 		renderer?.setAimAngle(aimAngle);
 	}
 

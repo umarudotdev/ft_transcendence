@@ -1,16 +1,30 @@
 import * as THREE from 'three';
-import type { ShipState, GameConfig } from '@ft/supercluster';
+import type { ShipState, GameConfig, RendererConfig } from '@ft/supercluster';
 
 // ============================================================================
 // Ship Renderer
 // Renders the player's ship as a triangle on the sphere surface
+// Also renders the aim dot that orbits the ship
 // ============================================================================
 export class ShipRenderer {
 	readonly mesh: THREE.Mesh;
-	private config: GameConfig;
+	readonly aimDot: THREE.Mesh;
+	readonly aimOrbit: THREE.LineLoop;  // Circle showing aim dot path
+	readonly group: THREE.Group;  // Contains ship, aim dot, and orbit circle
 
-	constructor(config: GameConfig) {
+	private config: GameConfig;
+	private rendererConfig: RendererConfig;
+
+	// Current ship direction (where tip points) - used for lerp
+	private currentDirectionAngle = 0;
+
+	constructor(config: GameConfig, rendererConfig: RendererConfig) {
 		this.config = config;
+		this.rendererConfig = rendererConfig;
+
+		// Create group to hold ship, aim dot, and orbit circle
+		this.group = new THREE.Group();
+		this.group.renderOrder = 100;
 
 		// Create triangle geometry for ship
 		const geometry = this.createTriangleGeometry();
@@ -20,7 +34,52 @@ export class ShipRenderer {
 		});
 
 		this.mesh = new THREE.Mesh(geometry, material);
-		this.mesh.renderOrder = 100;  // Render above planet
+		this.group.add(this.mesh);
+
+		// Create aim orbit circle (cosmetic ring showing aim dot path)
+		this.aimOrbit = this.createAimOrbit();
+		this.group.add(this.aimOrbit);
+
+		// Create aim dot
+		this.aimDot = this.createAimDot();
+		this.group.add(this.aimDot);
+	}
+
+	private createAimDot(): THREE.Mesh {
+		const geometry = new THREE.SphereGeometry(this.rendererConfig.aimDotSize, 16, 16);
+		const material = new THREE.MeshBasicMaterial({
+			color: this.rendererConfig.aimDotColor,
+		});
+		const dot = new THREE.Mesh(geometry, material);
+		dot.renderOrder = 101;  // Above ship
+		return dot;
+	}
+
+	private createAimOrbit(): THREE.LineLoop {
+		// Create a circle using points
+		const segments = 64;
+		const radius = this.rendererConfig.aimDotOrbitRadius;
+		const points: THREE.Vector3[] = [];
+
+		for (let i = 0; i <= segments; i++) {
+			const angle = (i / segments) * Math.PI * 2;
+			points.push(new THREE.Vector3(
+				Math.sin(angle) * radius,
+				-Math.cos(angle) * radius,  // Negative because forward is -Y
+				0
+			));
+		}
+
+		const geometry = new THREE.BufferGeometry().setFromPoints(points);
+		const material = new THREE.LineBasicMaterial({
+			color: this.rendererConfig.aimDotColor,
+			transparent: true,
+			opacity: 0.3,
+		});
+
+		const orbit = new THREE.LineLoop(geometry, material);
+		orbit.renderOrder = 99;  // Below ship and dot
+		return orbit;
 	}
 
 	private createTriangleGeometry(): THREE.BufferGeometry {
@@ -71,23 +130,24 @@ export class ShipRenderer {
 	// ========================================================================
 	// Update from Game State
 	// ========================================================================
-	updateFromState(state: ShipState): void {
+	updateFromState(state: ShipState, directionAngle: number, aimAngle: number): void {
 		// Ship is visually FIXED at (0, 0, gameSphereRadius) - front of sphere
 		// The planet rotates under the ship to create movement illusion
-		// Only aimAngle affects ship's visual rotation
 		const radius = this.config.gameSphereRadius;
 
 		// Fixed position: always at the front of the sphere (facing camera)
-		this.mesh.position.set(0, 0, radius);
+		this.group.position.set(0, 0, radius);
 
-		// Ship geometry is already defined in the XY plane (tangent to sphere):
-		// - Tip points toward -Y (forward/north on sphere)
-		// - Back is raised in +Z (up from surface)
-		// No base rotation needed - geometry is pre-aligned
+		// Apply direction rotation (where ship tip points)
+		// directionAngle: 0 = forward (-Y), PI/2 = right (+X), etc.
+		this.mesh.rotation.set(0, 0, -directionAngle);
 
-		// Apply aim rotation around the ship's up axis (Z axis = normal to sphere)
-		// Positive aim angle rotates clockwise when viewed from above
-		this.mesh.rotation.set(0, 0, -state.aimAngle);
+		// Position aim dot on orbit circle around ship
+		// aimAngle: 0 = forward, positive = clockwise
+		const orbitRadius = this.rendererConfig.aimDotOrbitRadius;
+		const dotX = Math.sin(aimAngle) * orbitRadius;
+		const dotY = -Math.cos(aimAngle) * orbitRadius;  // Negative because forward is -Y
+		this.aimDot.position.set(dotX, dotY, 0);
 
 		// Handle invincibility visual (blinking)
 		if (state.invincible) {
@@ -98,14 +158,86 @@ export class ShipRenderer {
 	}
 
 	// ========================================================================
+	// Lerp ship direction toward target
+	// ========================================================================
+	lerpDirection(targetAngle: number, deltaTime: number): number {
+		// Normalize angles to handle wraparound
+		let diff = targetAngle - this.currentDirectionAngle;
+
+		// Shortest path around the circle
+		while (diff > Math.PI) diff -= Math.PI * 2;
+		while (diff < -Math.PI) diff += Math.PI * 2;
+
+		// Lerp toward target (speed is per second, so multiply by deltaTime)
+		const lerpFactor = 1 - Math.exp(-this.rendererConfig.shipRotationSpeed * deltaTime);
+		this.currentDirectionAngle += diff * lerpFactor;
+
+		// Normalize result
+		while (this.currentDirectionAngle > Math.PI) this.currentDirectionAngle -= Math.PI * 2;
+		while (this.currentDirectionAngle < -Math.PI) this.currentDirectionAngle += Math.PI * 2;
+
+		return this.currentDirectionAngle;
+	}
+
+	getCurrentDirectionAngle(): number {
+		return this.currentDirectionAngle;
+	}
+
+	setCurrentDirectionAngle(angle: number): void {
+		this.currentDirectionAngle = angle;
+	}
+
+	// ========================================================================
 	// Configuration
 	// ========================================================================
 	updateConfig(config: GameConfig): void {
 		this.config = config;
 	}
 
+	updateRendererConfig(rendererConfig: RendererConfig): void {
+		this.rendererConfig = rendererConfig;
+	}
+
 	setColor(color: number): void {
 		(this.mesh.material as THREE.MeshBasicMaterial).color.setHex(color);
+	}
+
+	setAimDotColor(color: number): void {
+		(this.aimDot.material as THREE.MeshBasicMaterial).color.setHex(color);
+		(this.aimOrbit.material as THREE.LineBasicMaterial).color.setHex(color);
+	}
+
+	setAimDotSize(size: number): void {
+		this.aimDot.geometry.dispose();
+		this.aimDot.geometry = new THREE.SphereGeometry(size, 16, 16);
+	}
+
+	setAimDotOrbitRadius(radius: number): void {
+		this.rendererConfig.aimDotOrbitRadius = radius;
+		// Rebuild orbit circle with new radius
+		this.rebuildAimOrbit();
+	}
+
+	private rebuildAimOrbit(): void {
+		const segments = 64;
+		const radius = this.rendererConfig.aimDotOrbitRadius;
+		const points: THREE.Vector3[] = [];
+
+		for (let i = 0; i <= segments; i++) {
+			const angle = (i / segments) * Math.PI * 2;
+			points.push(new THREE.Vector3(
+				Math.sin(angle) * radius,
+				-Math.cos(angle) * radius,
+				0
+			));
+		}
+
+		this.aimOrbit.geometry.dispose();
+		this.aimOrbit.geometry = new THREE.BufferGeometry().setFromPoints(points);
+	}
+
+	setRotationSpeed(speed: number): void {
+		this.rendererConfig.shipRotationSpeed = speed;
 	}
 
 	// ========================================================================
@@ -114,5 +246,9 @@ export class ShipRenderer {
 	dispose(): void {
 		this.mesh.geometry.dispose();
 		(this.mesh.material as THREE.Material).dispose();
+		this.aimDot.geometry.dispose();
+		(this.aimDot.material as THREE.Material).dispose();
+		this.aimOrbit.geometry.dispose();
+		(this.aimOrbit.material as THREE.Material).dispose();
 	}
 }

@@ -3,10 +3,10 @@
 // ============================================================================
 
 // Re-export types from shared package
-export * from '@ft/supercluster';
+export * from "@ft/supercluster";
 
 // Renderer classes
-export { GameRenderer, PlanetRenderer, ShipRenderer } from './renderer';
+export { GameRenderer, PlanetRenderer, ShipRenderer } from "./renderer";
 
 // Svelte Component
-export { default as SuperCluster } from './SuperCluster.svelte';
+export { default as SuperCluster } from "./SuperCluster.svelte";

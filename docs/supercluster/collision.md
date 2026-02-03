@@ -83,6 +83,7 @@ const position = new THREE.Vector3(
 ```
 
 **Why unit vectors for collision?**
+
 - Collision math becomes simple dot products
 - No need for square roots in distance calculations
 - Natural representation for sphere surface positions
@@ -157,13 +158,13 @@ function getAngularRadius(visualDiameter: number, sphereRadius: number): number 
 
 Your asteroids have different visual sizes:
 
-| Size | Visual Diameter | Angular Radius | Coverage |
-|------|-----------------|----------------|----------|
-| 1    | 2 units         | ≈ 0.01 rad (0.57°) | Tiny |
-| 2    | 4 units         | ≈ 0.02 rad (1.15°) | Small |
-| 3    | 6 units         | ≈ 0.03 rad (1.72°) | Medium |
-| 4    | 8 units         | ≈ 0.04 rad (2.29°) | Large |
-| Ship | ~6 units        | ≈ 0.03 rad (1.72°) | Medium |
+| Size | Visual Diameter | Angular Radius     | Coverage |
+| ---- | --------------- | ------------------ | -------- |
+| 1    | 2 units         | ≈ 0.01 rad (0.57°) | Tiny     |
+| 2    | 4 units         | ≈ 0.02 rad (1.15°) | Small    |
+| 3    | 6 units         | ≈ 0.03 rad (1.72°) | Medium   |
+| 4    | 8 units         | ≈ 0.04 rad (2.29°) | Large    |
+| Ship | ~6 units        | ≈ 0.03 rad (1.72°) | Medium   |
 
 ```
 Small asteroid (size 1):        Large asteroid (size 4):
@@ -191,6 +192,7 @@ Collision if: θ_dist < r_A + r_B
 ```
 
 Example: Ship (radius 0.03) vs Large asteroid (radius 0.04)
+
 - Sum of radii = 0.07 rad
 - Threshold = cos(0.07) ≈ 0.9975
 - They collide if dot product > 0.9975
@@ -296,13 +298,14 @@ for (const asteroid of asteroids) {
 
 #### Why This is Better
 
-| Collision Type | Transforms Needed |
-|----------------|-------------------|
-| Bullet vs Asteroid | 0 (same space) |
-| Ship vs Asteroid | 1 (ship → local, once per frame) |
-| Ship vs Bullet | 1 (ship → local, reuse from above) |
+| Collision Type     | Transforms Needed                  |
+| ------------------ | ---------------------------------- |
+| Bullet vs Asteroid | 0 (same space)                     |
+| Ship vs Asteroid   | 1 (ship → local, once per frame)   |
+| Ship vs Bullet     | 1 (ship → local, reuse from above) |
 
 Compare to transforming asteroids to world space:
+
 - 12 asteroids = 12 transforms
 - 100 asteroids = 100 transforms
 - Plus bullets...
@@ -329,6 +332,7 @@ The icosahedron has 20 triangular faces that tile the sphere nearly equally:
 ```
 
 **Advantages:**
+
 - Near-equal area cells (unlike lat/long grids)
 - No pole singularities
 - Matches your `IcosahedronGeometry` force field
@@ -781,7 +785,8 @@ export class GameRenderer {
 2. **Asteroids**: Already in planet local space (children of planet group)
 3. **Bullets**: Also in planet local space (will be children of planet group)
 4. **Transforms per frame**: Just 1 (for the ship), regardless of object count
-```
+
+````
 
 ---
 
@@ -824,7 +829,7 @@ const collidableSize =
 
 // Total for 500 objects:
 // 500 × 44 + 8,000 ≈ 30 KB
-```
+````
 
 ---
 
@@ -833,11 +838,13 @@ const collidableSize =
 ### Bullet as Point vs Ray
 
 **Option 1: Point collision (simpler)**
+
 - Treat bullet as a point (angularRadius ≈ 0)
 - Check if point is within asteroid's angular radius
 - Miss fast-moving bullets (tunneling problem)
 
 **Option 2: Ray/segment collision (more accurate)**
+
 - Store bullet's previous position
 - Check if the arc from prev to current intersects any asteroid
 - Prevents tunneling for fast bullets
@@ -942,23 +949,27 @@ class SimpleLatitudeBands {
 ## Implementation Roadmap
 
 ### Phase 1: Basic Detection (No Spatial Hash)
+
 1. Add angular radius to AsteroidData
 2. Implement dot-product collision check
 3. Check ship vs all asteroids each frame
 4. Test with 12 asteroids
 
 ### Phase 2: Add Bullets
+
 1. Create Bullet class with position, velocity
 2. Spawn bullets at ship position + aim direction
 3. Move bullets along great circles
 4. Check bullets vs asteroids (brute force first)
 
 ### Phase 3: Spatial Partitioning
+
 1. Implement simple latitude bands
 2. Measure performance with 100+ asteroids
 3. If needed, upgrade to icosahedral grid
 
 ### Phase 4: Optimization
+
 1. Object pooling for bullets
 2. Batch collision responses
 3. Consider Web Workers for physics

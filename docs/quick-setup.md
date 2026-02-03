@@ -1,6 +1,6 @@
 # Quick Setup Guide
 
-## Full Stack (Recommended)
+## Full Stack (Docker)
 
 ```bash
 bun install                    # Install dependencies
@@ -9,26 +9,43 @@ docker compose up --build      # Start db, api, web
 
 Access at `http://localhost:5173`
 
+**Note**: Docker builds cache code into images. Use `docker compose up --build` after code changes, or use Development Mode below for hot reload.
+
 ---
 
-## Development Mode (DB in Docker, code locally)
+## Development Mode (Recommended for coding)
+
+### Option A: DB + API in Docker, Web locally (best for frontend work)
+
+```bash
+docker compose up db api -d    # Start database and API
+cd apps/web && bun run dev     # Start web with hot reload
+```
+
+### Option B: DB in Docker, API + Web locally (full hot reload)
 
 ```bash
 docker compose up db -d        # Start only database
-cd apps/api && bun run migrate # Apply migrations
+bun run db:migrate             # Apply migrations (from root)
 bun run dev                    # Start api + web with hot reload
 ```
+
+Access at `http://localhost:5173`
 
 ---
 
 ## Database
 
 ### Apply Migrations
+
 ```bash
-cd apps/api && bun run migrate
+bun run db:migrate             # From root (recommended)
+# OR
+cd apps/api && bun run migrate # From apps/api
 ```
 
 ### Seed Test Data
+
 ```bash
 cd apps/api && bun run src/db/seed.ts
 ```
@@ -36,11 +53,13 @@ cd apps/api && bun run src/db/seed.ts
 Creates 51 users, matches, friendships, achievements, etc.
 
 **Test credentials:**
+
 - `admin.user@example.com` / `Password123!`
 - `moderator.user@example.com` / `Password123!`
 - `alice.johnson@example.com` / `Password123!`
 
 ### Create Quick Test User
+
 ```bash
 cd apps/api
 bun -e "
@@ -61,6 +80,7 @@ process.exit(0);
 ```
 
 ### Access Database
+
 ```bash
 # psql
 docker compose exec db psql -U postgres -d ft_transcendence
@@ -78,6 +98,7 @@ cd apps/api && bunx drizzle-kit studio
 Rate limits are strict (3 per hour for register, 5 per 15min for login).
 
 **Fix:** Edit `apps/api/src/modules/auth/auth.controller.ts`:
+
 - Line 48 (register): change `max: 3` to `max: 100`
 - Line 74 (login): change `max: 5` to `max: 100`
 
@@ -88,6 +109,7 @@ error: lockfile had changes, but lockfile is frozen
 ```
 
 **Fix:** Update lockfile locally first:
+
 ```bash
 bun install
 docker compose up --build
@@ -100,6 +122,7 @@ error: Workspace dependency "@ft/supercluster" not found
 ```
 
 **Fix:** Ensure Dockerfiles include the package. In `apps/web/Dockerfile` and `apps/api/Dockerfile`, add:
+
 ```dockerfile
 COPY packages/supercluster/package.json ./packages/supercluster/
 ```
@@ -116,17 +139,28 @@ docker compose up db -d
 ### Migrations run but no tables
 
 Database port not exposed. Force recreate:
+
 ```bash
 docker compose down
 docker compose up db -d --force-recreate
 cd apps/api && bun run migrate
 ```
 
-### Reset everything
+### Stop containers (keep data)
 
 ```bash
-docker compose down -v           # -v removes volumes (deletes data)
-docker compose up --build
-cd apps/api && bun run migrate
-cd apps/api && bun run src/db/seed.ts
+docker compose down              # Stops containers, keeps DB volume
 ```
+
+Your database data (users, etc.) is preserved. Just `docker compose up` to restart.
+
+### Reset everything (delete DB)
+
+```bash
+docker compose down -v           # -v removes volumes (DELETES ALL DATA)
+docker compose up --build -d     # Rebuild and start fresh
+bun run db:migrate               # Apply migrations
+cd apps/api && bun run src/db/seed.ts  # Seed test data (optional)
+```
+
+**Warning**: `-v` deletes the postgres volume. All users, matches, etc. are gone.

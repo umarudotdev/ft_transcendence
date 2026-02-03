@@ -21,15 +21,15 @@ SuperCluster uses **Client-side Prediction with Server Reconciliation** - the in
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                        SHARED CODE                                       │
-│              (packages/supercluster/src/engine/)                         │
+│                        SHARED CODE                                      │
+│              (packages/supercluster/src/engine/)                        │
 ├─────────────────────────────────────────────────────────────────────────┤
-│  - Physics simulation (movement on sphere)                               │
-│  - Collision detection                                                   │
-│  - Input processing                                                      │
-│  - Game rules                                                            │
-│                                                                          │
-│  Used by BOTH client (prediction) and server (authoritative)             │
+│  - Physics simulation (movement on sphere)                              │
+│  - Collision detection                                                  │
+│  - Input processing                                                     │
+│  - Game rules                                                           │
+│                                                                         │
+│  Used by BOTH client (prediction) and server (authoritative)            │
 └─────────────────────────────────────────────────────────────────────────┘
               │                                         │
               ▼                                         ▼
@@ -55,22 +55,22 @@ SuperCluster uses **Client-side Prediction with Server Reconciliation** - the in
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ CLIENT                                                                   │
+│ CLIENT                                                                  │
 ├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  Player presses W key                                                    │
-│       │                                                                  │
-│       ├──► Store input with sequence number                              │
+│                                                                         │
+│  Player presses W key                                                   │
+│       │                                                                 │
+│       ├──► Store input with sequence number                             │
 │       │    inputBuffer.push({ seq: 1234, keys: {...}, aimAngle: 1.57 }) │
-│       │                                                                  │
-│       ├──► Send to server immediately                                    │
+│       │                                                                 │
+│       ├──► Send to server immediately                                   │
 │       │    ws.send({ type: "input", sequence: 1234, ... })              │
-│       │                                                                  │
-│       └──► Apply locally (PREDICTION)                                    │
-│            - Update ship position                                        │
-│            - Rotate planet                                               │
-│            - Visual feedback is INSTANT                                  │
-│                                                                          │
+│       │                                                                 │
+│       └──► Apply locally (PREDICTION)                                   │
+│            - Update ship position                                       │
+│            - Rotate planet                                              │
+│            - Visual feedback is INSTANT                                 │
+│                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -78,24 +78,24 @@ SuperCluster uses **Client-side Prediction with Server Reconciliation** - the in
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ SERVER                                                                   │
+│ SERVER                                                                  │
 ├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  Receive input from client                                               │
-│       │                                                                  │
-│       ├──► Validate input                                                │
-│       │    - Is movement speed reasonable?                               │
-│       │    - Is fire rate within limits?                                 │
-│       │    - Is timestamp reasonable?                                    │
-│       │                                                                  │
-│       ├──► Apply to authoritative game state                             │
-│       │    - Update ship position                                        │
-│       │    - Process shooting                                            │
-│       │    - Check collisions                                            │
-│       │                                                                  │
-│       └──► Include in next state broadcast                               │
-│            - Attach last processed sequence number                       │
-│                                                                          │
+│                                                                         │
+│  Receive input from client                                              │
+│       │                                                                 │
+│       ├──► Validate input                                               │
+│       │    - Is movement speed reasonable?                              │
+│       │    - Is fire rate within limits?                                │
+│       │    - Is timestamp reasonable?                                   │
+│       │                                                                 │
+│       ├──► Apply to authoritative game state                            │
+│       │    - Update ship position                                       │
+│       │    - Process shooting                                           │
+│       │    - Check collisions                                           │
+│       │                                                                 │
+│       └──► Include in next state broadcast                              │
+│            - Attach last processed sequence number                      │
+│                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -103,21 +103,21 @@ SuperCluster uses **Client-side Prediction with Server Reconciliation** - the in
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ SERVER (every tick - 60 Hz)                                              │
+│ SERVER (every tick - 60 Hz)                                             │
 ├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  For each connected client:                                              │
-│       │                                                                  │
-│       └──► Send game state                                               │
-│            {                                                             │
-│                type: "state",                                            │
-│                tick: 5678,                                               │
+│                                                                         │
+│  For each connected client:                                             │
+│       │                                                                 │
+│       └──► Send game state                                              │
+│            {                                                            │
+│                type: "state",                                           │
+│                tick: 5678,                                              │
 │                lastProcessedInput: 1234,  // For reconciliation         │
-│                players: { ... },                                         │
-│                projectiles: [ ... ],                                     │
-│                enemies: [ ... ]           // Co-op mode                  │
-│            }                                                             │
-│                                                                          │
+│                players: { ... },                                        │
+│                projectiles: [ ... ],                                    │
+│                enemies: [ ... ]           // Co-op mode                 │
+│            }                                                            │
+│                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -125,24 +125,24 @@ SuperCluster uses **Client-side Prediction with Server Reconciliation** - the in
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ CLIENT                                                                   │
+│ CLIENT                                                                  │
 ├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  Receive server state (lastProcessedInput: 1234)                         │
-│       │                                                                  │
-│       ├──► ALWAYS accept server state as truth                           │
-│       │    localState = serverState                                      │
-│       │                                                                  │
-│       ├──► Remove acknowledged inputs from buffer                        │
+│                                                                         │
+│  Receive server state (lastProcessedInput: 1234)                        │
+│       │                                                                 │
+│       ├──► ALWAYS accept server state as truth                          │
+│       │    localState = serverState                                     │
+│       │                                                                 │
+│       ├──► Remove acknowledged inputs from buffer                       │
 │       │    inputBuffer = inputBuffer.filter(i => i.seq > 1234)          │
-│       │                                                                  │
-│       └──► Re-apply unacknowledged inputs (prediction)                   │
-│            for (input of inputBuffer) {                                  │
-│                applyInput(localState, input)                             │
-│            }                                                             │
-│                                                                          │
-│  Result: Client shows predicted state, but server state is foundation    │
-│                                                                          │
+│       │                                                                 │
+│       └──► Re-apply unacknowledged inputs (prediction)                  │
+│            for (input of inputBuffer) {                                 │
+│                applyInput(localState, input)                            │
+│            }                                                            │
+│                                                                         │
+│  Result: Client shows predicted state, but server state is foundation   │
+│                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -228,6 +228,7 @@ Tick 1 → Tick 2 → Tick 3 → Tick 4 → ...
 ```
 
 Each tick:
+
 1. Process received inputs
 2. Update physics (movement, projectiles)
 3. Check collisions
@@ -238,6 +239,7 @@ Each tick:
 State is sent every tick (60 packets/second per client).
 
 For 1v1, this is fine:
+
 - 2 players × 60 packets/second = 120 packets/second total
 - Each state message ~500-1000 bytes
 - Total bandwidth: ~60-120 KB/second (minimal)
@@ -253,6 +255,7 @@ Since network rate = tick rate, no interpolation needed between server states.
 ## Interpolation
 
 When client receives server state, it may differ slightly from predicted state due to:
+
 - Network latency variations
 - Floating point differences
 - Server corrections
@@ -291,11 +294,11 @@ function smoothstep(t: number): number {
 
 ### When to Snap vs Interpolate
 
-| Difference | Action |
-|------------|--------|
-| Small (< 5 units) | Interpolate smoothly |
+| Difference         | Action                                     |
+| ------------------ | ------------------------------------------ |
+| Small (< 5 units)  | Interpolate smoothly                       |
 | Large (> 20 units) | Snap immediately (likely teleport/respawn) |
-| Medium | Interpolate faster (~50ms) |
+| Medium             | Interpolate faster (~50ms)                 |
 
 ---
 
@@ -375,21 +378,21 @@ function validatePosition(position: SphericalPosition): boolean {
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                           1v1 MODE                                       │
+│                           1v1 MODE                                      │
 ├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  Players: 2                                                              │
-│  Objective: Shoot opponent, avoid being shot                             │
-│                                                                          │
-│  State includes:                                                         │
-│  - Both players' ships                                                   │
-│  - All projectiles                                                       │
-│  - Per-player score                                                      │
-│                                                                          │
-│  Collision detection:                                                    │
-│  - Projectile vs opponent ship                                           │
-│  - Ship vs ship (optional bump)                                          │
-│                                                                          │
+│                                                                         │
+│  Players: 2                                                             │
+│  Objective: Shoot opponent, avoid being shot                            │
+│                                                                         │
+│  State includes:                                                        │
+│  - Both players' ships                                                  │
+│  - All projectiles                                                      │
+│  - Per-player score                                                     │
+│                                                                         │
+│  Collision detection:                                                   │
+│  - Projectile vs opponent ship                                          │
+│  - Ship vs ship (optional bump)                                         │
+│                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -397,24 +400,24 @@ function validatePosition(position: SphericalPosition): boolean {
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                          CO-OP MODE                                      │
+│                          CO-OP MODE                                     │
 ├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│  Players: 2                                                              │
-│  Objective: Survive waves of enemies together                            │
-│                                                                          │
-│  State includes:                                                         │
-│  - Both players' ships                                                   │
-│  - All projectiles                                                       │
-│  - All enemies (asteroids, chasers, shooters)                            │
-│  - Shared score                                                          │
-│  - Wave number                                                           │
-│                                                                          │
-│  Collision detection:                                                    │
-│  - Projectile vs enemy                                                   │
-│  - Enemy vs player ship                                                  │
-│  - Friendly fire? (configurable)                                         │
-│                                                                          │
+│                                                                         │
+│  Players: 2                                                             │
+│  Objective: Survive waves of enemies together                           │
+│                                                                         │
+│  State includes:                                                        │
+│  - Both players' ships                                                  │
+│  - All projectiles                                                      │
+│  - All enemies (asteroids, chasers, shooters)                           │
+│  - Shared score                                                         │
+│  - Wave number                                                          │
+│                                                                         │
+│  Collision detection:                                                   │
+│  - Projectile vs enemy                                                  │
+│  - Enemy vs player ship                                                 │
+│  - Friendly fire? (configurable)                                        │
+│                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -476,12 +479,12 @@ function onPong(pongTime: number) {
 
 Show connection quality indicator:
 
-| Latency | Quality | Color |
-|---------|---------|-------|
-| < 50ms | Excellent | Green |
-| 50-100ms | Good | Yellow |
-| 100-200ms | Fair | Orange |
-| > 200ms | Poor | Red |
+| Latency   | Quality   | Color  |
+| --------- | --------- | ------ |
+| < 50ms    | Excellent | Green  |
+| 50-100ms  | Good      | Yellow |
+| 100-200ms | Fair      | Orange |
+| > 200ms   | Poor      | Red    |
 
 ---
 

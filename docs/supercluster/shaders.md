@@ -37,15 +37,15 @@ void main() {
 
 ### Key Differences from C
 
-| Feature | C | GLSL |
-|---------|---|------|
-| Vector types | Not built-in | `vec2`, `vec3`, `vec4` |
-| Matrix types | Not built-in | `mat2`, `mat3`, `mat4` |
-| Math functions | Need library | Built-in (`sin`, `cos`, `dot`, etc.) |
-| Pointers | Yes | No |
-| Strings | Yes | No |
-| Dynamic memory | Yes | No |
-| Runs on | CPU (sequential) | GPU (parallel) |
+| Feature        | C                | GLSL                                 |
+| -------------- | ---------------- | ------------------------------------ |
+| Vector types   | Not built-in     | `vec2`, `vec3`, `vec4`               |
+| Matrix types   | Not built-in     | `mat2`, `mat3`, `mat4`               |
+| Math functions | Need library     | Built-in (`sin`, `cos`, `dot`, etc.) |
+| Pointers       | Yes              | No                                   |
+| Strings        | Yes              | No                                   |
+| Dynamic memory | Yes              | No                                   |
+| Runs on        | CPU (sequential) | GPU (parallel)                       |
 
 ### Built-in Types
 
@@ -206,11 +206,11 @@ vWorldPosition = (0, 0, 0)            vWorldPosition = (10, 0, 0)
 
 ### Summary Table
 
-| Keyword | Direction | Scope | Example Use |
-|---------|-----------|-------|-------------|
-| `uniform` | JS → GPU | All vertices/pixels | Color, opacity, camera position |
-| `attribute` | Geometry → Vertex | Per vertex | Position, normal, UV |
-| `varying` | Vertex → Fragment | Interpolated per pixel | World position, custom data |
+| Keyword     | Direction         | Scope                  | Example Use                     |
+| ----------- | ----------------- | ---------------------- | ------------------------------- |
+| `uniform`   | JS → GPU          | All vertices/pixels    | Color, opacity, camera position |
+| `attribute` | Geometry → Vertex | Per vertex             | Position, normal, UV            |
+| `varying`   | Vertex → Fragment | Interpolated per pixel | World position, custom data     |
 
 ---
 
@@ -509,10 +509,10 @@ console.log('WebGL 2:', renderer.capabilities.isWebGL2);
 
 ### Version Differences
 
-| WebGL | GLSL Version | Syntax |
-|-------|--------------|--------|
-| 1.0 | GLSL ES 1.00 | `attribute`, `varying`, `gl_FragColor` |
-| 2.0 | GLSL ES 3.00 | `in`, `out`, custom output names |
+| WebGL | GLSL Version | Syntax                                 |
+| ----- | ------------ | -------------------------------------- |
+| 1.0   | GLSL ES 1.00 | `attribute`, `varying`, `gl_FragColor` |
+| 2.0   | GLSL ES 3.00 | `in`, `out`, custom output names       |
 
 Three.js uses GLSL 1.00 syntax by default for compatibility. Most browsers support WebGL 2.0 now.
 

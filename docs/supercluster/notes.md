@@ -21,6 +21,7 @@ After discussion, decided on this structure:
   - lil-gui debug tools
 
 This separation ensures:
+
 1. Server can import types without pulling in Three.js
 2. Client-side prediction can reuse server physics logic
 3. Clear dependency boundaries
@@ -30,6 +31,7 @@ This separation ensures:
 ## Three-Layer Sphere Structure
 
 Decided on 3 concentric spheres:
+
 1. **Game Sphere** (radius=100, invisible) - where ship and all game objects actually move
 2. **Force-field** (radius=95) - visible wireframe with custom fading shader
 3. **Planet** (radius=70) - solid blue sphere, the actual planet surface
@@ -41,10 +43,12 @@ This gives nice visual depth and separation.
 ## Coordinate System
 
 Using spherical coordinates (phi, theta) to track positions on the sphere surface.
+
 - **phi**: polar angle from Y-axis (0 to π) - 0=north pole, π=south pole
 - **theta**: azimuthal angle in XZ plane (0 to 2π)
 
 Conversion to Cartesian:
+
 ```typescript
 x = radius * sin(phi) * cos(theta)
 y = radius * cos(phi)
@@ -118,12 +122,12 @@ z = sin(phi) * sin(theta)
 
 ### Trade-offs
 
-| Aspect | Spherical Only | Quaternion + Unit Vector |
-|--------|----------------|--------------------------|
-| Pole crossing | Broken | Smooth |
-| Memory | 2 floats | 7 floats (4 + 3) |
-| Collision check | Convert first | Direct dot product |
-| Server sync | Native | Convert when needed |
+| Aspect          | Spherical Only | Quaternion + Unit Vector |
+| --------------- | -------------- | ------------------------ |
+| Pole crossing   | Broken         | Smooth                   |
+| Memory          | 2 floats       | 7 floats (4 + 3)         |
+| Collision check | Convert first  | Direct dot product       |
+| Server sync     | Native         | Convert when needed      |
 
 ---
 
@@ -132,6 +136,7 @@ z = sin(phi) * sin(theta)
 The force field uses a custom GLSL shader to fade lines based on their orientation relative to the camera.
 
 For comprehensive documentation on:
+
 - GLSL language basics
 - Vertex and Fragment shaders
 - Three.js ShaderMaterial
@@ -149,12 +154,14 @@ The ship has **two independent angles**:
 ### 1. Direction Angle (WASD Input)
 
 Controls where the ship tip points. Updated based on movement input:
+
 - W = 0° (forward)
 - W+D = 45° (forward-right)
 - D = 90° (right)
 - etc.
 
 **Smooth rotation:** Ship direction lerps toward target angle using exponential smoothing:
+
 ```typescript
 // Lerp factor based on speed and deltaTime
 const lerpFactor = 1 - Math.exp(-rotationSpeed * deltaTime);
@@ -224,12 +231,14 @@ The `onMount` callback only runs on the client, but cleanup in `onDestroy` can r
 SuperCluster uses **Client-side Prediction with Server Reconciliation** for multiplayer gameplay.
 
 Key concepts:
+
 - **Server is authoritative** - Server's game state is the "truth"
 - **Client predicts locally** - Immediate visual feedback, no input lag
 - **Reconciliation** - Client accepts server state and re-applies unacknowledged inputs
 - **60 Hz tick rate** - Server updates 60 times per second
 
 For comprehensive documentation on:
+
 - Data flow diagrams
 - Message formats (InputMessage, StateMessage)
 - Tick rate and network rate
@@ -293,6 +302,7 @@ velocity.applyQuaternion(quat);  // Keep velocity tangent
 ### Instance Matrix Composition
 
 Each asteroid's transform is composed from:
+
 1. **Position**: Unit vector × gameSphereRadius
 2. **Orientation**: Basis matrix from (tangent, bitangent, normal)
 3. **Self-rotation**: Euler angles applied after orientation
@@ -321,6 +331,7 @@ This means when the planet rotates (via WASD), asteroids automatically rotate wi
 ## Performance Notes
 
 ### When to Use InstancedMesh/BatchedMesh
+
 - **InstancedMesh**: For many identical objects (asteroids, same enemy type)
   - Single draw call for all instances
   - Each instance has its own transform matrix
@@ -335,12 +346,14 @@ This means when the planet rotates (via WASD), asteroids automatically rotate wi
 ### Quick Reference
 
 **Unit Vector**: A vector with length = 1. All positions on the sphere are stored as unit vectors.
+
 ```typescript
 position = (x, y, z) where x² + y² + z² = 1
 worldPosition = position × gameSphereRadius
 ```
 
 **Angular Radius**: How much of the sphere an object covers (in radians).
+
 ```typescript
 angularRadius = visualRadius / gameSphereRadius
 // Size 1 asteroid (diameter=2): ≈ 0.01 rad
@@ -348,6 +361,7 @@ angularRadius = visualRadius / gameSphereRadius
 ```
 
 **Collision Check**: Two objects collide when `dot product > cos(sum of radii)`
+
 ```typescript
 const dot = posA.dot(posB);
 const threshold = Math.cos(radiusA + radiusB);
@@ -355,6 +369,7 @@ if (dot > threshold) // Collision!
 ```
 
 **Coordinate Spaces**: Keep everything in planet local space for efficiency.
+
 - Asteroids: planet local (no transform needed)
 - Bullets: planet local (no transform needed)
 - Ship: transform once from world to planet local

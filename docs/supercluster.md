@@ -53,29 +53,30 @@ Players control a spaceship on the surface of a spherical planet, shooting enemi
 
 The game world consists of three concentric spheres:
 
-| Layer | Radius | Description |
-|-------|--------|-------------|
-| Game Sphere | 100 | Invisible - where ship and objects move |
-| Force-Field | 95 | Green wireframe grid (protective shield) |
-| Planet | 70 | Solid blue sphere (actual surface) |
+| Layer       | Radius | Description                              |
+| ----------- | ------ | ---------------------------------------- |
+| Game Sphere | 100    | Invisible - where ship and objects move  |
+| Force-Field | 95     | Green wireframe grid (protective shield) |
+| Planet      | 70     | Solid blue sphere (actual surface)       |
 
 ### Movement Paradigm
 
 Instead of moving the ship around the sphere:
+
 - The **ship stays fixed** in the camera view
 - The **planet rotates** under the ship based on input
 - This simplifies camera logic and creates a natural feel
 
 ## Controls
 
-| Input | Action |
-|-------|--------|
-| W / ↑ | Move forward |
+| Input | Action        |
+| ----- | ------------- |
+| W / ↑ | Move forward  |
 | S / ↓ | Move backward |
-| A / ← | Move left |
-| D / → | Move right |
+| A / ← | Move left     |
+| D / → | Move right    |
 | Mouse | Aim direction |
-| Click | Shoot |
+| Click | Shoot         |
 
 ## Coordinate System
 
@@ -192,6 +193,7 @@ cd apps/web && bun run dev
 ## Roadmap
 
 ### Iteration 1: Basic Scene ✓
+
 - [x] Package structure
 - [x] Planet renderer (3-layer spheres)
 - [x] Ship renderer (triangle on sphere surface)
@@ -201,18 +203,21 @@ cd apps/web && bun run dev
 - [x] Input handling (keyboard, mouse)
 
 ### Iteration 2: Server Game Logic
+
 - [ ] Game engine (physics, state)
 - [ ] Collision detection
 - [ ] Shooting mechanics
 - [ ] WebSocket gateway
 
 ### Iteration 3: Enemies & Gameplay
+
 - [ ] Enemy spawning
 - [ ] Enemy types (asteroid, chaser, shooter)
 - [ ] Wave system
 - [ ] Scoring
 
 ### Iteration 4: Polish
+
 - [ ] Visual effects (explosions, particles)
 - [ ] Sound effects
 - [ ] UI overlay (score, lives, wave)
@@ -222,11 +227,11 @@ cd apps/web && bun run dev
 
 When `debug={true}` is passed to the component, a lil-gui panel appears with controls for:
 
-| Folder | Controls |
-|--------|----------|
-| Renderer | Show Axes, Force Field opacity (front/back) |
-| Game Config | Sphere radii (game, force-field, planet) |
-| Ship Position | Phi, Theta, Aim Angle |
+| Folder        | Controls                                    |
+| ------------- | ------------------------------------------- |
+| Renderer      | Show Axes, Force Field opacity (front/back) |
+| Game Config   | Sphere radii (game, force-field, planet)    |
+| Ship Position | Phi, Theta, Aim Angle                       |
 
 ## Additional Documentation
 

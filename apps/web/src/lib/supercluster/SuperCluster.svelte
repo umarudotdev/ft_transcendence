@@ -177,12 +177,15 @@
 	// ========================================================================
 	// Input Handling
 	// ========================================================================
+	let mousePressed = false;
+
 	function setupInputHandlers(): void {
 		if (!browser) return;
 		window.addEventListener('keydown', handleKeyDown);
 		window.addEventListener('keyup', handleKeyUp);
 		canvas.addEventListener('mousemove', handleMouseMove);
-		canvas.addEventListener('click', handleClick);
+		canvas.addEventListener('mousedown', handleMouseDown);
+		canvas.addEventListener('mouseup', handleMouseUp);
 	}
 
 	function cleanupInputHandlers(): void {
@@ -190,7 +193,8 @@
 		window.removeEventListener('keydown', handleKeyDown);
 		window.removeEventListener('keyup', handleKeyUp);
 		canvas?.removeEventListener('mousemove', handleMouseMove);
-		canvas?.removeEventListener('click', handleClick);
+		canvas?.removeEventListener('mousedown', handleMouseDown);
+		canvas?.removeEventListener('mouseup', handleMouseUp);
 	}
 
 	function handleKeyDown(event: KeyboardEvent): void {
@@ -297,8 +301,14 @@
 		renderer?.setAimAngle(aimAngle);
 	}
 
-	function handleClick(_event: MouseEvent): void {
-		sendMessage({ type: 'shoot' });
+	function handleMouseDown(_event: MouseEvent): void {
+		mousePressed = true;
+		renderer?.setMousePressed(true);
+	}
+
+	function handleMouseUp(_event: MouseEvent): void {
+		mousePressed = false;
+		renderer?.setMousePressed(false);
 	}
 
 	// ========================================================================

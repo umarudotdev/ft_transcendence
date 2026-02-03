@@ -4,7 +4,7 @@
 // ============================================================================
 
 // Types
-export * from './types';
+export * from "./types";
 
 // Engine (for client-side prediction and server game logic)
 // TODO: export * from './engine';

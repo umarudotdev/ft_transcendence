@@ -34,8 +34,8 @@ export class BulletRenderer {
   private readonly _quaternion = new THREE.Quaternion();
   private readonly _scale = new THREE.Vector3(1, 2, 1); // Scale 2x in Y for ellipse
 
-  // Camera position in planet local space (for billboard orientation)
-  private cameraLocalPosition = new THREE.Vector3(0, 0, 200);
+  // Camera position in world space (for billboard orientation)
+  private cameraPosition = new THREE.Vector3(0, 0, 200);
 
   constructor(gameConfig: GameConfig, bulletConfig: BulletConfig) {
     this.gameConfig = gameConfig;
@@ -160,10 +160,10 @@ export class BulletRenderer {
   // ========================================================================
 
   /**
-   * Set camera position in planet local space (for billboard orientation)
+   * Set camera position in world space (for billboard orientation)
    */
-  setCameraLocalPosition(position: THREE.Vector3): void {
-    this.cameraLocalPosition.copy(position);
+  setCameraPosition(position: THREE.Vector3): void {
+    this.cameraPosition.copy(position);
   }
 
   /**
@@ -237,12 +237,13 @@ export class BulletRenderer {
   /**
    * Update the instance matrix for a specific bullet
    * Uses billboard orientation so bullets always face the camera
+   * Bullets are in world space (not planet-relative)
    */
   private updateInstanceMatrix(index: number): void {
     const bullet = this.bullets[index];
     const radius = this.gameConfig.gameSphereRadius;
 
-    // Position on sphere surface
+    // Position on sphere surface in world space
     this._position.copy(bullet.position).multiplyScalar(radius);
 
     // Billboard orientation: plane faces camera while length follows velocity
@@ -252,9 +253,9 @@ export class BulletRenderer {
 
     const forward = bullet.velocity.clone().normalize();
 
-    // Direction from bullet to camera (in planet local space)
+    // Direction from bullet to camera (in world space)
     const toCamera = new THREE.Vector3()
-      .subVectors(this.cameraLocalPosition, this._position)
+      .subVectors(this.cameraPosition, this._position)
       .normalize();
 
     // Right = cross(forward, toCamera), gives us the width direction

@@ -1,7 +1,8 @@
 import type { GameConfig } from "@ft/supercluster";
+import * as THREE from "three";
 
 import type { AsteroidData, AsteroidRenderer } from "./Asteroid";
-import type { BulletData, BulletRenderer } from "./Bullet";
+import type { BulletRenderer } from "./Bullet";
 
 // ============================================================================
 // Collision System
@@ -34,21 +35,32 @@ export class CollisionSystem {
 
   /**
    * Check all bullet-asteroid collisions
-   * Both bullets and asteroids are in planet local space, so no transformation needed
+   * Bullets are in world space, asteroids are in planet local space
+   * @param planetQuaternion - Current rotation of planet to transform bullets
    * @returns Array of collision events
    */
   checkBulletAsteroidCollisions(
     bullets: BulletRenderer,
-    asteroids: AsteroidRenderer
+    asteroids: AsteroidRenderer,
+    planetQuaternion: THREE.Quaternion
   ): CollisionEvent[] {
     const collisions: CollisionEvent[] = [];
     const bulletList = bullets.getBullets();
     const asteroidList = asteroids.getAsteroids();
 
+    // Calculate inverse transform once (world → planet local)
+    const worldToPlanet = planetQuaternion.clone().invert();
+
     // Brute force: check every bullet against every asteroid
     for (const bullet of bulletList) {
+      // Transform bullet position from world space to planet local space
+      const bulletLocalPos = bullet.position
+        .clone()
+        .applyQuaternion(worldToPlanet)
+        .normalize();
+
       for (const asteroid of asteroidList) {
-        if (this.checkBulletAsteroidCollision(bullet, asteroid)) {
+        if (this.checkPositionCollision(bulletLocalPos, asteroid)) {
           collisions.push({
             type: "bullet-asteroid",
             bulletId: bullet.id,
@@ -64,11 +76,11 @@ export class CollisionSystem {
   }
 
   /**
-   * Check collision between a single bullet and asteroid
+   * Check collision between a position (bullet in local space) and asteroid
    * Uses dot product for angular distance on sphere surface
    */
-  private checkBulletAsteroidCollision(
-    bullet: BulletData,
+  private checkPositionCollision(
+    bulletLocalPosition: THREE.Vector3,
     asteroid: AsteroidData
   ): boolean {
     // Calculate angular radii
@@ -76,7 +88,7 @@ export class CollisionSystem {
     const asteroidRadius = this.getAsteroidAngularRadius(asteroid);
 
     // Dot product gives us cos(angular distance)
-    const dot = bullet.position.dot(asteroid.position);
+    const dot = bulletLocalPosition.dot(asteroid.position);
 
     // Collision threshold = cos(sum of radii)
     // cos is decreasing, so collision when dot > threshold

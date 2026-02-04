@@ -252,17 +252,26 @@ export class DebugGui {
     folder
       .add(this.state, "gameSphereRadius", 50, 200, 5)
       .name("Game Sphere R")
-      .onChange(() => this.applyGameConfig());
+      .onChange((value: number) => {
+        // Affects gameplay (ship/bullet/asteroid positions)
+        this.renderer.setGameSphereRadius(value);
+      });
 
     folder
       .add(this.state, "forceFieldRadius", 50, 200, 5)
-      .name("Force Field R")
-      .onChange(() => this.applyGameConfig());
+      .name("Force Field R (Visual)")
+      .onChange((value: number) => {
+        // Visual only - doesn't affect gameplay
+        this.renderer.setForceFieldRadius(value);
+      });
 
     folder
       .add(this.state, "planetRadius", 30, 150, 5)
-      .name("Planet R")
-      .onChange(() => this.applyGameConfig());
+      .name("Planet R (Visual)")
+      .onChange((value: number) => {
+        // Visual only - doesn't affect gameplay
+        this.renderer.setPlanetRadius(value);
+      });
 
     folder.close();
   }
@@ -288,19 +297,6 @@ export class DebugGui {
       .onChange(() => this.updateShipPosition());
 
     folder.open();
-  }
-
-  private applyGameConfig(): void {
-    // GameRenderer.updateConfig expects full config, so we provide all values
-    this.renderer.updateConfig({
-      gameSphereRadius: this.state.gameSphereRadius,
-      forceFieldRadius: this.state.forceFieldRadius,
-      planetRadius: this.state.planetRadius,
-      shipSpeed: 0.02,
-      projectileSpeed: 0.05,
-      projectileLifetime: 120,
-      tickRate: 60,
-    });
   }
 
   private updateShipPosition(): void {

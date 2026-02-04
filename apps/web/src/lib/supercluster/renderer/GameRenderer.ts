@@ -20,6 +20,16 @@ import { ShipRenderer } from "./Ship";
 // ============================================================================
 // Game Renderer
 // Main rendering class that manages all visual elements
+//
+// ARCHITECTURE:
+// - Ship: Fixed at (0,0,gameSphereRadius) in world space, planet rotates under it
+// - Bullets: World space (scene children) - absolute velocity independent of ship movement
+// - Asteroids: Planet local space (planet children) - rotate with planet
+// - Collisions: Transform bullets from world→planet space for detection
+//
+// This architecture ensures bullets always travel at absolute speed regardless
+// of ship movement direction, fixing the reference frame issue where bullets
+// appeared slower when moving in the same direction as the ship.
 // ============================================================================
 export class GameRenderer {
   private renderer: THREE.WebGLRenderer;
@@ -119,9 +129,10 @@ export class GameRenderer {
     this.asteroids = new AsteroidRenderer(config);
     this.planet.group.add(this.asteroids.group);
 
-    // Create bullets (as children of planet, same coordinate space as asteroids)
+    // Create bullets in WORLD SPACE (not planet children)
+    // This ensures bullets travel at absolute speed regardless of ship movement
     this.bullets = new BulletRenderer(config, bulletConfig);
-    this.planet.group.add(this.bullets.group);
+    this.scene.add(this.bullets.group);
 
     // Create collision system
     this.collisionSystem = new CollisionSystem(config);
@@ -277,18 +288,19 @@ export class GameRenderer {
     // Reset cooldown
     this.shootCooldownTimer = this.bulletConfig.cooldown;
 
-    // Get ship position in planet local space
-    // Ship is visually at (0, 0, radius), but planet has rotated
-    // We need the position relative to the planet's current rotation
-    const shipLocalPosition = this.getShipPositionInPlanetSpace();
+    // Ship is at (0, 0, 1) in world space (normalized unit vector)
+    const shipWorldPosition = new THREE.Vector3(0, 0, 1);
 
-    // Calculate aim direction as tangent vector in planet local space
-    const aimDirection = this.getAimDirectionInPlanetSpace(shipLocalPosition);
+    // Calculate aim direction in world space (on the XY tangent plane)
+    // aimAngle: 0 = forward (-Y), positive = clockwise
+    const aimX = Math.sin(this.shipAimAngle);
+    const aimY = -Math.cos(this.shipAimAngle);
+    const aimWorldDirection = new THREE.Vector3(aimX, aimY, 0).normalize();
 
     // Spawn bullets with spread
     this.bullets.spawnSpread(
-      shipLocalPosition,
-      aimDirection,
+      shipWorldPosition,
+      aimWorldDirection,
       this.bulletConfig.rayCount,
       this.bulletConfig.spreadAngle
     );
@@ -296,43 +308,6 @@ export class GameRenderer {
     return true;
   }
 
-  /**
-   * Get ship position as unit vector in planet local space
-   * The ship is visually fixed, but the planet rotates under it.
-   * To spawn bullets in planet space, we need the inverse transform.
-   */
-  private getShipPositionInPlanetSpace(): THREE.Vector3 {
-    // Ship visual position is always (0, 0, 1) normalized
-    // To get planet-local position, apply inverse of planet rotation
-    const shipWorld = new THREE.Vector3(0, 0, 1);
-    const inverseRotation = this.planetQuaternion.clone().invert();
-    return shipWorld.applyQuaternion(inverseRotation).normalize();
-  }
-
-  /**
-   * Get aim direction as unit tangent vector in planet local space
-   */
-  private getAimDirectionInPlanetSpace(
-    shipLocalPosition: THREE.Vector3
-  ): THREE.Vector3 {
-    // In ship's visual space, aim direction is on the XY plane
-    // aimAngle: 0 = forward (-Y), positive = clockwise
-    const aimX = Math.sin(this.shipAimAngle);
-    const aimY = -Math.cos(this.shipAimAngle);
-
-    // This is in world/camera space. Transform to planet local space.
-    const aimWorld = new THREE.Vector3(aimX, aimY, 0);
-    const inverseRotation = this.planetQuaternion.clone().invert();
-    const aimLocal = aimWorld.applyQuaternion(inverseRotation);
-
-    // Ensure it's tangent to sphere (project out any radial component)
-    const radialComponent = shipLocalPosition
-      .clone()
-      .multiplyScalar(aimLocal.dot(shipLocalPosition));
-    aimLocal.sub(radialComponent).normalize();
-
-    return aimLocal;
-  }
 
   // ========================================================================
   // Collision Detection
@@ -340,12 +315,15 @@ export class GameRenderer {
 
   /**
    * Check and handle all collisions
+   * Transforms bullets from world space to planet space for collision detection
    */
   private checkCollisions(): void {
     // Check bullet-asteroid collisions
+    // Pass planetQuaternion to transform bullets from world to planet space
     const collisions = this.collisionSystem.checkBulletAsteroidCollisions(
       this.bullets,
-      this.asteroids
+      this.asteroids,
+      this.planetQuaternion
     );
 
     // Handle each collision
@@ -391,11 +369,8 @@ export class GameRenderer {
       this.asteroids.update(deltaTime);
 
       // Update bullets (movement and lifetime)
-      // First, calculate camera position in planet local space for billboard orientation
-      const cameraLocalPos = this.camera.position
-        .clone()
-        .applyQuaternion(this.planetQuaternion.clone().invert());
-      this.bullets.setCameraLocalPosition(cameraLocalPos);
+      // Bullets are in world space, so use camera world position directly
+      this.bullets.setCameraPosition(this.camera.position);
       this.bullets.update(deltaTime);
 
       // Check collisions and handle them
@@ -576,6 +551,40 @@ export class GameRenderer {
 
     // Update camera position when sphere radius changes
     this.setupCamera();
+  }
+
+  /**
+   * Update only the game sphere radius (affects gameplay)
+   * Preserves all other config values
+   */
+  setGameSphereRadius(radius: number): void {
+    this.config.gameSphereRadius = radius;
+    this.planet.updateConfig(this.config);
+    this.ship.updateConfig(this.config);
+    this.asteroids.updateConfig(this.config);
+    this.bullets.updateGameConfig(this.config);
+    this.collisionSystem.updateConfig(this.config);
+    this.setupCamera();
+  }
+
+  /**
+   * Update only planet visual radius (cosmetic only, doesn't affect gameplay)
+   */
+  setPlanetRadius(radius: number): void {
+    this.config.planetRadius = radius;
+    this.planet.setPlanetRadius(radius);
+  }
+
+  /**
+   * Update only force field visual radius (cosmetic only, doesn't affect gameplay)
+   */
+  setForceFieldRadius(radius: number): void {
+    this.config.forceFieldRadius = radius;
+    this.planet.setForceFieldRadius(radius);
+  }
+
+  getConfig(): GameConfig {
+    return { ...this.config };
   }
 
   updateRendererConfig(rendererConfig: RendererConfig): void {

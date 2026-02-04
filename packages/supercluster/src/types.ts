@@ -135,9 +135,14 @@ export type ServerMessage =
 // Configuration
 // ============================================================================
 export interface GameConfig {
-  gameSphereRadius: number;
-  forceFieldRadius: number;
-  planetRadius: number;
+  // GAME LAYER: Affects gameplay mechanics (ship/bullet/asteroid positions)
+  gameSphereRadius: number; // Radius where gameplay happens (ship, bullets, asteroids)
+
+  // VISUAL LAYER: Purely cosmetic, doesn't affect gameplay
+  forceFieldRadius: number; // Visual radius of force field (should be < gameSphereRadius)
+  planetRadius: number; // Visual radius of planet (should be < forceFieldRadius)
+
+  // GAME MECHANICS: All speeds are ANGULAR (radians), independent of sphere radius
   shipSpeed: number; // Angular velocity (rad/tick)
   projectileSpeed: number; // Angular velocity (rad/tick)
   projectileLifetime: number; // Ticks
@@ -145,11 +150,14 @@ export interface GameConfig {
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
-  gameSphereRadius: 100,
-  forceFieldRadius: 95,
-  planetRadius: 70,
-  shipSpeed: 0.01,
-  projectileSpeed: 0.05,
+  // Game layer
+  gameSphereRadius: 100, // Game sphere (where ship/bullets/asteroids exist)
+  // Visual layer (cosmetic only)
+  forceFieldRadius: 95, // Force field appears inside game sphere
+  planetRadius: 70, // Planet core inside force field
+  // Game mechanics (angular speeds)
+  shipSpeed: 0.01, // Radians per tick
+  projectileSpeed: 0.05, // Radians per tick
   projectileLifetime: 120, // 2 seconds at 60 ticks
   tickRate: 60,
 };

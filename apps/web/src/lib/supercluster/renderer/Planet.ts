@@ -134,6 +134,31 @@ export class PlanetRenderer {
   }
 
   // ========================================================================
+  // Visual-Only Radius Updates (don't affect gameplay config)
+  // ========================================================================
+
+  /**
+   * Update only the planet visual radius (cosmetic only)
+   */
+  setPlanetRadius(radius: number): void {
+    this.config.planetRadius = radius;
+    this.planet.geometry.dispose();
+    this.planet.geometry = new THREE.SphereGeometry(
+      radius,
+      SPHERE_SEGMENTS,
+      SPHERE_SEGMENTS
+    );
+  }
+
+  /**
+   * Update only the force field visual radius (cosmetic only)
+   */
+  setForceFieldRadius(radius: number): void {
+    this.config.forceFieldRadius = radius;
+    this.rebuildForceField();
+  }
+
+  // ========================================================================
   // Rebuild Geometry
   // ========================================================================
   private rebuild(): void {

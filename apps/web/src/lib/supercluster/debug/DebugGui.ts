@@ -17,37 +17,37 @@ export class DebugGui {
   private renderer: GameRenderer;
 
   // Bindable state (lil-gui needs object properties)
+  // All values initialized from config in constructor (single source of truth)
   private state = {
-    // Renderer config
+    // Renderer config (initialized from actual config in constructor)
     showAxes: false,
-    forceFieldOpacityFront: 0.35,
-    forceFieldOpacityBack: 0.0,
-    forceFieldDetail: 10,
-    forceFieldColor: "#00ffaa",
+    forceFieldOpacityFront: 0,
+    forceFieldOpacityBack: 0,
+    forceFieldDetail: 0,
+    forceFieldColor: "#000000",
 
-    // Ship visual config
-    shipRotationSpeed: 10,
-    aimDotSize: 1,
-    aimDotColor: "#ffff00",
-    aimDotOrbitRadius: 4,
+    // Ship visual config (initialized from actual config in constructor)
+    shipRotationSpeed: 0,
+    aimDotSize: 0,
+    aimDotColor: "#000000",
+    aimDotOrbitRadius: 0,
 
-    // Game config
-    gameSphereRadius: 100,
-    forceFieldRadius: 95,
-    planetRadius: 70,
+    // Game config (initialized from actual config in constructor)
+    gameSphereRadius: 0,
+    forceFieldRadius: 0,
+    planetRadius: 0,
 
     // Ship position (for debugging)
     shipPhi: Math.PI / 2,
     shipTheta: Math.PI / 2,
     shipAimAngle: 0,
 
-    // Bullet config
-    bulletLifetime: 2.0,
-    bulletSpeed: 1.0,
-    bulletCooldown: 0.2,
-    bulletRayCount: 1,
-    bulletSpreadAngle: 10, // In degrees for easier GUI
-    bulletColor: "#ffaa00",
+    // Bullet config (initialized from actual config in constructor)
+    bulletLifetime: 0,
+    bulletCooldown: 0,
+    bulletRayCount: 0,
+    bulletSpreadAngle: 0,
+    bulletColor: "#000000",
     bulletCount: 0, // Read-only display
     asteroidCount: 0, // Read-only display
   };
@@ -59,6 +59,36 @@ export class DebugGui {
   constructor(renderer: GameRenderer, container?: HTMLElement) {
     this.renderer = renderer;
     this.gui = new GUI({ container, title: "SuperCluster Debug" });
+
+    // Initialize ALL state from actual config (single source of truth)
+    const config = this.renderer.getConfig();
+    const rendererConfig = this.renderer.getRendererConfig();
+    const bulletConfig = this.renderer.getBulletConfig();
+
+    // Renderer config
+    this.state.showAxes = rendererConfig.showAxes;
+    this.state.forceFieldOpacityFront = rendererConfig.forceFieldOpacity;
+    this.state.forceFieldOpacityBack = rendererConfig.forceFieldBackFade;
+    this.state.forceFieldDetail = this.renderer.getForceFieldDetail();
+    this.state.forceFieldColor = `#${this.renderer.getForceFieldColor().toString(16).padStart(6, "0")}`;
+
+    // Ship visual config
+    this.state.shipRotationSpeed = rendererConfig.shipRotationSpeed;
+    this.state.aimDotSize = rendererConfig.aimDotSize;
+    this.state.aimDotColor = `#${rendererConfig.aimDotColor.toString(16).padStart(6, "0")}`;
+    this.state.aimDotOrbitRadius = rendererConfig.aimDotOrbitRadius;
+
+    // Game config
+    this.state.gameSphereRadius = config.gameSphereRadius;
+    this.state.forceFieldRadius = config.forceFieldRadius;
+    this.state.planetRadius = config.planetRadius;
+
+    // Bullet config (projectile mechanics from GameConfig, visual from BulletConfig)
+    this.state.bulletLifetime = config.projectile.lifetime / config.tickRate; // ticks → sec
+    this.state.bulletCooldown = config.projectile.cooldown / config.tickRate; // ticks → sec
+    this.state.bulletRayCount = config.projectile.rayCount;
+    this.state.bulletSpreadAngle = (config.projectile.spreadAngle * 180) / Math.PI; // rad → deg
+    this.state.bulletColor = `#${bulletConfig.color.toString(16).padStart(6, "0")}`;
 
     this.setupRendererControls();
     this.setupForceFieldControls();
@@ -162,40 +192,39 @@ export class DebugGui {
   private setupBulletControls(): void {
     const folder = this.gui.addFolder("Bullets");
 
+    const config = this.renderer.getConfig();
+
     folder
       .add(this.state, "bulletLifetime", 0.5, 5, 0.1)
       .name("Lifetime (s)")
       .onChange((value: number) => {
-        this.renderer.updateBulletConfig({ lifetime: value });
+        // Convert seconds to ticks for GameConfig
+        this.renderer.updateProjectileConfig({ lifetime: value * config.tickRate });
       });
 
-    folder
-      .add(this.state, "bulletSpeed", 0.5, 10, 0.5)
-      .name("Speed")
-      .onChange((value: number) => {
-        this.renderer.updateBulletConfig({ speed: value });
-      });
+    // Note: Bullet speed comes from GameConfig.projectile.speed (server-authoritative)
 
     folder
       .add(this.state, "bulletCooldown", 0.05, 1, 0.05)
       .name("Cooldown (s)")
       .onChange((value: number) => {
-        this.renderer.updateBulletConfig({ cooldown: value });
+        // Convert seconds to ticks for GameConfig
+        this.renderer.updateProjectileConfig({ cooldown: value * config.tickRate });
       });
 
     folder
       .add(this.state, "bulletRayCount", 1, 5, 1)
       .name("Ray Count")
       .onChange((value: number) => {
-        this.renderer.updateBulletConfig({ rayCount: value });
+        this.renderer.updateProjectileConfig({ rayCount: value });
       });
 
     folder
       .add(this.state, "bulletSpreadAngle", 0, 45, 1)
       .name("Spread (deg)")
       .onChange((value: number) => {
-        // Convert degrees to radians
-        this.renderer.updateBulletConfig({
+        // Convert degrees to radians for GameConfig
+        this.renderer.updateProjectileConfig({
           spreadAngle: (value * Math.PI) / 180,
         });
       });
@@ -322,12 +351,14 @@ export class DebugGui {
     this.state.forceFieldOpacityFront = rendererConfig.forceFieldOpacity;
     this.state.forceFieldOpacityBack = rendererConfig.forceFieldBackFade;
 
+    // Projectile mechanics from GameConfig (convert ticks → seconds for GUI)
+    this.state.bulletLifetime = config.projectile.lifetime / config.tickRate;
+    this.state.bulletCooldown = config.projectile.cooldown / config.tickRate;
+    this.state.bulletRayCount = config.projectile.rayCount;
+    this.state.bulletSpreadAngle = (config.projectile.spreadAngle * 180) / Math.PI;
+
+    // Visual config from BulletConfig
     if (bulletConfig) {
-      this.state.bulletLifetime = bulletConfig.lifetime;
-      this.state.bulletSpeed = bulletConfig.speed;
-      this.state.bulletCooldown = bulletConfig.cooldown;
-      this.state.bulletRayCount = bulletConfig.rayCount;
-      this.state.bulletSpreadAngle = (bulletConfig.spreadAngle * 180) / Math.PI;
       this.state.bulletColor = `#${bulletConfig.color.toString(16).padStart(6, "0")}`;
     }
 

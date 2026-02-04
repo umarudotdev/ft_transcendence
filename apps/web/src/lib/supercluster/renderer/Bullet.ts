@@ -79,17 +79,20 @@ export class BulletRenderer {
    * @param velocity - Unit vector direction tangent to sphere
    */
   spawn(position: THREE.Vector3, velocity: THREE.Vector3): BulletData | null {
-    // Check max bullets limit
+    // Check max bullets limit (client performance cap)
     if (this.bullets.length >= this.bulletConfig.maxBullets) {
       // Remove oldest bullet to make room
       this.bullets.shift();
     }
 
+    // Convert lifetime from ticks to seconds
+    const lifetimeSeconds = this.gameConfig.projectile.lifetime / this.gameConfig.tickRate;
+
     const bullet: BulletData = {
       id: this.nextId++,
       position: position.clone().normalize(),
       velocity: velocity.clone().normalize(),
-      lifetime: this.bulletConfig.lifetime,
+      lifetime: lifetimeSeconds,
     };
 
     this.bullets.push(bullet);
@@ -102,19 +105,17 @@ export class BulletRenderer {
   }
 
   /**
-   * Spawn multiple bullets in a spread pattern
+   * Spawn multiple bullets in a spread pattern (uses GameConfig for mechanics)
    * @param position - Ship position as unit vector
    * @param aimDirection - Center aim direction as unit vector tangent to sphere
-   * @param rayCount - Number of bullets (1-5)
-   * @param spreadAngle - Angle between rays in radians
    */
   spawnSpread(
     position: THREE.Vector3,
-    aimDirection: THREE.Vector3,
-    rayCount: number,
-    spreadAngle: number
+    aimDirection: THREE.Vector3
   ): BulletData[] {
     const spawned: BulletData[] = [];
+    const rayCount = this.gameConfig.projectile.rayCount;
+    const spreadAngle = this.gameConfig.projectile.spreadAngle;
 
     if (rayCount === 1) {
       // Single bullet, straight ahead
@@ -208,11 +209,14 @@ export class BulletRenderer {
 
   /**
    * Move a bullet along the sphere surface in its velocity direction
-   * Same math as asteroid movement
+   * Uses GameConfig.projectile.speed (rad/tick) converted to rad/sec
    */
   private moveOnSphere(bullet: BulletData, deltaTime: number): void {
+    // Convert projectile speed from rad/tick to rad/sec
+    const speedRadPerSec = this.gameConfig.projectile.speed * this.gameConfig.tickRate;
+
     // Angular distance to move this frame
-    const angle = this.bulletConfig.speed * deltaTime;
+    const angle = speedRadPerSec * deltaTime;
 
     if (angle === 0) return;
 

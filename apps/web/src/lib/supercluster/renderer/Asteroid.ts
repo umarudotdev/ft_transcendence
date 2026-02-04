@@ -101,8 +101,11 @@ export class AsteroidRenderer {
     const rotationSpeedX = (Math.random() - 0.5) * 2; // -1 to 1 rad/s
     const rotationSpeedY = (Math.random() - 0.5) * 2;
 
-    // Random movement speed (smaller = faster for gameplay balance)
-    const speed = 0.1 + Math.random() * 0.2; // 0.1 to 0.3 rad/s
+    // Random movement speed from config (rad/tick → rad/sec)
+    const speedInRadPerTick =
+      this.config.asteroidSpeedMin +
+      Math.random() * (this.config.asteroidSpeedMax - this.config.asteroidSpeedMin);
+    const speed = speedInRadPerTick * this.config.tickRate; // Convert to rad/sec
 
     const asteroid: AsteroidData = {
       id: this.nextId++,
@@ -346,7 +349,7 @@ export class AsteroidRenderer {
         rotationX: Math.random() * Math.PI * 2,
         rotationY: Math.random() * Math.PI * 2,
         size: newSize,
-        speed: asteroid.speed * 1.3, // Smaller = faster
+        speed: asteroid.speed * 1.3, // Smaller pieces move 30% faster
         isHit: false,
         hitTimer: 0,
       };

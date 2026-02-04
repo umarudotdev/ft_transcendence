@@ -142,10 +142,22 @@ export interface GameConfig {
   forceFieldRadius: number; // Visual radius of force field (should be < gameSphereRadius)
   planetRadius: number; // Visual radius of planet (should be < forceFieldRadius)
 
-  // GAME MECHANICS: All speeds are ANGULAR (radians), independent of sphere radius
+  // GAME MECHANICS: All speeds in rad/tick (server-authoritative, client converts to rad/sec)
   shipSpeed: number; // Angular velocity (rad/tick)
-  projectileSpeed: number; // Angular velocity (rad/tick)
-  projectileLifetime: number; // Ticks
+
+  // Projectile mechanics (nested for organization)
+  projectile: {
+    speed: number; // Angular velocity (rad/tick)
+    lifetime: number; // Ticks before despawn
+    cooldown: number; // Ticks between shots
+    rayCount: number; // Number of bullets per shot (1-5)
+    spreadAngle: number; // Angle between rays in radians
+  };
+
+  // Asteroid mechanics
+  asteroidSpeedMin: number; // Minimum asteroid angular velocity (rad/tick)
+  asteroidSpeedMax: number; // Maximum asteroid angular velocity (rad/tick)
+
   tickRate: number; // Ticks per second (60)
 }
 
@@ -155,10 +167,19 @@ export const DEFAULT_CONFIG: GameConfig = {
   // Visual layer (cosmetic only)
   forceFieldRadius: 95, // Force field appears inside game sphere
   planetRadius: 70, // Planet core inside force field
-  // Game mechanics (angular speeds)
-  shipSpeed: 0.01, // Radians per tick
-  projectileSpeed: 0.05, // Radians per tick
-  projectileLifetime: 120, // 2 seconds at 60 ticks
+  // Game mechanics (angular speeds in rad/tick)
+  shipSpeed: 0.01, // 0.6 rad/sec at 60 ticks/sec
+  // Projectile mechanics
+  projectile: {
+    speed: 0.015, // 3.0 rad/sec at 60 ticks/sec
+    lifetime: 102, // 2 seconds at 60 ticks/sec
+    cooldown: 18, // 0.2 seconds at 60 ticks/sec (5 shots/sec)
+    rayCount: 1, // Single shot
+    spreadAngle: Math.PI / 18, // 10 degrees
+  },
+  // Asteroid mechanics
+  asteroidSpeedMin: 0.00167, // ~0.1 rad/sec at 60 ticks/sec
+  asteroidSpeedMax: 0.005, // ~0.3 rad/sec at 60 ticks/sec
   tickRate: 60,
 };
 
@@ -192,24 +213,15 @@ export const DEFAULT_RENDERER_CONFIG: RendererConfig = {
 };
 
 // ============================================================================
-// Bullet Config (Client-only, for local testing before networking)
+// Bullet Visual Config (Client-only visual preferences)
+// NOTE: All gameplay mechanics (speed, lifetime, cooldown, etc.) come from GameConfig
 // ============================================================================
 export interface BulletConfig {
-  lifetime: number; // Seconds before bullet disappears
-  speed: number; // Radians per second on sphere surface
-  cooldown: number; // Seconds between shots
-  rayCount: number; // Number of bullets per shot (1-5)
-  spreadAngle: number; // Angle between rays in radians (for multi-ray)
-  color: number; // Hex color (yellow/orange)
-  maxBullets: number; // Max bullets on screen (performance)
+  color: number; // Hex color (yellow/orange) - visual only
+  maxBullets: number; // Max bullets on screen (client performance limit)
 }
 
 export const DEFAULT_BULLET_CONFIG: BulletConfig = {
-  lifetime: 2.0, // 2 seconds
-  speed: 1.0, // Moderate travel speed
-  cooldown: 0.2, // 5 shots per second
-  rayCount: 1, // Single shot
-  spreadAngle: Math.PI / 18, // 10 degrees in radians
   color: 0xffaa00, // Orange-yellow
-  maxBullets: 100,
+  maxBullets: 100, // Performance cap for low-end devices
 };

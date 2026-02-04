@@ -285,8 +285,8 @@ export class GameRenderer {
       return false;
     }
 
-    // Reset cooldown
-    this.shootCooldownTimer = this.bulletConfig.cooldown;
+    // Reset cooldown (convert from ticks to seconds)
+    this.shootCooldownTimer = this.config.projectile.cooldown / this.config.tickRate;
 
     // Ship is at (0, 0, 1) in world space (normalized unit vector)
     const shipWorldPosition = new THREE.Vector3(0, 0, 1);
@@ -297,13 +297,8 @@ export class GameRenderer {
     const aimY = -Math.cos(this.shipAimAngle);
     const aimWorldDirection = new THREE.Vector3(aimX, aimY, 0).normalize();
 
-    // Spawn bullets with spread
-    this.bullets.spawnSpread(
-      shipWorldPosition,
-      aimWorldDirection,
-      this.bulletConfig.rayCount,
-      this.bulletConfig.spreadAngle
-    );
+    // Spawn bullets (spread/count from GameConfig)
+    this.bullets.spawnSpread(shipWorldPosition, aimWorldDirection);
 
     return true;
   }
@@ -391,7 +386,7 @@ export class GameRenderer {
 
   private updateLocalMovement(deltaTime: number): void {
     // Movement speed in radians per second
-    const speed = this.config.shipSpeed * 60; // Convert from per-tick to per-second
+    const speed = this.config.shipSpeed * this.config.tickRate; // Convert from per-tick to per-second
 
     // Check if any movement input is active
     const hasInput =
@@ -587,6 +582,10 @@ export class GameRenderer {
     return { ...this.config };
   }
 
+  getRendererConfig(): RendererConfig {
+    return { ...this.rendererConfig };
+  }
+
   updateRendererConfig(rendererConfig: RendererConfig): void {
     this.rendererConfig = rendererConfig;
     this.planet.updateRendererConfig(rendererConfig);
@@ -734,9 +733,21 @@ export class GameRenderer {
     return this.bulletConfig;
   }
 
+  /**
+   * Update bullet visual config (color, maxBullets)
+   */
   updateBulletConfig(config: Partial<BulletConfig>): void {
     Object.assign(this.bulletConfig, config);
     this.bullets.updateBulletConfig(this.bulletConfig);
+  }
+
+  /**
+   * Update projectile gameplay mechanics (speed, lifetime, cooldown, etc.)
+   * These are server-authoritative and affect gameplay balance
+   */
+  updateProjectileConfig(config: Partial<GameConfig['projectile']>): void {
+    Object.assign(this.config.projectile, config);
+    this.bullets.updateGameConfig(this.config);
   }
 
   setBulletColor(color: number): void {

@@ -43,16 +43,18 @@ export class DebugGui {
 
     // Bullet config
     bulletLifetime: 2.0,
-    bulletSpeed: 3.0,
+    bulletSpeed: 1.0,
     bulletCooldown: 0.2,
     bulletRayCount: 1,
     bulletSpreadAngle: 10, // In degrees for easier GUI
     bulletColor: "#ffaa00",
     bulletCount: 0, // Read-only display
+    asteroidCount: 0, // Read-only display
   };
 
-  // Interval ID for bullet count updates
+  // Interval IDs for count updates
   private bulletCountInterval: ReturnType<typeof setInterval> | null = null;
+  private asteroidCountInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(renderer: GameRenderer, container?: HTMLElement) {
     this.renderer = renderer;
@@ -62,6 +64,7 @@ export class DebugGui {
     this.setupForceFieldControls();
     this.setupShipVisualControls();
     this.setupBulletControls();
+    this.setupAsteroidControls();
     this.setupGameConfigControls();
     this.setupShipControls();
   }
@@ -225,6 +228,24 @@ export class DebugGui {
     folder.open();
   }
 
+  private setupAsteroidControls(): void {
+    const folder = this.gui.addFolder("Asteroids");
+
+    // Read-only asteroid count display - updated via interval
+    const countController = folder
+      .add(this.state, "asteroidCount")
+      .name("Active Asteroids")
+      .disable();
+
+    // Update asteroid count every 100ms
+    this.asteroidCountInterval = setInterval(() => {
+      this.state.asteroidCount = this.renderer.getAsteroidCount();
+      countController.updateDisplay();
+    }, 100);
+
+    folder.open();
+  }
+
   private setupGameConfigControls(): void {
     const folder = this.gui.addFolder("Game Config");
 
@@ -322,6 +343,10 @@ export class DebugGui {
     if (this.bulletCountInterval !== null) {
       clearInterval(this.bulletCountInterval);
       this.bulletCountInterval = null;
+    }
+    if (this.asteroidCountInterval !== null) {
+      clearInterval(this.asteroidCountInterval);
+      this.asteroidCountInterval = null;
     }
     this.gui.destroy();
   }

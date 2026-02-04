@@ -13,6 +13,7 @@ import * as THREE from "three";
 
 import { AsteroidRenderer } from "./Asteroid";
 import { BulletRenderer } from "./Bullet";
+import { CollisionSystem } from "./CollisionSystem";
 import { PlanetRenderer } from "./Planet";
 import { ShipRenderer } from "./Ship";
 
@@ -29,6 +30,7 @@ export class GameRenderer {
   private ship: ShipRenderer;
   private asteroids: AsteroidRenderer;
   private bullets: BulletRenderer;
+  private collisionSystem: CollisionSystem;
 
   private config: GameConfig;
   private rendererConfig: RendererConfig;
@@ -121,8 +123,16 @@ export class GameRenderer {
     this.bullets = new BulletRenderer(config, bulletConfig);
     this.planet.group.add(this.bullets.group);
 
-    // Spawn initial asteroids: 8 small (size 1), 4 large (size 2)
-    this.asteroids.spawnMultiple([1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2]);
+    // Create collision system
+    this.collisionSystem = new CollisionSystem(config);
+
+    // Spawn initial asteroids: 12 size 1, 8 size 2, 4 size 3, 2 size 4
+    this.asteroids.spawnMultiple([
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 12 size 1
+      2, 2, 2, 2, 2, 2, 2, 2, // 8 size 2
+      3, 3, 3, 3, // 4 size 3
+      4, 4, // 2 size 4
+    ]);
 
     // Initialize ship facing camera (on +Z side of sphere)
     // phi = PI/2 (equator), theta = PI/2 (facing +Z)
@@ -325,6 +335,30 @@ export class GameRenderer {
   }
 
   // ========================================================================
+  // Collision Detection
+  // ========================================================================
+
+  /**
+   * Check and handle all collisions
+   */
+  private checkCollisions(): void {
+    // Check bullet-asteroid collisions
+    const collisions = this.collisionSystem.checkBulletAsteroidCollisions(
+      this.bullets,
+      this.asteroids
+    );
+
+    // Handle each collision
+    for (const collision of collisions) {
+      // Remove the bullet
+      this.bullets.remove(collision.bulletId);
+
+      // Mark asteroid as hit - will turn red and break after 0.5s delay
+      this.asteroids.markAsHit(collision.asteroidId, 0.5);
+    }
+  }
+
+  // ========================================================================
   // Render Loop
   // ========================================================================
   start(): void {
@@ -363,6 +397,9 @@ export class GameRenderer {
         .applyQuaternion(this.planetQuaternion.clone().invert());
       this.bullets.setCameraLocalPosition(cameraLocalPos);
       this.bullets.update(deltaTime);
+
+      // Check collisions and handle them
+      this.checkCollisions();
 
       this.render();
     };
@@ -535,6 +572,7 @@ export class GameRenderer {
     this.ship.updateConfig(config);
     this.asteroids.updateConfig(config);
     this.bullets.updateGameConfig(config);
+    this.collisionSystem.updateConfig(config);
 
     // Update camera position when sphere radius changes
     this.setupCamera();
@@ -699,5 +737,12 @@ export class GameRenderer {
 
   clearBullets(): void {
     this.bullets.clear();
+  }
+
+  // ========================================================================
+  // Asteroid Controls
+  // ========================================================================
+  getAsteroidCount(): number {
+    return this.asteroids.getCount();
   }
 }

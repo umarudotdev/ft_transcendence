@@ -32,7 +32,7 @@ export class BulletRenderer {
   private readonly _matrix = new THREE.Matrix4();
   private readonly _position = new THREE.Vector3();
   private readonly _quaternion = new THREE.Quaternion();
-  private readonly _scale = new THREE.Vector3(1, 1, 1);
+  private readonly _scale = new THREE.Vector3(1, 2, 1); // Scale 2x in Y for ellipse
 
   // Camera position in planet local space (for billboard orientation)
   private cameraLocalPosition = new THREE.Vector3(0, 0, 200);
@@ -43,9 +43,9 @@ export class BulletRenderer {
 
     this.group = new THREE.Group();
 
-    // Create bullet geometry: flat plane (2D laser streak)
-    // PlaneGeometry(width, height) - width is perpendicular to velocity, height is along velocity
-    const geometry = new THREE.PlaneGeometry(0.5, 1.0);
+    // Create bullet geometry: ellipse (circle stretched in velocity direction)
+    // CircleGeometry(radius, segments) - will be stretched 2x in Y for ellipse
+    const geometry = new THREE.CircleGeometry(0.75, 16);
 
     // Create material with laser look (yellow-orange, emissive)
     const material = new THREE.MeshStandardMaterial({
@@ -265,7 +265,7 @@ export class BulletRenderer {
     const up = new THREE.Vector3().crossVectors(right, forward).normalize();
 
     // Build rotation matrix from basis vectors
-    // PlaneGeometry: XY plane, X = width, Y = height, Z = normal
+    // CircleGeometry: XY plane (scaled 2x in Y for ellipse), Z = normal
     const rotMatrix = new THREE.Matrix4().makeBasis(right, forward, up);
     this._quaternion.setFromRotationMatrix(rotMatrix);
 

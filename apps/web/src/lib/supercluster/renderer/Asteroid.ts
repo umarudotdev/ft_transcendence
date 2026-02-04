@@ -21,6 +21,9 @@ export interface AsteroidData {
   size: number;
   // Movement speed (radians per second on sphere surface)
   speed: number;
+  // Hit state tracking
+  isHit: boolean;
+  hitTimer: number; // Time remaining until break (in seconds)
 }
 
 // ============================================================================
@@ -45,7 +48,7 @@ export class AsteroidRenderer {
   // Size multipliers for asteroid visual size
   private readonly SIZE_MULTIPLIERS = [2, 4, 6, 8]; // size 1-4
 
-  constructor(config: GameConfig, maxAsteroids = 50) {
+  constructor(config: GameConfig, maxAsteroids = 100) {
     this.config = config;
 
     this.group = new THREE.Group();
@@ -111,6 +114,8 @@ export class AsteroidRenderer {
       rotationY: Math.random() * Math.PI * 2,
       size,
       speed,
+      isHit: false,
+      hitTimer: 0,
     };
 
     this.asteroids.push(asteroid);
@@ -160,8 +165,21 @@ export class AsteroidRenderer {
    * @param deltaTime - seconds since last update
    */
   update(deltaTime: number): void {
+    // Track asteroids to break (can't modify array while iterating)
+    const asteroidsToBreak: number[] = [];
+
     for (let i = 0; i < this.asteroids.length; i++) {
       const asteroid = this.asteroids[i];
+
+      // Handle hit timer
+      if (asteroid.isHit) {
+        asteroid.hitTimer -= deltaTime;
+        if (asteroid.hitTimer <= 0) {
+          // Time's up! Break the asteroid
+          asteroidsToBreak.push(asteroid.id);
+          continue; // Skip updating matrix for this asteroid
+        }
+      }
 
       // Update self-rotation
       asteroid.rotationX += asteroid.rotationSpeedX * deltaTime;
@@ -174,8 +192,19 @@ export class AsteroidRenderer {
       this.updateInstanceMatrix(i);
     }
 
-    // Tell Three.js that matrices have changed
+    // Break asteroids after loop completes
+    for (const id of asteroidsToBreak) {
+      this.breakAsteroid(id);
+    }
+
+    // Update instance count if asteroids were broken
+    this.instancedMesh.count = this.asteroids.length;
+
+    // Tell Three.js that matrices and colors have changed
     this.instancedMesh.instanceMatrix.needsUpdate = true;
+    if (this.instancedMesh.instanceColor) {
+      this.instancedMesh.instanceColor.needsUpdate = true;
+    }
   }
 
   /**
@@ -239,11 +268,32 @@ export class AsteroidRenderer {
 
     // Set instance matrix
     this.instancedMesh.setMatrixAt(index, this._matrix);
+
+    // Set color (red if hit, normal otherwise)
+    if (asteroid.isHit) {
+      this.instancedMesh.setColorAt(index, new THREE.Color(0xff0000)); // Red
+    } else {
+      this.instancedMesh.setColorAt(index, new THREE.Color(0xffffff)); // White (normal)
+    }
   }
 
   // ========================================================================
-  // Remove Asteroids
+  // Hit & Remove Asteroids
   // ========================================================================
+
+  /**
+   * Mark an asteroid as hit - it will turn red and break after delay
+   * @param id - Asteroid ID
+   * @param delay - Time in seconds before breaking (default 0.5s)
+   */
+  markAsHit(id: number, delay = 0.5): boolean {
+    const asteroid = this.asteroids.find((a) => a.id === id);
+    if (!asteroid || asteroid.isHit) return false;
+
+    asteroid.isHit = true;
+    asteroid.hitTimer = delay;
+    return true;
+  }
 
   /**
    * Remove an asteroid by ID
@@ -297,6 +347,8 @@ export class AsteroidRenderer {
         rotationY: Math.random() * Math.PI * 2,
         size: newSize,
         speed: asteroid.speed * 1.3, // Smaller = faster
+        isHit: false,
+        hitTimer: 0,
       };
 
       this.asteroids.push(newAsteroid);

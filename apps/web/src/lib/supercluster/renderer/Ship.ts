@@ -30,9 +30,9 @@ export class ShipRenderer {
     // Create triangle geometry for ship
     const geometry = this.createTriangleGeometry();
     const material = new THREE.MeshStandardMaterial({
-      color: 0x444444, // Dark grey
-      metalness: 0.8, // Metallic look
-      roughness: 0.2, // Slightly shiny
+      color: 0x888888, // Grey
+      metalness: 0, // No metallic
+      roughness: 0.8, // Matte finish
       side: THREE.DoubleSide,
     });
 

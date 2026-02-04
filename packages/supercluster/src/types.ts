@@ -198,7 +198,7 @@ export interface BulletConfig {
 
 export const DEFAULT_BULLET_CONFIG: BulletConfig = {
   lifetime: 2.0, // 2 seconds
-  speed: 3.0, // Fast travel
+  speed: 1.0, // Moderate travel speed
   cooldown: 0.2, // 5 shots per second
   rayCount: 1, // Single shot
   spreadAngle: Math.PI / 18, // 10 degrees in radians

@@ -20,27 +20,10 @@ export class DebugGui {
   // All values initialized from config in constructor (single source of truth)
   private state = {
     // Renderer config (initialized from actual config in constructor)
-    showAxes: false,
-    forceFieldOpacityFront: 0,
-    forceFieldOpacityBack: 0,
-    forceFieldDetail: 0,
     forceFieldColor: "#000000",
 
     // Ship visual config (initialized from actual config in constructor)
-    shipRotationSpeed: 0,
-    aimDotSize: 0,
     aimDotColor: "#000000",
-    aimDotOrbitRadius: 0,
-
-    // Game config (initialized from actual config in constructor)
-    gameSphereRadius: 0,
-    forceFieldRadius: 0,
-    planetRadius: 0,
-
-    // Ship position (for debugging)
-    shipPhi: Math.PI / 2,
-    shipTheta: Math.PI / 2,
-    shipAimAngle: 0,
 
     // Bullet config (initialized from actual config in constructor)
     bulletLifetime: 0,
@@ -66,61 +49,27 @@ export class DebugGui {
     const bulletConfig = this.renderer.getBulletConfig();
 
     // Renderer config
-    this.state.showAxes = rendererConfig.showAxes;
-    this.state.forceFieldOpacityFront = rendererConfig.forceFieldOpacity;
-    this.state.forceFieldOpacityBack = rendererConfig.forceFieldBackFade;
-    this.state.forceFieldDetail = this.renderer.getForceFieldDetail();
     this.state.forceFieldColor = `#${this.renderer.getForceFieldColor().toString(16).padStart(6, "0")}`;
 
     // Ship visual config
-    this.state.shipRotationSpeed = rendererConfig.shipRotationSpeed;
-    this.state.aimDotSize = rendererConfig.aimDotSize;
     this.state.aimDotColor = `#${rendererConfig.aimDotColor.toString(16).padStart(6, "0")}`;
-    this.state.aimDotOrbitRadius = rendererConfig.aimDotOrbitRadius;
-
-    // Game config
-    this.state.gameSphereRadius = config.gameSphereRadius;
-    this.state.forceFieldRadius = config.forceFieldRadius;
-    this.state.planetRadius = config.planetRadius;
 
     // Bullet config (projectile mechanics from GameConfig, visual from BulletConfig)
     this.state.bulletLifetime = config.projectile.lifetime / config.tickRate; // ticks → sec
     this.state.bulletCooldown = config.projectile.cooldown / config.tickRate; // ticks → sec
     this.state.bulletRayCount = config.projectile.rayCount;
-    this.state.bulletSpreadAngle = (config.projectile.spreadAngle * 180) / Math.PI; // rad → deg
+    this.state.bulletSpreadAngle =
+      (config.projectile.spreadAngle * 180) / Math.PI; // rad → deg
     this.state.bulletColor = `#${bulletConfig.color.toString(16).padStart(6, "0")}`;
 
-    this.setupRendererControls();
     this.setupForceFieldControls();
     this.setupShipVisualControls();
     this.setupBulletControls();
     this.setupAsteroidControls();
-    this.setupGameConfigControls();
-    this.setupShipControls();
-  }
-
-  private setupRendererControls(): void {
-    const folder = this.gui.addFolder("Renderer");
-
-    folder
-      .add(this.state, "showAxes")
-      .name("Show Axes")
-      .onChange((value: boolean) => {
-        this.renderer.setAxesVisible(value);
-      });
-
-    folder.open();
   }
 
   private setupForceFieldControls(): void {
     const folder = this.gui.addFolder("Force Field");
-
-    folder
-      .add(this.state, "forceFieldDetail", 0, 10, 1)
-      .name("Detail (0-10)")
-      .onChange((value: number) => {
-        this.renderer.setForceFieldDetail(value);
-      });
 
     folder
       .addColor(this.state, "forceFieldColor")
@@ -131,26 +80,6 @@ export class DebugGui {
         this.renderer.setForceFieldColor(colorNum);
       });
 
-    folder
-      .add(this.state, "forceFieldOpacityFront", 0, 1, 0.05)
-      .name("Opacity Front")
-      .onChange(() => {
-        this.renderer.setForceFieldOpacity(
-          this.state.forceFieldOpacityFront,
-          this.state.forceFieldOpacityBack
-        );
-      });
-
-    folder
-      .add(this.state, "forceFieldOpacityBack", 0, 1, 0.05)
-      .name("Opacity Back")
-      .onChange(() => {
-        this.renderer.setForceFieldOpacity(
-          this.state.forceFieldOpacityFront,
-          this.state.forceFieldOpacityBack
-        );
-      });
-
     folder.open();
   }
 
@@ -158,32 +87,11 @@ export class DebugGui {
     const folder = this.gui.addFolder("Ship & Aim");
 
     folder
-      .add(this.state, "shipRotationSpeed", 1, 30, 1)
-      .name("Rotation Speed")
-      .onChange((value: number) => {
-        this.renderer.setShipRotationSpeed(value);
-      });
-
-    folder
-      .add(this.state, "aimDotSize", 0.5, 5, 0.5)
-      .name("Aim Dot Size")
-      .onChange((value: number) => {
-        this.renderer.setAimDotSize(value);
-      });
-
-    folder
       .addColor(this.state, "aimDotColor")
       .name("Aim Dot Color")
       .onChange((value: string) => {
         const colorNum = Number.parseInt(value.replace("#", ""), 16);
         this.renderer.setAimDotColor(colorNum);
-      });
-
-    folder
-      .add(this.state, "aimDotOrbitRadius", 1, 30, 1)
-      .name("Aim Dot Orbit")
-      .onChange((value: number) => {
-        this.renderer.setAimDotOrbitRadius(value);
       });
 
     folder.open();
@@ -199,7 +107,9 @@ export class DebugGui {
       .name("Lifetime (s)")
       .onChange((value: number) => {
         // Convert seconds to ticks for GameConfig
-        this.renderer.updateProjectileConfig({ lifetime: value * config.tickRate });
+        this.renderer.updateProjectileConfig({
+          lifetime: value * config.tickRate,
+        });
       });
 
     // Note: Bullet speed comes from GameConfig.projectile.speed (server-authoritative)
@@ -209,7 +119,9 @@ export class DebugGui {
       .name("Cooldown (s)")
       .onChange((value: number) => {
         // Convert seconds to ticks for GameConfig
-        this.renderer.updateProjectileConfig({ cooldown: value * config.tickRate });
+        this.renderer.updateProjectileConfig({
+          cooldown: value * config.tickRate,
+        });
       });
 
     folder
@@ -275,87 +187,18 @@ export class DebugGui {
     folder.open();
   }
 
-  private setupGameConfigControls(): void {
-    const folder = this.gui.addFolder("Game Config");
-
-    folder
-      .add(this.state, "gameSphereRadius", 50, 200, 5)
-      .name("Game Sphere R")
-      .onChange((value: number) => {
-        // Affects gameplay (ship/bullet/asteroid positions)
-        this.renderer.setGameSphereRadius(value);
-      });
-
-    folder
-      .add(this.state, "forceFieldRadius", 50, 200, 5)
-      .name("Force Field R (Visual)")
-      .onChange((value: number) => {
-        // Visual only - doesn't affect gameplay
-        this.renderer.setForceFieldRadius(value);
-      });
-
-    folder
-      .add(this.state, "planetRadius", 30, 150, 5)
-      .name("Planet R (Visual)")
-      .onChange((value: number) => {
-        // Visual only - doesn't affect gameplay
-        this.renderer.setPlanetRadius(value);
-      });
-
-    folder.close();
-  }
-
-  private setupShipControls(): void {
-    const folder = this.gui.addFolder("Ship State");
-
-    // Phi/Theta control the planet rotation (ship is visually fixed)
-    // This simulates where the ship is "logically" on the planet surface
-    folder
-      .add(this.state, "shipPhi", 0.01, Math.PI - 0.01, 0.05)
-      .name("Phi (rotates planet X)")
-      .onChange(() => this.updateShipPosition());
-
-    folder
-      .add(this.state, "shipTheta", 0, Math.PI * 2, 0.05)
-      .name("Theta (rotates planet Y)")
-      .onChange(() => this.updateShipPosition());
-
-    folder
-      .add(this.state, "shipAimAngle", -Math.PI, Math.PI, 0.05)
-      .name("Aim Angle")
-      .onChange(() => this.updateShipPosition());
-
-    folder.open();
-  }
-
-  private updateShipPosition(): void {
-    // This requires access to ship directly - we'll add a method to GameRenderer
-    this.renderer.updateShipDebug({
-      position: { phi: this.state.shipPhi, theta: this.state.shipTheta },
-      aimAngle: this.state.shipAimAngle,
-      lives: 3,
-      invincible: false,
-    });
-  }
-
   // Sync GUI state from external changes
   syncFromConfig(
     config: GameConfig,
-    rendererConfig: RendererConfig,
+    _rendererConfig: RendererConfig,
     bulletConfig?: BulletConfig
   ): void {
-    this.state.gameSphereRadius = config.gameSphereRadius;
-    this.state.forceFieldRadius = config.forceFieldRadius;
-    this.state.planetRadius = config.planetRadius;
-    this.state.showAxes = rendererConfig.showAxes;
-    this.state.forceFieldOpacityFront = rendererConfig.forceFieldOpacity;
-    this.state.forceFieldOpacityBack = rendererConfig.forceFieldBackFade;
-
     // Projectile mechanics from GameConfig (convert ticks → seconds for GUI)
     this.state.bulletLifetime = config.projectile.lifetime / config.tickRate;
     this.state.bulletCooldown = config.projectile.cooldown / config.tickRate;
     this.state.bulletRayCount = config.projectile.rayCount;
-    this.state.bulletSpreadAngle = (config.projectile.spreadAngle * 180) / Math.PI;
+    this.state.bulletSpreadAngle =
+      (config.projectile.spreadAngle * 180) / Math.PI;
 
     // Visual config from BulletConfig
     if (bulletConfig) {

@@ -259,41 +259,6 @@ export class ShipRenderer {
     (this.aimOrbit.material as THREE.LineBasicMaterial).color.setHex(color);
   }
 
-  setAimDotSize(size: number): void {
-    this.aimDot.geometry.dispose();
-    this.aimDot.geometry = new THREE.SphereGeometry(size, 16, 16);
-  }
-
-  setAimDotOrbitRadius(radius: number): void {
-    this.rendererConfig.aimDotOrbitRadius = radius;
-    // Rebuild orbit circle with new radius
-    this.rebuildAimOrbit();
-  }
-
-  private rebuildAimOrbit(): void {
-    const segments = 64;
-    const radius = this.rendererConfig.aimDotOrbitRadius;
-    const points: THREE.Vector3[] = [];
-
-    for (let i = 0; i <= segments; i++) {
-      const angle = (i / segments) * Math.PI * 2;
-      points.push(
-        new THREE.Vector3(
-          Math.sin(angle) * radius,
-          -Math.cos(angle) * radius,
-          0
-        )
-      );
-    }
-
-    this.aimOrbit.geometry.dispose();
-    this.aimOrbit.geometry = new THREE.BufferGeometry().setFromPoints(points);
-  }
-
-  setRotationSpeed(speed: number): void {
-    this.rendererConfig.shipRotationSpeed = speed;
-  }
-
   // ========================================================================
   // Cleanup
   // ========================================================================

@@ -10,8 +10,8 @@ import type { BulletRenderer } from "./Bullet";
 // ============================================================================
 
 export interface CollisionEvent {
-  type: "bullet-asteroid";
-  bulletId: number;
+  type: "bullet-asteroid" | "ship-asteroid";
+  bulletId?: number;
   asteroidId: number;
 }
 
@@ -76,6 +76,47 @@ export class CollisionSystem {
   }
 
   /**
+   * Check ship-asteroid collisions
+   * Ship is in world space, asteroids are in planet local space
+   * @param shipPosition - Ship position in world space (unit vector)
+   * @param planetQuaternion - Current rotation of planet to transform ship
+   * @returns Array of collision events (first collision only)
+   */
+  checkShipAsteroidCollisions(
+    shipPosition: THREE.Vector3,
+    asteroids: AsteroidRenderer,
+    planetQuaternion: THREE.Quaternion
+  ): CollisionEvent[] {
+    const collisions: CollisionEvent[] = [];
+    const asteroidList = asteroids.getAsteroids();
+
+    // Transform ship from world space to planet local space
+    const worldToPlanet = planetQuaternion.clone().invert();
+    const shipLocal = shipPosition.clone().applyQuaternion(worldToPlanet).normalize();
+
+    // Ship collision radius (visual size ~3 units)
+    const shipRadius = 3 / this.config.gameSphereRadius;
+
+    // Check ship against all asteroids
+    for (const asteroid of asteroidList) {
+      const asteroidRadius = this.getAsteroidAngularRadius(asteroid);
+      const dot = shipLocal.dot(asteroid.position);
+      const threshold = Math.cos(shipRadius + asteroidRadius);
+
+      if (dot > threshold) {
+        collisions.push({
+          type: "ship-asteroid",
+          asteroidId: asteroid.id,
+        });
+        // Ship can only hit one asteroid per frame
+        break;
+      }
+    }
+
+    return collisions;
+  }
+
+  /**
    * Check collision between a position (bullet in local space) and asteroid
    * Uses dot product for angular distance on sphere surface
    */
@@ -124,8 +165,12 @@ export class CollisionSystem {
     const visualRadius = visualDiameter / 2;
     const sphereRadius = this.config.gameSphereRadius;
 
+    // Add collision padding (1.3x = 30% larger hit area than visual)
+    const collisionPadding = 1.3;
+    const collisionRadius = visualRadius * collisionPadding;
+
     // For small angles: angular radius ≈ visual radius / sphere radius
     // For accurate calculation: Math.atan(visualRadius / sphereRadius)
-    return visualRadius / sphereRadius;
+    return collisionRadius / sphereRadius;
   }
 }

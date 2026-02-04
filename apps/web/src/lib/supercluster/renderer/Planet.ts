@@ -106,56 +106,13 @@ export class PlanetRenderer {
       rendererConfig.forceFieldBackFade;
   }
 
-  setAxesVisible(visible: boolean): void {
-    this.axes.visible = visible;
-  }
-
-  setForceFieldOpacity(front: number, back: number): void {
-    this.forceFieldMaterial.uniforms["uOpacityFront"]!.value = front;
-    this.forceFieldMaterial.uniforms["uOpacityBack"]!.value = back;
-  }
-
-  setForceFieldDetail(detail: number): void {
-    this.forceFieldDetail = detail;
-    this.rebuildForceField();
-  }
-
   setForceFieldColor(color: number): void {
     this.forceFieldColor.setHex(color);
     this.forceFieldMaterial.uniforms["uColor"]!.value = this.forceFieldColor;
   }
 
-  getForceFieldDetail(): number {
-    return this.forceFieldDetail;
-  }
-
   getForceFieldColor(): number {
     return this.forceFieldColor.getHex();
-  }
-
-  // ========================================================================
-  // Visual-Only Radius Updates (don't affect gameplay config)
-  // ========================================================================
-
-  /**
-   * Update only the planet visual radius (cosmetic only)
-   */
-  setPlanetRadius(radius: number): void {
-    this.config.planetRadius = radius;
-    this.planet.geometry.dispose();
-    this.planet.geometry = new THREE.SphereGeometry(
-      radius,
-      SPHERE_SEGMENTS,
-      SPHERE_SEGMENTS
-    );
-  }
-
-  /**
-   * Update only the force field visual radius (cosmetic only)
-   */
-  setForceFieldRadius(radius: number): void {
-    this.config.forceFieldRadius = radius;
-    this.rebuildForceField();
   }
 
   // ========================================================================

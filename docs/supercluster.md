@@ -235,5 +235,10 @@ When `debug={true}` is passed to the component, a lil-gui panel appears with con
 
 ## Additional Documentation
 
+- [Configuration](./supercluster/configuration.md) - Configuration system architecture and patterns
+- [Collision Detection](./supercluster/collision.md) - Spherical collision detection implementation
+- [Shaders](./supercluster/shaders.md) - GLSL shaders and force field rendering
+- [Networking](./supercluster/networking.md) - Client-server architecture and protocol
+- [Movement](./supercluster/movement.md) - Quaternion-based movement system
 - [Workflow](./supercluster/workflow.md) - Detailed iteration steps and progress
 - [Notes](./supercluster/notes.md) - Development notes and technical decisions

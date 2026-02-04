@@ -380,6 +380,55 @@ For comprehensive documentation including spatial partitioning and implementatio
 
 ---
 
+## Configuration System
+
+SuperCluster uses a **three-tier configuration system** with clear separation between server-authoritative gameplay mechanics and client-side visual preferences.
+
+### Configuration Types
+
+1. **GameConfig** (Server-Authoritative)
+   - All gameplay mechanics (speeds, collision, physics)
+   - All speeds in rad/tick (converted to rad/sec by client)
+   - Shared between client and server via `@ft/supercluster` package
+
+2. **RendererConfig** (Client-Only)
+   - Visual preferences (opacity, colors, rotation speed)
+   - Debug options (axes, info display)
+   - No effect on gameplay
+
+3. **BulletConfig** (Client-Only)
+   - Visual settings (color)
+   - Performance caps (maxBullets)
+   - No gameplay mechanics
+
+### Key Architecture Decisions
+
+**Single Source of Truth**: All projectile mechanics nested in `GameConfig.projectile`:
+```typescript
+GameConfig {
+  projectile: {
+    speed: number,        // rad/tick (server-authoritative)
+    lifetime: number,     // ticks
+    cooldown: number,     // ticks
+    rayCount: number,     // affects collision
+    spreadAngle: number,  // affects trajectory
+  }
+}
+```
+
+**Speed Units**: All speeds in `rad/tick`, client converts using `tickRate`:
+```typescript
+const speedRadPerSec = config.projectile.speed * config.tickRate;
+```
+
+**No Hardcoding**: Debug GUI initializes from actual config values, not hardcoded defaults.
+
+For comprehensive documentation on configuration structure, units, and patterns:
+
+**See: [configuration.md](./configuration.md)**
+
+---
+
 ## Useful Resources
 
 - Three.js Vector3.setFromSphericalCoords()

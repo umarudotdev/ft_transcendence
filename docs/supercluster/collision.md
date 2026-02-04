@@ -235,82 +235,88 @@ Understanding coordinate spaces is crucial for collision detection.
 
 **World Space**: The fixed reference frame. The camera is here. The ship's logical position (`shipPosition`) is tracked here.
 
-#### The Smart Approach: Keep Everything in Planet Local Space
+#### Current Implementation: World Space Bullets
 
-Since asteroids are children of the planet group, and bullets will ALSO be children of the planet group, we can do all collision checks in **planet local space**:
+**Design Decision**: Bullets are in **world space** (scene children) to ensure absolute velocity independent of ship movement direction. This fixes the reference frame issue where bullets appeared slower when moving in the same direction as the ship.
 
 ```
-Planet Local Space (everything rotates together):
-┌─────────────────────────────────────────┐
-│                                         │
-│    🪨 Asteroid A (position: unit vec)   │
-│                                         │
-│         💫 Bullet (position: unit vec)  │
-│                                         │
-│    🪨 Asteroid B (position: unit vec)   │
-│                                         │
-└─────────────────────────────────────────┘
-        ↑
-        │ Bullets spawned here, move here
-        │ No transformation needed for bullet vs asteroid!
-
-World Space (fixed):
+World Space (fixed reference frame):
 ┌─────────────────────────────────────────┐
 │                                         │
 │         🚀 Ship (shipPosition)          │
 │                                         │
+│         💫 Bullet (world space)         │
+│                                         │
 │         📷 Camera                       │
+│                                         │
+└─────────────────────────────────────────┘
+
+Planet Local Space (rotates with planet):
+┌─────────────────────────────────────────┐
+│                                         │
+│    🪨 Asteroid A (position: unit vec)   │
+│                                         │
+│    🪨 Asteroid B (position: unit vec)   │
 │                                         │
 └─────────────────────────────────────────┘
 ```
 
 #### Collision Check Strategy
 
-**Bullet vs Asteroid**: Both in planet local space → **No transformation needed!**
+**Bullet vs Asteroid**: Transform bullets from world to planet local space:
 
 ```typescript
-// Direct comparison - both are unit vectors in planet local space
-const dot = bullet.position.dot(asteroid.position);
+// Calculate inverse transform once per frame
+const worldToPlanet = planetQuaternion.clone().invert();
+
+for (const bullet of bullets) {
+  // Transform bullet position from world space to planet local space
+  const bulletLocalPos = bullet.position
+    .clone()
+    .applyQuaternion(worldToPlanet)
+    .normalize();
+
+  for (const asteroid of asteroids) {
+    // Both now in planet local space
+    const dot = bulletLocalPos.dot(asteroid.position);
+    const threshold = Math.cos(bulletRadius + asteroidRadius);
+    if (dot > threshold) {
+      // Collision!
+    }
+  }
+}
 ```
 
-**Ship vs Asteroid**: Transform ship position ONCE to planet local space, then check all asteroids:
+**Ship vs Asteroid**: Ship already in world space, asteroids in planet local:
 
 ```typescript
-function getShipInPlanetSpace(): THREE.Vector3 {
-  // Ship position is in world space
-  const localPos = this.shipPosition.clone();
-
-  // Apply INVERSE of planet rotation to get into planet local space
-  const inverseQuat = this.planetQuaternion.clone().invert();
-  localPos.applyQuaternion(inverseQuat);
-
-  return localPos; // Now in same space as asteroids
-}
-
-// In collision check:
-const shipLocal = this.getShipInPlanetSpace();  // Transform once
+// Transform ship position ONCE to planet local space
+const shipLocal = this.shipPosition.clone();
+const worldToPlanet = this.planetQuaternion.clone().invert();
+shipLocal.applyQuaternion(worldToPlanet);
+shipLocal.normalize();
 
 for (const asteroid of asteroids) {
-  const dot = shipLocal.dot(asteroid.position);  // Direct comparison
+  const dot = shipLocal.dot(asteroid.position);
   // ...
 }
 ```
 
-#### Why This is Better
+#### Performance Trade-offs
 
-| Collision Type     | Transforms Needed                  |
-| ------------------ | ---------------------------------- |
-| Bullet vs Asteroid | 0 (same space)                     |
-| Ship vs Asteroid   | 1 (ship → local, once per frame)   |
-| Ship vs Bullet     | 1 (ship → local, reuse from above) |
+| Collision Type     | Transforms Needed                    |
+| ------------------ | ------------------------------------ |
+| Bullet vs Asteroid | N bullets (world → planet local)     |
+| Ship vs Asteroid   | 1 transform (ship → planet local)    |
+| Ship vs Bullet     | 0 (both in world space)              |
 
-Compare to transforming asteroids to world space:
+**Trade-off Analysis**:
+- Transform N bullets (typically 10-100) instead of keeping them in planet space
+- **Benefit**: Consistent bullet physics - bullets always travel at absolute speed
+- **Cost**: O(N) quaternion transforms per frame
+- **Optimization**: Calculate `worldToPlanet` once, reuse for all bullets
 
-- 12 asteroids = 12 transforms
-- 100 asteroids = 100 transforms
-- Plus bullets...
-
-**Rule**: Transform the minority (ship = 1) to the majority's space (asteroids + bullets = many).
+**Alternative Design (Not Used)**: Keeping bullets in planet local space would eliminate bullet transforms but reintroduce the reference frame issue where bullet speed appeared inconsistent based on ship movement direction.
 
 ---
 

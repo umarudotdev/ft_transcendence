@@ -6,7 +6,6 @@ import {
   type GameConfig,
   type RendererConfig,
   type BulletConfig,
-  type ShipState,
   type InputState,
 } from "@ft/supercluster";
 import * as THREE from "three";
@@ -84,12 +83,19 @@ export class GameRenderer {
   private shootCooldownTimer = 0; // Time until next shot allowed
   private mousePressed = false; // Is mouse button currently held down
 
+  // Game state
+  private isGameOver = false;
+  private explosionCircle: THREE.Mesh | null = null;
+  private gameOverOverlay: HTMLDivElement | null = null;
+  private canvas: HTMLCanvasElement;
+
   constructor(
     canvas: HTMLCanvasElement,
     config: GameConfig = { ...DEFAULT_CONFIG },
     rendererConfig: RendererConfig = { ...DEFAULT_RENDERER_CONFIG },
     bulletConfig: BulletConfig = { ...DEFAULT_BULLET_CONFIG }
   ) {
+    this.canvas = canvas;
     this.config = config;
     this.rendererConfig = rendererConfig;
     this.bulletConfig = bulletConfig;
@@ -139,10 +145,32 @@ export class GameRenderer {
 
     // Spawn initial asteroids: 12 size 1, 8 size 2, 4 size 3, 2 size 4
     this.asteroids.spawnMultiple([
-      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 12 size 1
-      2, 2, 2, 2, 2, 2, 2, 2, // 8 size 2
-      3, 3, 3, 3, // 4 size 3
-      4, 4, // 2 size 4
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1, // 12 size 1
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2, // 8 size 2
+      3,
+      3,
+      3,
+      3, // 4 size 3
+      4,
+      4, // 2 size 4
     ]);
 
     // Initialize ship facing camera (on +Z side of sphere)
@@ -162,6 +190,19 @@ export class GameRenderer {
     // Handle window resize
     this.handleResize = this.handleResize.bind(this);
     window.addEventListener("resize", this.handleResize);
+
+    // Handle restart on Enter key
+    this.handleKeyPress = this.handleKeyPress.bind(this);
+    window.addEventListener("keydown", this.handleKeyPress);
+  }
+
+  /**
+   * Handle keyboard input for restart
+   */
+  private handleKeyPress(event: KeyboardEvent): void {
+    if (event.key === "Enter" && this.isGameOver) {
+      this.restart();
+    }
   }
 
   private addLights(): void {
@@ -286,7 +327,8 @@ export class GameRenderer {
     }
 
     // Reset cooldown (convert from ticks to seconds)
-    this.shootCooldownTimer = this.config.projectile.cooldown / this.config.tickRate;
+    this.shootCooldownTimer =
+      this.config.projectile.cooldown / this.config.tickRate;
 
     // Ship is at (0, 0, 1) in world space (normalized unit vector)
     const shipWorldPosition = new THREE.Vector3(0, 0, 1);
@@ -303,7 +345,6 @@ export class GameRenderer {
     return true;
   }
 
-
   // ========================================================================
   // Collision Detection
   // ========================================================================
@@ -315,19 +356,126 @@ export class GameRenderer {
   private checkCollisions(): void {
     // Check bullet-asteroid collisions
     // Pass planetQuaternion to transform bullets from world to planet space
-    const collisions = this.collisionSystem.checkBulletAsteroidCollisions(
+    const bulletCollisions = this.collisionSystem.checkBulletAsteroidCollisions(
       this.bullets,
       this.asteroids,
       this.planetQuaternion
     );
 
-    // Handle each collision
-    for (const collision of collisions) {
-      // Remove the bullet
-      this.bullets.remove(collision.bulletId);
+    // Handle bullet collisions
+    for (const collision of bulletCollisions) {
+      // Remove the bullet (bulletId always exists for bullet-asteroid collisions)
+      this.bullets.remove(collision.bulletId!);
 
       // Mark asteroid as hit - will turn red and break after 0.5s delay
       this.asteroids.markAsHit(collision.asteroidId, 0.5);
+    }
+
+    // Check ship-asteroid collisions (only if still alive)
+    if (!this.isGameOver) {
+      // Ship is at (0, 0, 1) in world space (normalized unit vector)
+      const shipWorldPosition = new THREE.Vector3(0, 0, 1);
+
+      const shipCollisions = this.collisionSystem.checkShipAsteroidCollisions(
+        shipWorldPosition,
+        this.asteroids,
+        this.planetQuaternion
+      );
+
+      // Handle first ship collision (game over)
+      if (shipCollisions.length > 0) {
+        this.handleShipCollision();
+      }
+    }
+  }
+
+  /**
+   * Handle ship collision - create explosion visual and trigger game over
+   */
+  private handleShipCollision(): void {
+    this.isGameOver = true;
+
+    // Create red explosion circle around ship
+    // Ship is at (0, 0, gameSphereRadius) in world space
+    const explosionRadius = 8; // Visual size of explosion
+    const geometry = new THREE.CircleGeometry(explosionRadius, 32);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.7,
+    });
+
+    this.explosionCircle = new THREE.Mesh(geometry, material);
+
+    // Position at ship location and orient to face camera
+    this.explosionCircle.position.set(0, 0, this.config.gameSphereRadius);
+
+    this.scene.add(this.explosionCircle);
+
+    // Create game over overlay (DOM element)
+    this.createGameOverOverlay();
+  }
+
+  /**
+   * Create the game over overlay DOM element
+   */
+  private createGameOverOverlay(): void {
+    // Create overlay container
+    this.gameOverOverlay = document.createElement("div");
+    this.gameOverOverlay.style.position = "absolute";
+    this.gameOverOverlay.style.top = "0";
+    this.gameOverOverlay.style.left = "0";
+    this.gameOverOverlay.style.width = "100%";
+    this.gameOverOverlay.style.height = "100%";
+    this.gameOverOverlay.style.display = "flex";
+    this.gameOverOverlay.style.alignItems = "center";
+    this.gameOverOverlay.style.justifyContent = "center";
+    this.gameOverOverlay.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+    this.gameOverOverlay.style.zIndex = "1000";
+    this.gameOverOverlay.style.pointerEvents = "none"; // Allow clicking through
+
+    // Create content container
+    const content = document.createElement("div");
+    content.style.textAlign = "center";
+    content.style.color = "white";
+
+    // Create title
+    const title = document.createElement("h1");
+    title.textContent = "GAME OVER";
+    title.style.fontSize = "4rem";
+    title.style.fontWeight = "bold";
+    title.style.color = "#ff0000";
+    title.style.margin = "0 0 1rem 0";
+    title.style.textShadow = "0 0 20px rgba(255, 0, 0, 0.5)";
+
+    // Create instruction text
+    const text = document.createElement("p");
+    text.textContent = "Press ENTER to restart";
+    text.style.fontSize = "1.5rem";
+    text.style.margin = "0";
+    text.style.color = "#ffffff";
+    text.style.opacity = "0.9";
+
+    content.appendChild(title);
+    content.appendChild(text);
+    this.gameOverOverlay.appendChild(content);
+
+    // Add to canvas parent element
+    const parent = this.canvas.parentElement;
+    if (parent) {
+      parent.style.position = "relative"; // Ensure parent is positioned
+      parent.appendChild(this.gameOverOverlay);
+    }
+  }
+
+  /**
+   * Remove the game over overlay DOM element
+   */
+  private removeGameOverOverlay(): void {
+    if (this.gameOverOverlay && this.gameOverOverlay.parentElement) {
+      this.gameOverOverlay.parentElement.removeChild(this.gameOverOverlay);
+      this.gameOverOverlay = null;
     }
   }
 
@@ -345,31 +493,34 @@ export class GameRenderer {
       const deltaTime = (currentTime - this.lastTime) / 1000;
       this.lastTime = currentTime;
 
-      // Update cooldown timer
-      if (this.shootCooldownTimer > 0) {
-        this.shootCooldownTimer -= deltaTime;
+      // Skip game updates if game is over
+      if (!this.isGameOver) {
+        // Update cooldown timer
+        if (this.shootCooldownTimer > 0) {
+          this.shootCooldownTimer -= deltaTime;
+        }
+
+        // Continuous shooting while mouse is held
+        if (this.mousePressed && this.shootCooldownTimer <= 0) {
+          this.shoot();
+        }
+
+        // Update local movement (only when not receiving server state)
+        if (!this.lastState) {
+          this.updateLocalMovement(deltaTime);
+        }
+
+        // Update asteroids (rotation and movement)
+        this.asteroids.update(deltaTime);
+
+        // Update bullets (movement and lifetime)
+        // Bullets are in world space, so use camera world position directly
+        this.bullets.setCameraPosition(this.camera.position);
+        this.bullets.update(deltaTime);
+
+        // Check collisions and handle them
+        this.checkCollisions();
       }
-
-      // Continuous shooting while mouse is held
-      if (this.mousePressed && this.shootCooldownTimer <= 0) {
-        this.shoot();
-      }
-
-      // Update local movement (only when not receiving server state)
-      if (!this.lastState) {
-        this.updateLocalMovement(deltaTime);
-      }
-
-      // Update asteroids (rotation and movement)
-      this.asteroids.update(deltaTime);
-
-      // Update bullets (movement and lifetime)
-      // Bullets are in world space, so use camera world position directly
-      this.bullets.setCameraPosition(this.camera.position);
-      this.bullets.update(deltaTime);
-
-      // Check collisions and handle them
-      this.checkCollisions();
 
       this.render();
     };
@@ -548,36 +699,6 @@ export class GameRenderer {
     this.setupCamera();
   }
 
-  /**
-   * Update only the game sphere radius (affects gameplay)
-   * Preserves all other config values
-   */
-  setGameSphereRadius(radius: number): void {
-    this.config.gameSphereRadius = radius;
-    this.planet.updateConfig(this.config);
-    this.ship.updateConfig(this.config);
-    this.asteroids.updateConfig(this.config);
-    this.bullets.updateGameConfig(this.config);
-    this.collisionSystem.updateConfig(this.config);
-    this.setupCamera();
-  }
-
-  /**
-   * Update only planet visual radius (cosmetic only, doesn't affect gameplay)
-   */
-  setPlanetRadius(radius: number): void {
-    this.config.planetRadius = radius;
-    this.planet.setPlanetRadius(radius);
-  }
-
-  /**
-   * Update only force field visual radius (cosmetic only, doesn't affect gameplay)
-   */
-  setForceFieldRadius(radius: number): void {
-    this.config.forceFieldRadius = radius;
-    this.planet.setForceFieldRadius(radius);
-  }
-
   getConfig(): GameConfig {
     return { ...this.config };
   }
@@ -592,83 +713,16 @@ export class GameRenderer {
   }
 
   // Convenience methods for common config changes
-  setAxesVisible(visible: boolean): void {
-    this.planet.setAxesVisible(visible);
-  }
-
-  setForceFieldOpacity(front: number, back: number): void {
-    this.planet.setForceFieldOpacity(front, back);
-  }
-
-  setForceFieldDetail(detail: number): void {
-    this.planet.setForceFieldDetail(detail);
-  }
-
   setForceFieldColor(color: number): void {
     this.planet.setForceFieldColor(color);
-  }
-
-  getForceFieldDetail(): number {
-    return this.planet.getForceFieldDetail();
   }
 
   getForceFieldColor(): number {
     return this.planet.getForceFieldColor();
   }
 
-  // Ship rotation and aim dot controls
-  setShipRotationSpeed(speed: number): void {
-    this.ship.setRotationSpeed(speed);
-  }
-
   setAimDotColor(color: number): void {
     this.ship.setAimDotColor(color);
-  }
-
-  setAimDotSize(size: number): void {
-    this.ship.setAimDotSize(size);
-  }
-
-  setAimDotOrbitRadius(radius: number): void {
-    this.ship.setAimDotOrbitRadius(radius);
-  }
-
-  // Debug method to update ship state directly (for lil-gui controls)
-  // Sets the planet quaternion from spherical coordinates
-  updateShipDebug(state: ShipState): void {
-    // Update ship position from spherical coordinates
-    this.shipPosition.copy(
-      this.sphericalToUnitVector(state.position.phi, state.position.theta)
-    );
-    this.shipAimAngle = state.aimAngle;
-
-    // Rebuild planet quaternion from spherical position
-    // This creates the rotation that would place the ship at (phi, theta)
-    this.planetQuaternion.identity();
-
-    // Rotate to match phi (pitch around X)
-    this._tempQuat.setFromAxisAngle(
-      this._pitchAxis,
-      -(state.position.phi - Math.PI / 2)
-    );
-    this.planetQuaternion.multiply(this._tempQuat);
-
-    // Rotate to match theta (yaw around Y)
-    this._tempQuat.setFromAxisAngle(
-      this._yawAxis,
-      state.position.theta - Math.PI / 2
-    );
-    this.planetQuaternion.multiply(this._tempQuat);
-
-    // Apply to planet visual
-    this.planet.group.quaternion.copy(this.planetQuaternion);
-
-    // Update ship visual
-    this.ship.updateFromState(
-      state,
-      this.ship.getCurrentDirectionAngle(),
-      this.shipAimAngle
-    );
   }
 
   // ========================================================================
@@ -703,6 +757,18 @@ export class GameRenderer {
   dispose(): void {
     this.stop();
     window.removeEventListener("resize", this.handleResize);
+    window.removeEventListener("keydown", this.handleKeyPress);
+
+    // Clean up game over overlay
+    this.removeGameOverOverlay();
+
+    // Clean up explosion
+    if (this.explosionCircle) {
+      this.scene.remove(this.explosionCircle);
+      this.explosionCircle.geometry.dispose();
+      (this.explosionCircle.material as THREE.Material).dispose();
+      this.explosionCircle = null;
+    }
 
     this.planet.dispose();
     this.ship.dispose();
@@ -745,7 +811,7 @@ export class GameRenderer {
    * Update projectile gameplay mechanics (speed, lifetime, cooldown, etc.)
    * These are server-authoritative and affect gameplay balance
    */
-  updateProjectileConfig(config: Partial<GameConfig['projectile']>): void {
+  updateProjectileConfig(config: Partial<GameConfig["projectile"]>): void {
     Object.assign(this.config.projectile, config);
     this.bullets.updateGameConfig(this.config);
   }
@@ -764,5 +830,96 @@ export class GameRenderer {
   // ========================================================================
   getAsteroidCount(): number {
     return this.asteroids.getCount();
+  }
+
+  // ========================================================================
+  // Game Over / Restart
+  // ========================================================================
+
+  /**
+   * Restart the game - reset all state and respawn asteroids
+   */
+  restart(): void {
+    // Clear game over state
+    this.isGameOver = false;
+
+    // Remove game over overlay
+    this.removeGameOverOverlay();
+
+    // Remove explosion visual
+    if (this.explosionCircle) {
+      this.scene.remove(this.explosionCircle);
+      this.explosionCircle.geometry.dispose();
+      (this.explosionCircle.material as THREE.Material).dispose();
+      this.explosionCircle = null;
+    }
+
+    // Clear all bullets
+    this.bullets.clear();
+
+    // Clear all asteroids
+    this.asteroids.clear();
+
+    // Respawn initial asteroids: 12 size 1, 8 size 2, 4 size 3, 2 size 4
+    this.asteroids.spawnMultiple([
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1, // 12 size 1
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2, // 8 size 2
+      3,
+      3,
+      3,
+      3, // 4 size 3
+      4,
+      4, // 2 size 4
+    ]);
+
+    // Reset ship position to initial position
+    this.shipPosition.set(0, 0, 1);
+    this.planetQuaternion.identity();
+    this.planet.group.quaternion.copy(this.planetQuaternion);
+
+    // Reset ship visual state
+    this.targetShipDirection = 0;
+    this.shipAimAngle = 0;
+    this.shipLives = 3;
+    this.shipInvincible = false;
+
+    this.ship.updateFromState(
+      {
+        position: { phi: Math.PI / 2, theta: Math.PI / 2 },
+        aimAngle: 0,
+        lives: 3,
+        invincible: false,
+      },
+      0,
+      0
+    );
+
+    // Reset input state
+    this.currentInput = {
+      forward: false,
+      backward: false,
+      left: false,
+      right: false,
+    };
+    this.mousePressed = false;
+    this.shootCooldownTimer = 0;
   }
 }

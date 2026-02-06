@@ -184,6 +184,26 @@ export const usersController = new Elysia({ prefix: "/users" })
     }
   )
   .get(
+    "/me/stats/daily",
+    async ({ user, query }) => {
+      const result = await UsersService.getDailyStats(
+        user.id,
+        query.days ?? 30
+      );
+
+      return result.match(
+        (data) => data,
+        () => ({
+          daily: [],
+          totals: { totalHoursPlayed: 0, totalGamesPlayed: 0 },
+        })
+      );
+    },
+    {
+      query: UsersModel.dailyStatsQuery,
+    }
+  )
+  .get(
     "/me/matches",
     async ({ user, query }) => {
       const result = await UsersService.getMatchHistory(user.id, user.id, {

@@ -2,6 +2,7 @@ import { err, ok, ResultAsync } from "neverthrow";
 
 import type {
   AvatarUploadError,
+  DailyStatsResponse,
   FriendshipError,
   MatchHistoryItem,
   ProfileUpdateError,
@@ -436,6 +437,18 @@ abstract class UsersService {
       usersRepository.getStats(userId, gameType),
       (): never => {
         throw new Error("Unexpected error fetching stats");
+      }
+    );
+  }
+
+  static getDailyStats(
+    userId: number,
+    days = 30
+  ): ResultAsync<DailyStatsResponse, never> {
+    return ResultAsync.fromPromise(
+      usersRepository.getDailyStats(userId, days),
+      (): never => {
+        throw new Error("Unexpected error fetching daily stats");
       }
     );
   }

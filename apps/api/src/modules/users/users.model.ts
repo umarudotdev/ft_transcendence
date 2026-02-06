@@ -40,6 +40,32 @@ export const UsersModel = {
     gameType: t.Optional(t.String()),
   }),
 
+  dailyStatsQuery: t.Object({
+    days: t.Optional(t.Numeric({ minimum: 1, maximum: 365, default: 30 })),
+  }),
+
+  dailyStatsItem: t.Object({
+    date: t.String(),
+    gamesPlayed: t.Number(),
+    hoursPlayed: t.Number(),
+    wins: t.Number(),
+  }),
+
+  dailyStatsResponse: t.Object({
+    daily: t.Array(
+      t.Object({
+        date: t.String(),
+        gamesPlayed: t.Number(),
+        hoursPlayed: t.Number(),
+        wins: t.Number(),
+      })
+    ),
+    totals: t.Object({
+      totalHoursPlayed: t.Number(),
+      totalGamesPlayed: t.Number(),
+    }),
+  }),
+
   matchesQuery: t.Object({
     limit: t.Optional(t.Numeric({ minimum: 1, maximum: 100, default: 10 })),
     offset: t.Optional(t.Numeric({ minimum: 0, default: 0 })),
@@ -197,6 +223,10 @@ export type UploadAvatarBody = (typeof UsersModel.uploadAvatar)["static"];
 export type UserIdParam = (typeof UsersModel.userIdParam)["static"];
 export type RequestIdParam = (typeof UsersModel.requestIdParam)["static"];
 export type StatsQuery = (typeof UsersModel.statsQuery)["static"];
+export type DailyStatsQuery = (typeof UsersModel.dailyStatsQuery)["static"];
+export type DailyStatsItem = (typeof UsersModel.dailyStatsItem)["static"];
+export type DailyStatsResponse =
+  (typeof UsersModel.dailyStatsResponse)["static"];
 export type MatchesQuery = (typeof UsersModel.matchesQuery)["static"];
 export type SearchQuery = (typeof UsersModel.searchQuery)["static"];
 

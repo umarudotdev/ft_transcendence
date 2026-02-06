@@ -375,4 +375,48 @@ export const usersRepository = {
       },
     });
   },
+
+  async getDailyStats(userId: number, days = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const baseCondition = or(
+      eq(matches.player1Id, userId),
+      eq(matches.player2Id, userId)
+    );
+
+    const result = await db
+      .select({
+        date: sql<string>`DATE(${matches.createdAt})`.as("date"),
+        gamesPlayed: count(),
+        totalDuration: sql<number>`COALESCE(SUM(${matches.duration}), 0)`,
+        wins: sql<number>`SUM(CASE WHEN ${matches.winnerId} = ${userId} THEN 1 ELSE 0 END)`,
+      })
+      .from(matches)
+      .where(and(baseCondition, sql`${matches.createdAt} >= ${startDate}`))
+      .groupBy(sql`DATE(${matches.createdAt})`)
+      .orderBy(sql`DATE(${matches.createdAt})`);
+
+    // Calculate total hours played
+    const [totals] = await db
+      .select({
+        totalDuration: sql<number>`COALESCE(SUM(${matches.duration}), 0)`,
+        totalGames: count(),
+      })
+      .from(matches)
+      .where(baseCondition);
+
+    return {
+      daily: result.map((row) => ({
+        date: row.date,
+        gamesPlayed: Number(row.gamesPlayed),
+        hoursPlayed: Number(row.totalDuration) / 3600,
+        wins: Number(row.wins),
+      })),
+      totals: {
+        totalHoursPlayed: Number(totals?.totalDuration ?? 0) / 3600,
+        totalGamesPlayed: Number(totals?.totalGames ?? 0),
+      },
+    };
+  },
 };

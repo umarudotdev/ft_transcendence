@@ -1,4 +1,5 @@
 import type {
+  DailyStatsResponse,
   FriendItem,
   MatchHistoryItem,
   PendingRequest,
@@ -22,6 +23,8 @@ export const usersKeys = {
   profile: (id: number) => [...usersKeys.all, "profile", id] as const,
   stats: (id: number, gameType?: string) =>
     [...usersKeys.all, "stats", id, gameType ?? "all"] as const,
+  dailyStats: (days: number) =>
+    [...usersKeys.all, "daily-stats", days] as const,
   matches: (
     id: number,
     params?: { limit?: number; offset?: number; gameType?: string }
@@ -34,6 +37,7 @@ export const usersKeys = {
 };
 
 export type {
+  DailyStatsResponse,
   PublicUser,
   UserProfile,
   UserStats,
@@ -68,6 +72,24 @@ export function createMyStatsQuery(gameType?: string) {
       }
 
       return response.data.stats as UserStats | null;
+    },
+  }));
+}
+
+export function createDailyStatsQuery(days = 30) {
+  return createQuery<DailyStatsResponse, ApiError>(() => ({
+    queryKey: usersKeys.dailyStats(days),
+    queryFn: async () => {
+      const response = await api.api.users.me.stats.daily.get({
+        query: { days },
+        fetch: { credentials: "include" },
+      });
+
+      if (response.error) {
+        throw createApiError(response.error.value);
+      }
+
+      return response.data as DailyStatsResponse;
     },
   }));
 }

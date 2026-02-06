@@ -31,6 +31,7 @@
 	} from '$lib/queries/users';
 	import { toast } from 'svelte-sonner';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
+	import ChartLineIcon from '@lucide/svelte/icons/chart-line';
 
 	// Queries
 	const meQuery = createMeQuery();
@@ -244,6 +245,10 @@
 						</div>
 
 						<div class="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
+							<Button variant="outline" size="sm" onclick={() => goto('/stats')}>
+								<ChartLineIcon class="mr-1 size-4" />
+								My Stats
+							</Button>
 							<Button variant="outline" size="sm" onclick={() => goto('/settings')}>
 								Settings
 							</Button>

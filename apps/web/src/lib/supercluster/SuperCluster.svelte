@@ -5,13 +5,11 @@
 	import { DebugGui } from './debug';
 	import {
 		DEFAULT_CONFIG,
-		DEFAULT_RENDERER_CONFIG,
 		type GameState,
 		type GameConfig,
-		type RendererConfig,
 		type ClientMessage,
 		type ServerMessage,
-		type InputState,
+		type InputState
 	} from '@ft/supercluster';
 
 	// ========================================================================
@@ -20,16 +18,10 @@
 	interface Props {
 		wsUrl?: string;
 		config?: GameConfig;
-		rendererConfig?: RendererConfig;
 		debug?: boolean;
 	}
 
-	let {
-		wsUrl = '',
-		config = DEFAULT_CONFIG,
-		rendererConfig = DEFAULT_RENDERER_CONFIG,
-		debug = false,
-	}: Props = $props();
+	let { wsUrl = '', config = DEFAULT_CONFIG, debug = false }: Props = $props();
 
 	// ========================================================================
 	// State
@@ -46,7 +38,7 @@
 		forward: false,
 		backward: false,
 		left: false,
-		right: false,
+		right: false
 	};
 
 	let aimAngle = 0;
@@ -55,8 +47,8 @@
 	// Lifecycle
 	// ========================================================================
 	onMount(() => {
-		// Initialize renderer
-		renderer = new GameRenderer(canvas, config, rendererConfig);
+		// Initialize renderer (uses GAME_CONST and RENDERER_CONST directly)
+		renderer = new GameRenderer(canvas, config);
 		renderer.start();
 
 		// Setup debug GUI if enabled

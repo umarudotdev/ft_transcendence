@@ -132,55 +132,26 @@ export type ServerMessage =
   | WaveMessage;
 
 // ============================================================================
-// Configuration
+// Configuration (GUI-controlled values only)
+// Non-GUI values use GAME_CONST directly from constants.ts
 // ============================================================================
 export interface GameConfig {
-  // GAME LAYER: Affects gameplay mechanics (ship/bullet/asteroid positions)
-  gameSphereRadius: number; // Radius where gameplay happens (ship, bullets, asteroids)
-
-  // VISUAL LAYER: Purely cosmetic, doesn't affect gameplay
-  forceFieldRadius: number; // Visual radius of force field (should be < gameSphereRadius)
-  planetRadius: number; // Visual radius of planet (should be < forceFieldRadius)
-
-  // GAME MECHANICS: All speeds in rad/tick (server-authoritative, client converts to rad/sec)
-  shipSpeed: number; // Angular velocity (rad/tick)
-
-  // Projectile mechanics (nested for organization)
+  // Projectile mechanics - GUI controlled via lil-gui
   projectile: {
-    speed: number; // Angular velocity (rad/tick)
-    lifetime: number; // Ticks before despawn
-    cooldown: number; // Ticks between shots
-    rayCount: number; // Number of bullets per shot (1-5)
-    spreadAngle: number; // Angle between rays in radians
+    lifetime: number; // Ticks before despawn (GUI: Bullets → Lifetime)
+    cooldown: number; // Ticks between shots (GUI: Bullets → Cooldown)
+    rayCount: number; // Number of bullets per shot 1-5 (GUI: Bullets → Ray Count)
+    spreadAngle: number; // Angle between rays in radians (GUI: Bullets → Spread)
   };
-
-  // Asteroid mechanics
-  asteroidSpeedMin: number; // Minimum asteroid angular velocity (rad/tick)
-  asteroidSpeedMax: number; // Maximum asteroid angular velocity (rad/tick)
-
-  tickRate: number; // Ticks per second (60)
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
-  // Game layer
-  gameSphereRadius: 100, // Game sphere (where ship/bullets/asteroids exist)
-  // Visual layer (cosmetic only)
-  forceFieldRadius: 95, // Force field appears inside game sphere
-  planetRadius: 70, // Planet core inside force field
-  // Game mechanics (angular speeds in rad/tick)
-  shipSpeed: 0.01, // 0.6 rad/sec at 60 ticks/sec
-  // Projectile mechanics
   projectile: {
-    speed: 0.015, // 3.0 rad/sec at 60 ticks/sec
-    lifetime: 102, // 2 seconds at 60 ticks/sec
-    cooldown: 18, // 0.2 seconds at 60 ticks/sec (5 shots/sec)
+    lifetime: 102, // ~1.7 sec at 60 ticks/sec
+    cooldown: 18, // ~0.3 sec at 60 ticks/sec (5 shots/sec)
     rayCount: 1, // Single shot
     spreadAngle: Math.PI / 18, // 10 degrees
   },
-  // Asteroid mechanics
-  asteroidSpeedMin: 0.00167, // ~0.1 rad/sec at 60 ticks/sec
-  asteroidSpeedMax: 0.005, // ~0.3 rad/sec at 60 ticks/sec
-  tickRate: 60,
 };
 
 // ============================================================================
@@ -189,8 +160,6 @@ export const DEFAULT_CONFIG: GameConfig = {
 export interface RendererConfig {
   forceFieldOpacity: number;
   forceFieldBackFade: number;
-  showAxes: boolean;
-  showDebugInfo: boolean;
   // Ship rotation
   shipRotationSpeed: number; // Lerp speed (0-1, higher = faster)
   // Aim dot
@@ -202,8 +171,6 @@ export interface RendererConfig {
 export const DEFAULT_RENDERER_CONFIG: RendererConfig = {
   forceFieldOpacity: 0.35,
   forceFieldBackFade: 0.0,
-  showAxes: false,
-  showDebugInfo: false,
   // Ship rotation
   shipRotationSpeed: 10, // ~0.3s to rotate at 60fps
   // Aim dot

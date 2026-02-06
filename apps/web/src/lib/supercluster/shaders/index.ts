@@ -1,1 +1,1 @@
-export { forceFieldVertexShader, forceFieldFragmentShader } from "./forceField";
+export { forceFieldFragmentShader, forceFieldVertexShader } from "./forceField";

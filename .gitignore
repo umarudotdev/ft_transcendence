@@ -42,3 +42,6 @@ docs/.vitepress/cache
 
 # AWS setup output
 .aws-setup-output
+
+# Personal scratch/backup folder
+onze-e-meia/

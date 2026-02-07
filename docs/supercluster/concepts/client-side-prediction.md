@@ -3,6 +3,7 @@
 This document explains how networked games achieve responsive gameplay despite network latency.
 
 **References:**
+
 - [Gabriel Gambetta: Client-Side Prediction and Server Reconciliation](https://www.gabrielgambetta.com/client-side-prediction-server-reconciliation.html)
 - [CrystalOrb - Rust netcode library](https://github.com/ErnWong/crystalorb)
 
@@ -195,6 +196,7 @@ Client receives:       state + lastInputSeq=3
 ## Misprediction and Smoothing
 
 Sometimes client prediction is wrong:
+
 - Another player shot your ship (client didn't know)
 - Server physics differs slightly
 - Packet loss caused input to arrive late
@@ -202,6 +204,7 @@ Sometimes client prediction is wrong:
 When misprediction happens, you have options:
 
 ### Option 1: Snap Correction
+
 ```typescript
 // Instantly correct to server state
 localState = serverState;
@@ -209,6 +212,7 @@ localState = serverState;
 ```
 
 ### Option 2: Smooth Interpolation
+
 ```typescript
 // Blend toward server state over time
 localState = lerp(localState, serverState, 0.1);
@@ -216,6 +220,7 @@ localState = lerp(localState, serverState, 0.1);
 ```
 
 ### Option 3: Rollback + Replay (Best but complex)
+
 ```typescript
 // Roll back to server state
 localState = serverState;
@@ -232,21 +237,21 @@ for (const input of pendingInputs) {
 
 ### Client → Server
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `type` | string | Message type ("input", "aim", "shoot") |
-| `seq` | number | Monotonically increasing sequence (1, 2, 3...) |
-| `tick` | number | Client's game tick when input was made |
-| `keys` | InputState | For "input": WASD state |
-| `angle` | number | For "aim": mouse aim angle |
+| Field   | Type       | Purpose                                        |
+| ------- | ---------- | ---------------------------------------------- |
+| `type`  | string     | Message type ("input", "aim", "shoot")         |
+| `seq`   | number     | Monotonically increasing sequence (1, 2, 3...) |
+| `tick`  | number     | Client's game tick when input was made         |
+| `keys`  | InputState | For "input": WASD state                        |
+| `angle` | number     | For "aim": mouse aim angle                     |
 
 ### Server → Client
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `type` | string | Message type ("state", "hit", etc.) |
-| `state` | GameState | Full authoritative game state |
-| `lastInputSeq` | number | Last input sequence server processed |
+| Field          | Type      | Purpose                              |
+| -------------- | --------- | ------------------------------------ |
+| `type`         | string    | Message type ("state", "hit", etc.)  |
+| `state`        | GameState | Full authoritative game state        |
+| `lastInputSeq` | number    | Last input sequence server processed |
 
 ---
 
@@ -255,12 +260,14 @@ for (const input of pendingInputs) {
 ### When to Add Prediction
 
 **Start simple (no prediction):**
+
 1. Client sends inputs to server
 2. Server sends state back
 3. Client renders server state directly
 4. Works fine for low-latency (local network)
 
 **Add prediction when:**
+
 - Testing with real network latency
 - Players complain about "lag"
 - Targeting competitive/action gameplay
@@ -283,14 +290,14 @@ With prediction: game feels responsive.
 
 ## SuperCluster Implementation Status
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Sequence numbers in messages | ⬜ TODO | Add `seq` to ClientMessage |
-| `lastInputSeq` in StateMessage | ⬜ TODO | Add to StateMessage |
-| Client input buffer | ⬜ TODO | Store pending inputs |
-| Server input tracking | ⬜ TODO | Track per-player lastInputSeq |
-| Reconciliation logic | ⬜ TODO | Re-apply pending inputs |
-| Misprediction smoothing | ⬜ Future | Start with snap correction |
+| Feature                        | Status    | Notes                         |
+| ------------------------------ | --------- | ----------------------------- |
+| Sequence numbers in messages   | ⬜ TODO   | Add `seq` to ClientMessage    |
+| `lastInputSeq` in StateMessage | ⬜ TODO   | Add to StateMessage           |
+| Client input buffer            | ⬜ TODO   | Store pending inputs          |
+| Server input tracking          | ⬜ TODO   | Track per-player lastInputSeq |
+| Reconciliation logic           | ⬜ TODO   | Re-apply pending inputs       |
+| Misprediction smoothing        | ⬜ Future | Start with snap correction    |
 
 ---
 

@@ -47,6 +47,7 @@ App.svelte (root)
 ```
 
 **Key terms:**
+
 - **Parent component** = The component that USES another component
 - **Child component** = The component being USED
 - **Props** = Data passed from parent to child
@@ -112,6 +113,7 @@ Props are how parent components pass data to children.
 ### Real Example From Our Codebase
 
 **Parent:** `apps/web/src/routes/(app)/game/+page.svelte`
+
 ```svelte
 <script>
   import { SuperCluster } from '$lib/supercluster';
@@ -123,6 +125,7 @@ Props are how parent components pass data to children.
 ```
 
 **Child:** `apps/web/src/lib/supercluster/SuperCluster.svelte`
+
 ```svelte
 <script>
   interface Props {
@@ -136,6 +139,7 @@ Props are how parent components pass data to children.
 ```
 
 **Currently:**
+
 - SuperCluster **receives:** `debug={true}`
 - SuperCluster **does NOT receive:** `wsUrl`, `config` (they use defaults)
 - SuperCluster **sends nothing** - props only flow DOWN (parent → child)
@@ -184,12 +188,12 @@ Props are how parent components pass data to children.
 
 ### Props vs Regular Variables
 
-| Props                        | Regular Variables              |
-| ---------------------------- | ------------------------------ |
-| Come from parent             | Defined in this component      |
-| Read-only by default         | Can be modified freely         |
-| Part of component's API      | Internal implementation detail |
-| `$props()`                   | `let x = ...`                  |
+| Props                   | Regular Variables              |
+| ----------------------- | ------------------------------ |
+| Come from parent        | Defined in this component      |
+| Read-only by default    | Can be modified freely         |
+| Part of component's API | Internal implementation detail |
+| `$props()`              | `let x = ...`                  |
 
 ---
 
@@ -293,6 +297,7 @@ This is crucial to understand:
 ```
 
 **Key insight:** Svelte's only job is to:
+
 1. Capture input events (keyboard, mouse)
 2. Pass them to GameRenderer via method calls
 3. Update the debug overlay when `$state()` changes
@@ -350,6 +355,7 @@ renderer?.setInput(inputState);
 ```
 
 Use regular variables when:
+
 - The value is only used internally
 - It's passed to external systems (Three.js)
 - You don't need UI updates
@@ -389,6 +395,7 @@ Runs **once** when the component is first added to the DOM.
 ```
 
 **Why onMount?**
+
 - DOM elements don't exist until component mounts
 - `canvas` is `undefined` before mount
 - Three.js needs a real canvas element
@@ -410,6 +417,7 @@ Runs **once** when the component is removed from the DOM.
 ```
 
 **Why onDestroy?**
+
 - Remove event listeners (prevent memory leaks)
 - Stop animation loops
 - Close WebSocket connections

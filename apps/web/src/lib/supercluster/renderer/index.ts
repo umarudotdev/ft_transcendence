@@ -1,4 +1,6 @@
 export { GameRenderer } from "./GameRenderer";
+export { GameStage } from "./GameStage";
+export { GameOverScreen } from "./GameOverScreen";
 export { WorldRenderer } from "./World";
 export { ForceFieldRenderer } from "./ForceField";
 export { ShipRenderer } from "./Ship";

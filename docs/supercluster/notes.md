@@ -404,6 +404,7 @@ SuperCluster uses a **three-tier configuration system** with clear separation be
 ### Key Architecture Decisions
 
 **Single Source of Truth**: All projectile mechanics nested in `GameConfig.projectile`:
+
 ```typescript
 GameConfig {
   projectile: {
@@ -417,6 +418,7 @@ GameConfig {
 ```
 
 **Speed Units**: All speeds in `rad/tick`, client converts using `tickRate`:
+
 ```typescript
 const speedRadPerSec = config.projectile.speed * config.tickRate;
 ```

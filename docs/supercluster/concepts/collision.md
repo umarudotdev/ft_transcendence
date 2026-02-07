@@ -304,13 +304,14 @@ for (const asteroid of asteroids) {
 
 #### Performance Trade-offs
 
-| Collision Type     | Transforms Needed                    |
-| ------------------ | ------------------------------------ |
-| Bullet vs Asteroid | N bullets (world → planet local)     |
-| Ship vs Asteroid   | 1 transform (ship → planet local)    |
-| Ship vs Bullet     | 0 (both in world space)              |
+| Collision Type     | Transforms Needed                 |
+| ------------------ | --------------------------------- |
+| Bullet vs Asteroid | N bullets (world → planet local)  |
+| Ship vs Asteroid   | 1 transform (ship → planet local) |
+| Ship vs Bullet     | 0 (both in world space)           |
 
 **Trade-off Analysis**:
+
 - Transform N bullets (typically 10-100) instead of keeping them in planet space
 - **Benefit**: Consistent bullet physics - bullets always travel at absolute speed
 - **Cost**: O(N) quaternion transforms per frame

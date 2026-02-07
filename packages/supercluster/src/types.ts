@@ -14,13 +14,24 @@ export interface SphericalPosition {
 // ============================================================================
 // Game Entities
 // ============================================================================
+
+/**
+ * Ship state - player's ship
+ * Power-up levels increase during gameplay, reset on game restart
+ */
 export interface ShipState {
   position: SphericalPosition;
   aimAngle: number; // Direction of aim on tangent plane (radians)
   lives: number;
   invincible: boolean; // After taking damage
+  invincibleTicks: number; // Remaining invincibility ticks (for visual feedback)
+  cooldownLevel: number; // 0-4, each level = -3 ticks cooldown
+  rayCountLevel: number; // 0-4, each level = +1 ray
 }
 
+/**
+ * Projectile state - bullets fired by player
+ */
 export interface ProjectileState {
   id: number;
   position: SphericalPosition;
@@ -28,15 +39,19 @@ export interface ProjectileState {
   age: number; // Ticks since spawn
 }
 
-export interface EnemyState {
+/**
+ * Asteroid state - replaces generic EnemyState
+ * Server sends this, client renders based on it
+ */
+export interface AsteroidState {
   id: number;
   position: SphericalPosition;
-  type: EnemyType;
-  health: number;
-  velocity: SphericalPosition; // Angular velocity
+  direction: number; // Movement direction on tangent plane (radians)
+  speed: number; // Angular speed (rad/tick)
+  size: 1 | 2 | 3 | 4; // 1=smallest, 4=largest
+  health: number; // Hits remaining (usually 1)
+  isHit: boolean; // Has been hit, waiting to break
 }
-
-export type EnemyType = "asteroid" | "chaser" | "shooter";
 
 // ============================================================================
 // Game State (Server → Client)
@@ -45,21 +60,21 @@ export interface GameState {
   tick: number;
   ship: ShipState;
   projectiles: ProjectileState[];
-  enemies: EnemyState[];
+  asteroids: AsteroidState[]; // Changed from enemies: EnemyState[]
   score: number;
   wave: number;
   gameStatus: GameStatus;
 }
 
 export type GameStatus =
-  | "waiting"
-  | "countdown"
-  | "playing"
-  | "paused"
-  | "gameOver";
+  | "waiting" // Waiting for player to be ready
+  | "countdown" // Countdown before game starts
+  | "playing" // Game in progress
+  | "gameOver"; // Game ended (removed "paused" - no pause feature)
 
 // ============================================================================
 // Player Input (Client → Server)
+// Includes sequence numbers for future client-side prediction
 // ============================================================================
 export interface InputState {
   forward: boolean; // W or Up
@@ -70,16 +85,20 @@ export interface InputState {
 
 export interface PlayerInput {
   type: "input";
+  seq: number; // Sequence number for reconciliation
+  tick: number; // Client tick when input was made
   keys: InputState;
 }
 
 export interface AimInput {
   type: "aim";
+  seq: number; // Sequence number for reconciliation
   angle: number; // Radians
 }
 
 export interface ShootInput {
   type: "shoot";
+  seq: number; // Sequence number for reconciliation
 }
 
 export interface ReadyInput {
@@ -94,6 +113,7 @@ export type ClientMessage = PlayerInput | AimInput | ShootInput | ReadyInput;
 export interface StateMessage {
   type: "state";
   state: GameState;
+  lastInputSeq: number; // Last processed input sequence (for reconciliation)
 }
 
 export interface CountdownMessage {
@@ -155,40 +175,6 @@ export const DEFAULT_CONFIG: GameConfig = {
 };
 
 // ============================================================================
-// Renderer Config (Client-only)
+// NOTE: RendererConfig, BulletConfig removed - now in RENDERER_CONST
+// See: apps/web/src/lib/supercluster/constants/renderer.ts
 // ============================================================================
-export interface RendererConfig {
-  forceFieldOpacity: number;
-  forceFieldBackFade: number;
-  // Ship rotation
-  shipRotationSpeed: number; // Lerp speed (0-1, higher = faster)
-  // Aim dot
-  aimDotSize: number; // Radius of the dot
-  aimDotColor: number; // Hex color
-  aimDotOrbitRadius: number; // Distance from ship center
-}
-
-export const DEFAULT_RENDERER_CONFIG: RendererConfig = {
-  forceFieldOpacity: 0.35,
-  forceFieldBackFade: 0.0,
-  // Ship rotation
-  shipRotationSpeed: 10, // ~0.3s to rotate at 60fps
-  // Aim dot
-  aimDotSize: 1,
-  aimDotColor: 0xffff00, // Yellow
-  aimDotOrbitRadius: 4, // Slightly larger than ship
-};
-
-// ============================================================================
-// Bullet Visual Config (Client-only visual preferences)
-// NOTE: All gameplay mechanics (speed, lifetime, cooldown, etc.) come from GameConfig
-// ============================================================================
-export interface BulletConfig {
-  color: number; // Hex color (yellow/orange) - visual only
-  maxBullets: number; // Max bullets on screen (client performance limit)
-}
-
-export const DEFAULT_BULLET_CONFIG: BulletConfig = {
-  color: 0xffaa00, // Orange-yellow
-  maxBullets: 100, // Performance cap for low-end devices
-};

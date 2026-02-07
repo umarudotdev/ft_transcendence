@@ -2,8 +2,10 @@
 // Client Input (ClientInput)
 // Data sent from CLIENT -> SERVER every frame (or on change)
 //
-// PLACEHOLDER - To be implemented when server is ready
+// NOTE: Uses InputState from ../types.ts
 // ============================================================================
+
+import type { InputState } from "../types";
 
 /**
  * Movement and action input from client
@@ -11,14 +13,9 @@
  */
 export interface ClientInput {
   // ========================================================================
-  // Movement Keys (WASD)
+  // Movement Keys (WASD) - from types.ts
   // ========================================================================
-  keys: {
-    forward: boolean; // W or Up
-    backward: boolean; // S or Down
-    left: boolean; // A or Left
-    right: boolean; // D or Right
-  };
+  keys: InputState;
 
   // ========================================================================
   // Aim Direction

@@ -2,8 +2,15 @@
 // Game State Update (GameStateUpdate)
 // Data sent from SERVER -> CLIENT every tick (60/sec)
 //
-// PLACEHOLDER - To be implemented when server is ready
+// NOTE: Uses types from ../types.ts - this file adds network-specific wrappers
 // ============================================================================
+
+import type {
+  AsteroidState,
+  ProjectileState,
+  ShipState,
+  GameStatus,
+} from "../types";
 
 /**
  * Complete game state sent to client for rendering
@@ -15,28 +22,14 @@ export interface GameStateUpdate {
   // ========================================================================
   tick: number; // Server tick number
   timestamp: number; // Server timestamp
+  lastInputSeq: number; // Last processed input sequence
 
   // ========================================================================
-  // Ship State
+  // Game Entities (from types.ts)
   // ========================================================================
-  ship: {
-    phi: number; // Polar angle (0 to PI)
-    theta: number; // Azimuthal angle (0 to 2*PI)
-    aimAngle: number; // Aim direction on tangent plane
-    lives: number; // Remaining lives
-    invincible: boolean; // Currently invincible
-    invincibleTimer: number; // Seconds remaining
-  };
-
-  // ========================================================================
-  // Asteroids
-  // ========================================================================
+  ship: ShipState;
   asteroids: AsteroidState[];
-
-  // ========================================================================
-  // Bullets
-  // ========================================================================
-  bullets: BulletState[];
+  projectiles: ProjectileState[];
 
   // ========================================================================
   // Power-ups (Future)
@@ -48,31 +41,7 @@ export interface GameStateUpdate {
   // ========================================================================
   score: number;
   wave: number;
-  isGameOver: boolean;
-}
-
-/**
- * Individual asteroid state
- */
-export interface AsteroidState {
-  id: number;
-  phi: number;
-  theta: number;
-  size: 1 | 2 | 3 | 4; // Size category
-  rotationAngle: number; // Visual rotation
-  isHit: boolean; // Turning red (hit but not yet broken)
-  hitTimer: number; // Seconds until break
-}
-
-/**
- * Individual bullet state
- */
-export interface BulletState {
-  id: number;
-  phi: number;
-  theta: number;
-  age: number; // Ticks since spawn
-  ownerId?: number; // For multiplayer: who shot it
+  status: GameStatus;
 }
 
 /**
@@ -92,19 +61,21 @@ export function createEmptyGameState(): GameStateUpdate {
   return {
     tick: 0,
     timestamp: 0,
+    lastInputSeq: 0,
     ship: {
-      phi: Math.PI / 2,
-      theta: Math.PI / 2,
+      position: { phi: Math.PI / 2, theta: Math.PI / 2 },
       aimAngle: 0,
       lives: 3,
       invincible: false,
-      invincibleTimer: 0,
+      invincibleTicks: 0,
+      cooldownLevel: 0,
+      rayCountLevel: 0,
     },
     asteroids: [],
-    bullets: [],
+    projectiles: [],
     powerUps: [],
     score: 0,
     wave: 1,
-    isGameOver: false,
+    status: "waiting",
   };
 }

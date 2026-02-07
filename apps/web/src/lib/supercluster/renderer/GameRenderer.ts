@@ -32,17 +32,21 @@ import { ShipRenderer } from './Ship';
 // appeared slower when moving in the same direction as the ship.
 // ============================================================================
 export class GameRenderer {
+	// Basic Three.JS objects
 	private renderer: THREE.WebGLRenderer;
 	private scene: THREE.Scene;
 	private camera: THREE.PerspectiveCamera;
 
+	// Game objects
 	private planet: PlanetRenderer;
 	private ship: ShipRenderer;
 	private asteroids: AsteroidRenderer;
 	private bullets: BulletRenderer;
 	private collisionSystem: CollisionSystem;
 
-	private config: GameConfig; // GUI-controlled projectile values only
+	// GUI-controlled projectile values only
+	// TODO: Get rid of this. just for game calibration
+	private config: GameConfig;
 
 	private animationId: number | null = null;
 	private lastState: GameState | null = null;
@@ -179,7 +183,10 @@ export class GameRenderer {
 				position: { phi: Math.PI / 2, theta: Math.PI / 2 },
 				aimAngle: 0,
 				lives: DEFAULT_GAMEPLAY.shipLives,
-				invincible: DEFAULT_GAMEPLAY.shipInvincible
+				invincible: DEFAULT_GAMEPLAY.shipInvincible,
+				invincibleTicks: 0,
+				cooldownLevel: 0,
+				rayCountLevel: 0
 			},
 			0,
 			0
@@ -611,7 +618,10 @@ export class GameRenderer {
 				position: spherical,
 				aimAngle: this.shipAimAngle,
 				lives: this.shipLives,
-				invincible: this.shipInvincible
+				invincible: this.shipInvincible,
+				invincibleTicks: 0,
+				cooldownLevel: 0,
+				rayCountLevel: 0
 			},
 			this.ship.getCurrentDirectionAngle(),
 			this.shipAimAngle

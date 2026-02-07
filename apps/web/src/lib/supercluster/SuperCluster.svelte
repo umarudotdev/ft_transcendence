@@ -43,6 +43,10 @@
 
 	let aimAngle = 0;
 
+	// Sequence tracking for client-side prediction
+	let inputSeq = 0; // Monotonically increasing sequence number
+	let clientTick = 0; // Client's local tick counter
+
 	// ========================================================================
 	// Lifecycle
 	// ========================================================================
@@ -225,7 +229,8 @@
 		}
 
 		if (changed) {
-			sendMessage({ type: 'input', keys: { ...inputState } });
+			inputSeq++;
+			sendMessage({ type: 'input', seq: inputSeq, tick: clientTick, keys: { ...inputState } });
 			// Also update local renderer for immediate feedback
 			renderer?.setInput(inputState);
 		}
@@ -267,7 +272,8 @@
 		}
 
 		if (changed) {
-			sendMessage({ type: 'input', keys: { ...inputState } });
+			inputSeq++;
+			sendMessage({ type: 'input', seq: inputSeq, tick: clientTick, keys: { ...inputState } });
 			// Also update local renderer for immediate feedback
 			renderer?.setInput(inputState);
 		}
@@ -289,7 +295,8 @@
 		// This gives: 0 = down/forward, PI/2 = right, PI = up, -PI/2 = left
 		aimAngle = Math.atan2(dx, dy);
 
-		sendMessage({ type: 'aim', angle: aimAngle });
+		inputSeq++;
+		sendMessage({ type: 'aim', seq: inputSeq, angle: aimAngle });
 		renderer?.setAimAngle(aimAngle);
 	}
 

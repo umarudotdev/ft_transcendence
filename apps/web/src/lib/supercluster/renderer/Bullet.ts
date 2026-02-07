@@ -1,4 +1,4 @@
-import { GAME_CONST, type GameConfig, type BulletConfig } from '@ft/supercluster';
+import { GAME_CONST, type GameConfig } from '@ft/supercluster';
 import * as THREE from 'three';
 
 import { RENDERER_CONST } from '../constants/renderer';

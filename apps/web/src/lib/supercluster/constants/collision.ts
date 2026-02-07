@@ -4,4 +4,8 @@
 // ============================================================================
 
 // Re-export collision-related items from shared package
-export { GAMEPLAY_CONST, getAsteroidRadius, getAsteroidCollisionRadius } from '@ft/supercluster';
+export {
+  GAMEPLAY_CONST,
+  getAsteroidRadius,
+  getAsteroidCollisionRadius,
+} from "@ft/supercluster";

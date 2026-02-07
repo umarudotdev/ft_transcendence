@@ -12,8 +12,8 @@ import { RENDERER_CONST } from "../constants/renderer";
 import { AsteroidRenderer } from "./Asteroid";
 import { BulletRenderer } from "./Bullet";
 import { CollisionSystem } from "./CollisionSystem";
-import { PlanetRenderer } from "./Planet";
 import { ShipRenderer } from "./Ship";
+import { WorldRenderer } from "./World";
 
 // ============================================================================
 // Game Renderer
@@ -36,7 +36,7 @@ export class GameRenderer {
   private camera: THREE.PerspectiveCamera;
 
   // Game objects
-  private planet: PlanetRenderer;
+  private world: WorldRenderer;
   private ship: ShipRenderer;
   private asteroids: AsteroidRenderer;
   private bullets: BulletRenderer;
@@ -115,17 +115,17 @@ export class GameRenderer {
     // Add lighting
     this.addLights();
 
-    // Create planet (uses GAME_CONST and RENDERER_CONST directly)
-    this.planet = new PlanetRenderer(this.camera);
-    this.scene.add(this.planet.group);
+    // Create world (planet + force field container)
+    this.world = new WorldRenderer();
+    this.scene.add(this.world.group);
+
+    // Create asteroids (as children of planet so they rotate with it)
+    this.asteroids = new AsteroidRenderer();
+    this.world.group.add(this.asteroids.group);
 
     // Create ship (uses GAME_CONST and RENDERER_CONST directly)
     this.ship = new ShipRenderer();
     this.scene.add(this.ship.group);
-
-    // Create asteroids (as children of planet so they rotate with it)
-    this.asteroids = new AsteroidRenderer();
-    this.planet.group.add(this.asteroids.group);
 
     // Create bullets in WORLD SPACE (not planet children)
     // This ensures bullets travel at absolute speed regardless of ship movement
@@ -165,7 +165,7 @@ export class GameRenderer {
     const { x, y, z } = GAME_CONST.SHIP_INITIAL_POS;
     this.shipPosition.set(x, y, z);
     this.planetQuaternion.identity();
-    this.planet.group.quaternion.copy(this.planetQuaternion);
+    this.world.group.quaternion.copy(this.planetQuaternion);
 
     // Reset ship visual state
     this.targetShipDirection = 0;
@@ -265,7 +265,7 @@ export class GameRenderer {
     this.planetQuaternion.multiply(this._tempQuat);
 
     // Apply to visuals
-    this.planet.group.quaternion.copy(this.planetQuaternion);
+    this.world.group.quaternion.copy(this.planetQuaternion);
     this.ship.updateFromState(
       state.ship,
       this.ship.getCurrentDirectionAngle(),
@@ -535,6 +535,9 @@ export class GameRenderer {
         this.checkCollisions();
       }
 
+      // Update world (force field shader needs camera position)
+      this.world.update(this.camera.position);
+
       this.render();
     };
 
@@ -619,7 +622,7 @@ export class GameRenderer {
       this.shipPosition.normalize();
 
       // Apply planet rotation to the visual
-      this.planet.group.quaternion.copy(this.planetQuaternion);
+      this.world.group.quaternion.copy(this.planetQuaternion);
     }
 
     // ====================================================================
@@ -745,7 +748,7 @@ export class GameRenderer {
       this.explosionCircle = null;
     }
 
-    this.planet.dispose();
+    this.world.dispose();
     this.ship.dispose();
     this.asteroids.dispose();
     this.bullets.dispose();

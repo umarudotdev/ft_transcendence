@@ -44,8 +44,7 @@ export class GameRenderer {
 	private bullets: BulletRenderer;
 	private collisionSystem: CollisionSystem;
 
-	// GUI-controlled projectile values only
-	// TODO: Get rid of this. just for game calibration
+	// Projectile configuration (lifetime, cooldown, rayCount, spreadAngle)
 	private config: GameConfig;
 
 	private animationId: number | null = null;
@@ -675,32 +674,6 @@ export class GameRenderer {
 	}
 
 	// ========================================================================
-	// Configuration (GUI-controlled values only)
-	// ========================================================================
-	updateConfig(config: GameConfig): void {
-		this.config = config;
-		// Only bullets need GUI config updates (lifetime, cooldown, rayCount, spreadAngle)
-		this.bullets.updateGameConfig(config);
-	}
-
-	getConfig(): GameConfig {
-		return { ...this.config };
-	}
-
-	// Convenience methods for GUI-controlled colors
-	setForceFieldColor(color: number): void {
-		this.planet.setForceFieldColor(color);
-	}
-
-	getForceFieldColor(): number {
-		return this.planet.getForceFieldColor();
-	}
-
-	setAimDotColor(color: number): void {
-		this.ship.setAimDotColor(color);
-	}
-
-	// ========================================================================
 	// Resize Handling
 	// ========================================================================
 	private handleResize(): void {
@@ -750,48 +723,6 @@ export class GameRenderer {
 		this.asteroids.dispose();
 		this.bullets.dispose();
 		this.renderer.dispose();
-	}
-
-	// ========================================================================
-	// Asteroid Controls
-	// ========================================================================
-	getAsteroidRenderer(): AsteroidRenderer {
-		return this.asteroids;
-	}
-
-	// ========================================================================
-	// Bullet Controls
-	// ========================================================================
-	getBulletRenderer(): BulletRenderer {
-		return this.bullets;
-	}
-
-	getBulletCount(): number {
-		return this.bullets.getCount();
-	}
-
-	/**
-	 * Update projectile gameplay mechanics (lifetime, cooldown, rayCount, spreadAngle)
-	 * These are GUI-controlled values
-	 */
-	updateProjectileConfig(config: Partial<GameConfig['projectile']>): void {
-		Object.assign(this.config.projectile, config);
-		this.bullets.updateGameConfig(this.config);
-	}
-
-	setBulletColor(color: number): void {
-		this.bullets.setColor(color);
-	}
-
-	clearBullets(): void {
-		this.bullets.clear();
-	}
-
-	// ========================================================================
-	// Asteroid Controls
-	// ========================================================================
-	getAsteroidCount(): number {
-		return this.asteroids.getCount();
 	}
 
 	// ========================================================================

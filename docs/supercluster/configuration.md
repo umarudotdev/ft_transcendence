@@ -2,86 +2,175 @@
 
 ## Overview
 
-SuperCluster uses a layered configuration system with clear separation between **server-authoritative gameplay mechanics** and **client-side visual preferences**.
+SuperCluster uses a layered configuration system with clear separation between **shared gameplay constants** and **client-only visual settings**.
 
 ---
 
-## Configuration Types
+## Configuration Layers
 
-### GameConfig (Server-Authoritative)
+### 1. GAME_CONST (Shared - Immutable Physics)
 
-All gameplay mechanics that affect game balance, physics, and collision detection.
+Physics constants that NEVER change during gameplay. Shared between server and client.
+
+**Location:** `packages/supercluster/src/constants.ts`
 
 ```typescript
-interface GameConfig {
-  // GAME LAYER: Affects gameplay mechanics (ship/bullet/asteroid positions)
-  gameSphereRadius: number; // Radius where gameplay happens
+export const GAME_CONST = Object.freeze({
+  // Sphere Geometry
+  SPHERE_RADIUS: 100,      // Game sphere radius
+  FORCE_FIELD_RADIUS: 95,  // Visual boundary
+  PLANET_RADIUS: 70,       // Visual planet size
 
-  // VISUAL LAYER: Purely cosmetic (doesn't affect gameplay)
-  forceFieldRadius: number; // Visual radius of force field (< gameSphereRadius)
-  planetRadius: number;     // Visual radius of planet (< forceFieldRadius)
+  // Timing
+  TICK_RATE: 60,           // Server ticks per second
 
-  // GAME MECHANICS: All speeds in rad/tick (server converts)
-  shipSpeed: number;        // Angular velocity (rad/tick)
+  // Ship Physics
+  SHIP_SPEED: 0.01,        // Angular velocity (rad/tick)
+  SHIP_INITIAL_POS: { x: 0, y: 0, z: 1 },
 
-  // Projectile mechanics (nested for organization)
+  // Projectile Physics
+  PROJECTILE_SPEED: 0.015, // Angular velocity (rad/tick)
+  PROJECTILE_LIFETIME: 102, // Ticks before despawn
+  PROJECTILE_SPREAD_ANGLE: Math.PI / 18, // 10 degrees
+
+  // Asteroid Physics
+  ASTEROID_SPEED_MIN: 0.00167, // Min angular velocity (rad/tick)
+  ASTEROID_SPEED_MAX: 0.005,   // Max angular velocity (rad/tick)
+});
+```
+
+### 2. GAMEPLAY_CONST (Shared - Mechanics)
+
+Gameplay mechanics that affect collision detection and game balance.
+
+**Location:** `packages/supercluster/src/constants.ts`
+
+```typescript
+export const GAMEPLAY_CONST = Object.freeze({
+  HIT_DELAY_SEC: 0.5,       // Delay before asteroid breaks
+  BULLET_RADIUS: 1,         // Collision radius
+  SHIP_RADIUS: 3,           // Collision radius
+  ASTEROID_PADDING: 1.3,    // Forgiving collision multiplier
+  ASTEROID_DIAM: [2, 4, 6, 8] as const, // Diameters by size 1-4
+});
+```
+
+### 3. DEFAULT_GAMEPLAY (Shared - Starting Values)
+
+Values that reset when the game restarts.
+
+**Location:** `packages/supercluster/src/defaults.ts`
+
+```typescript
+export const DEFAULT_GAMEPLAY = Object.freeze({
+  shipLives: 3,
+  shipInvincible: false,
+  invincibleTimer: 2.0,     // Seconds of invincibility after damage
+  asteroidWave: { 1: 12, 2: 8, 3: 4, 4: 2 }, // Initial asteroid counts
+});
+```
+
+### 4. GameConfig (Shared - Projectile Mechanics)
+
+Configuration for projectile behavior (used by BulletRenderer).
+
+**Location:** `packages/supercluster/src/types.ts`
+
+```typescript
+export interface GameConfig {
   projectile: {
-    speed: number;          // Angular velocity (rad/tick)
-    lifetime: number;       // Ticks before despawn
-    cooldown: number;       // Ticks between shots
-    rayCount: number;       // Number of bullets per shot (1-5)
-    spreadAngle: number;    // Angle between rays in radians
+    lifetime: number;     // Ticks before despawn
+    cooldown: number;     // Ticks between shots
+    rayCount: number;     // Bullets per shot (1-5)
+    spreadAngle: number;  // Angle between rays (radians)
   };
-
-  // Asteroid mechanics
-  asteroidSpeedMin: number; // Minimum asteroid angular velocity (rad/tick)
-  asteroidSpeedMax: number; // Maximum asteroid angular velocity (rad/tick)
-
-  tickRate: number;         // Ticks per second (60)
 }
+
+export const DEFAULT_CONFIG: GameConfig = {
+  projectile: {
+    lifetime: 102,                // ~1.7 sec at 60 ticks/sec
+    cooldown: 18,                 // ~0.3 sec at 60 ticks/sec
+    rayCount: 1,                  // Single shot
+    spreadAngle: Math.PI / 18,    // 10 degrees
+  },
+};
 ```
 
-**Key Points:**
-- All speeds in `rad/tick` (server-authoritative)
-- Client converts to `rad/sec` using: `speedRadPerSec = speedRadPerTick × tickRate`
-- `tickRate` is the conversion factor (default: 60)
+### 5. RENDERER_CONST (Client Only - Visuals)
 
-### RendererConfig (Client-Only)
+Visual settings that don't affect gameplay.
 
-Visual preferences that don't affect gameplay.
+**Location:** `apps/web/src/lib/supercluster/constants/renderer.ts`
 
 ```typescript
-interface RendererConfig {
-  // Force field visual settings
-  forceFieldOpacity: number;      // Front face opacity
-  forceFieldBackFade: number;     // Back face opacity
+export const RENDERER_CONST = Object.freeze({
+  // Scene
+  SCENE_BG: 0x111122,
 
-  // Debug options
-  showAxes: boolean;              // Show XYZ axes
-  showDebugInfo: boolean;         // Show debug text
+  // Camera
+  CAMERA_FOV: 60,
+  CAMERA_NEAR: 0.1,
+  CAMERA_FAR: 1000,
+  CAMERA_DIST_MULT: 2,
 
-  // Ship visual controls
-  shipRotationSpeed: number;      // Lerp speed (0-1, higher = faster)
+  // Lighting
+  AMB_LIGHT_INTENSITY: 0.4,
+  DIR_LIGHT_INTENSITY: 0.8,
+  DIR_LIGHT_POS: { x: 50, y: 50, z: 100 },
 
-  // Aim dot visual settings
-  aimDotSize: number;             // Radius of the dot
-  aimDotColor: number;            // Hex color
-  aimDotOrbitRadius: number;      // Distance from ship center
-}
+  // Force Field
+  FORCE_FIELD_COLOR: 0x00ffaa,
+  FORCE_FIELD_OPACITY: 0.35,
+
+  // Ship & Aim
+  SHIP_ROTATION_SPEED: 10,
+  AIM_DOT_SIZE: 1,
+  AIM_DOT_COLOR: 0xffff00,
+  AIM_DOT_ORBIT_RADIUS: 4,
+
+  // Bullet Visuals
+  BULLET_COLOR: 0xffaa00,
+  BULLET_MAX_COUNT: 100,
+  BULLET_RADIUS: 0.75,
+  BULLET_STRETCH: 2,
+  BULLET_EMISSIVE_INT: 0.5,
+  BULLET_ROUGHNESS: 0.3,
+  BULLET_METALNESS: 0.7,
+
+  // Asteroid Visuals
+  ASTEROID_COLOR: 0x8b7355,
+  ASTEROID_HIT_COLOR: 0xff0000,
+  ASTEROID_ROUGHNESS: 0.9,
+  ASTEROID_METALNESS: 0.1,
+  ASTEROID_ROT_SPEED: 2,
+  ASTEROID_FRAG_ROT: 3,
+  ASTEROID_FRAG_SPEED_MULT: 1.3,
+
+  // Explosion
+  EXPLOSION_RADIUS: 8,
+  EXPLOSION_COLOR: 0xff0000,
+  EXPLOSION_OPACITY: 0.7,
+});
 ```
 
-### BulletConfig (Client-Only)
+### 6. SHIP_GEOMETRY (Client Only - Procedural Ship)
 
-Visual and performance settings for bullets.
+Constants for the procedural ship shape. Replace with 3D model loader when ready.
+
+**Location:** `apps/web/src/lib/supercluster/assets/ship-geometry.ts`
 
 ```typescript
-interface BulletConfig {
-  color: number;      // Hex color (yellow/orange) - visual only
-  maxBullets: number; // Max bullets on screen (client performance limit)
-}
+export const SHIP_GEOMETRY = Object.freeze({
+  COLOR: 0x888888,
+  ROUGHNESS: 0.8,
+  METALNESS: 0,
+  SIZE: 4,
+  HEIGHT: 2,
+  WIDTH_MULT: 0.6,
+  AIM_ORBIT_OPACITY: 0.3,
+  INVINCIBLE_BLINK_MS: 100,
+});
 ```
-
-**Important:** All bullet gameplay mechanics (speed, lifetime, cooldown, rayCount, spreadAngle) are in `GameConfig.projectile`, **not** in `BulletConfig`.
 
 ---
 
@@ -89,18 +178,13 @@ interface BulletConfig {
 
 ### Server-Authoritative (rad/tick)
 
-All speeds in GameConfig are measured in **radians per tick**:
+All speeds in GAME_CONST are measured in **radians per tick**:
 
 ```typescript
-{
-  shipSpeed: 0.01,              // 0.01 rad/tick
-  projectile: {
-    speed: 0.05,                // 0.05 rad/tick
-  },
-  asteroidSpeedMin: 0.00167,    // 0.00167 rad/tick
-  asteroidSpeedMax: 0.005,      // 0.005 rad/tick
-  tickRate: 60,                 // Server runs at 60 ticks/sec
-}
+SHIP_SPEED: 0.01,           // 0.01 rad/tick
+PROJECTILE_SPEED: 0.015,    // 0.015 rad/tick
+ASTEROID_SPEED_MIN: 0.00167, // 0.00167 rad/tick
+TICK_RATE: 60,              // Server runs at 60 ticks/sec
 ```
 
 ### Client Conversion (rad/sec)
@@ -109,11 +193,11 @@ The client renderer converts tick-based to time-based:
 
 ```typescript
 // In client rendering code:
-const speedRadPerSec = config.shipSpeed * config.tickRate;
+const speedRadPerSec = GAME_CONST.SHIP_SPEED * GAME_CONST.TICK_RATE;
 // 0.01 rad/tick × 60 ticks/sec = 0.6 rad/sec
 
-const bulletSpeedRadPerSec = config.projectile.speed * config.tickRate;
-// 0.05 rad/tick × 60 ticks/sec = 3.0 rad/sec
+const bulletSpeedRadPerSec = GAME_CONST.PROJECTILE_SPEED * GAME_CONST.TICK_RATE;
+// 0.015 rad/tick × 60 ticks/sec = 0.9 rad/sec
 ```
 
 **Why this matters:**
@@ -123,135 +207,25 @@ const bulletSpeedRadPerSec = config.projectile.speed * config.tickRate;
 
 ---
 
-## Default Configuration
+## Import Reference
 
 ```typescript
-export const DEFAULT_CONFIG: GameConfig = {
-  // Game layer
-  gameSphereRadius: 100,      // Game sphere (where ship/bullets/asteroids exist)
+// Shared (server + client)
+import {
+  GAME_CONST,
+  GAMEPLAY_CONST,
+  DEFAULT_GAMEPLAY,
+  createWaveArray,
+  type GameConfig,
+  DEFAULT_CONFIG
+} from '@ft/supercluster';
 
-  // Visual layer (cosmetic only)
-  forceFieldRadius: 95,       // Force field appears inside game sphere
-  planetRadius: 70,           // Planet core inside force field
+// Client only - renderer constants
+import { RENDERER_CONST } from '../constants/renderer';
 
-  // Game mechanics (angular speeds in rad/tick)
-  shipSpeed: 0.01,            // 0.6 rad/sec at 60 ticks/sec
-
-  // Projectile mechanics
-  projectile: {
-    speed: 0.05,              // 3.0 rad/sec at 60 ticks/sec
-    lifetime: 120,            // 2 seconds at 60 ticks/sec
-    cooldown: 12,             // 0.2 seconds at 60 ticks/sec (5 shots/sec)
-    rayCount: 1,              // Single shot
-    spreadAngle: Math.PI / 18, // 10 degrees
-  },
-
-  // Asteroid mechanics
-  asteroidSpeedMin: 0.00167,  // ~0.1 rad/sec at 60 ticks/sec
-  asteroidSpeedMax: 0.005,    // ~0.3 rad/sec at 60 ticks/sec
-
-  tickRate: 60,
-};
-
-export const DEFAULT_RENDERER_CONFIG: RendererConfig = {
-  forceFieldOpacity: 0.35,
-  forceFieldBackFade: 0.0,
-  showAxes: false,
-  showDebugInfo: false,
-
-  // Ship rotation
-  shipRotationSpeed: 10,      // ~0.3s to rotate at 60fps
-
-  // Aim dot
-  aimDotSize: 1,
-  aimDotColor: 0xffff00,      // Yellow
-  aimDotOrbitRadius: 4,       // Slightly larger than ship
-};
-
-export const DEFAULT_BULLET_CONFIG: BulletConfig = {
-  color: 0xffaa00,            // Orange-yellow
-  maxBullets: 100,            // Performance cap for low-end devices
-};
+// Client only - ship geometry
+import { SHIP_GEOMETRY } from '../assets/ship-geometry';
 ```
-
----
-
-## Configuration Updates
-
-### Gameplay Mechanics (GameConfig)
-
-Updates to gameplay mechanics propagate to all affected systems:
-
-```typescript
-// Update projectile mechanics
-renderer.updateProjectileConfig({
-  rayCount: 3,                // Spread shot
-  spreadAngle: Math.PI / 12,  // 15 degrees
-});
-
-// This updates:
-// - BulletRenderer.spawnSpread() behavior
-// - Shooting mechanics in GameRenderer.shoot()
-```
-
-### Visual Settings (RendererConfig)
-
-Updates to visual settings affect only appearance:
-
-```typescript
-// Update renderer visuals
-renderer.updateRendererConfig({
-  forceFieldOpacity: 0.5,
-  shipRotationSpeed: 15,
-});
-
-// This updates:
-// - PlanetRenderer material opacity
-// - ShipRenderer rotation lerp speed
-// - Does NOT affect gameplay
-```
-
-### Visual-Only Radii
-
-Some radius updates are purely cosmetic:
-
-```typescript
-// Update visual-only radii (doesn't affect gameplay)
-renderer.setPlanetRadius(80);       // Bigger planet visual
-renderer.setForceFieldRadius(90);   // Smaller force field visual
-
-// Gameplay sphere radius stays at 100
-// Ship/bullets/asteroids still collide at radius 100
-```
-
----
-
-## Debug GUI Integration
-
-The Debug GUI reads all initial values from actual config (no hardcoding):
-
-```typescript
-constructor(renderer: GameRenderer, container?: HTMLElement) {
-  // Initialize ALL state from actual config (single source of truth)
-  const config = this.renderer.getConfig();
-  const rendererConfig = this.renderer.getRendererConfig();
-  const bulletConfig = this.renderer.getBulletConfig();
-
-  // Projectile mechanics from GameConfig (convert ticks → seconds for GUI)
-  this.state.bulletLifetime = config.projectile.lifetime / config.tickRate;
-  this.state.bulletCooldown = config.projectile.cooldown / config.tickRate;
-  this.state.bulletRayCount = config.projectile.rayCount;
-  this.state.bulletSpreadAngle = (config.projectile.spreadAngle * 180) / Math.PI;
-
-  // Visual config from BulletConfig
-  this.state.bulletColor = `#${bulletConfig.color.toString(16).padStart(6, "0")}`;
-}
-```
-
-**Unit Conversions in GUI:**
-- Display: seconds, degrees (user-friendly)
-- Storage: ticks, radians (game-friendly)
-- Conversion happens in `onChange` handlers
 
 ---
 
@@ -259,143 +233,41 @@ constructor(renderer: GameRenderer, container?: HTMLElement) {
 
 ### Single Source of Truth
 
-**Problem:** Hardcoded values scattered across codebase
-**Solution:** All values defined once in config objects
+All values defined once in their appropriate constant objects:
 
 ```typescript
-// ❌ Bad: Hardcoded values
-const bulletSpeed = 0.05;  // Defined in Bullet.ts
-const bulletSpeed = 0.05;  // Also defined in GameRenderer.ts
-const bulletSpeed = 0.05;  // Also defined in DebugGui.ts
+// ❌ Bad: Hardcoded values scattered
+const bulletSpeed = 0.015;  // in Bullet.ts
+const bulletSpeed = 0.015;  // also in GameRenderer.ts
 
 // ✅ Good: Single source of truth
-config.projectile.speed     // Defined once in types.ts
+GAME_CONST.PROJECTILE_SPEED  // Defined once in constants.ts
 ```
 
 ### Clear Separation
 
-**Problem:** Mixed gameplay and visual settings
-**Solution:** Separate config objects for different concerns
+| Constant Type     | Purpose                  | Affects Gameplay? | Location |
+|-------------------|--------------------------|-------------------|----------|
+| GAME_CONST        | Physics, collision       | Yes               | Shared   |
+| GAMEPLAY_CONST    | Game mechanics           | Yes               | Shared   |
+| DEFAULT_GAMEPLAY  | Starting values          | Yes (resets)      | Shared   |
+| GameConfig        | Projectile behavior      | Yes               | Shared   |
+| RENDERER_CONST    | Visual settings          | No                | Client   |
+| SHIP_GEOMETRY     | Ship appearance          | No                | Client   |
 
-| Config Type      | Purpose                  | Affects Gameplay? |
-|------------------|--------------------------|-------------------|
-| GameConfig       | Physics, collision, AI   | Yes               |
-| RendererConfig   | Visual preferences       | No                |
-| BulletConfig     | Bullet appearance, caps  | No (visual only)  |
+### Immutability
 
-### Server-Client Consistency
-
-**Problem:** Client and server use different values
-**Solution:** Shared GameConfig package
-
-```typescript
-// packages/supercluster/src/types.ts
-export interface GameConfig { ... }
-
-// Both import same types:
-import { GameConfig } from "@ft/supercluster";  // Client
-import { GameConfig } from "@ft/supercluster";  // Server
-```
-
----
-
-## Common Patterns
-
-### Reading Config
+All constant objects use `Object.freeze()` to prevent accidental mutation:
 
 ```typescript
-// Get current config (returns copy to prevent mutation)
-const config = renderer.getConfig();
-const rendererConfig = renderer.getRendererConfig();
-const bulletConfig = renderer.getBulletConfig();
+// This will fail silently or throw in strict mode:
+GAME_CONST.SHIP_SPEED = 0.02;  // ❌ Cannot modify frozen object
 ```
-
-### Updating Config
-
-```typescript
-// Update entire config
-renderer.updateConfig(newGameConfig);
-
-// Update specific projectile settings
-renderer.updateProjectileConfig({
-  rayCount: 5,
-  spreadAngle: Math.PI / 6,
-});
-
-// Update visual settings
-renderer.setBulletColor(0xff0000);  // Red bullets
-renderer.setForceFieldOpacity(0.5, 0.2);
-```
-
-### Converting Units
-
-```typescript
-// Ticks → Seconds
-const lifetimeSeconds = config.projectile.lifetime / config.tickRate;
-
-// Seconds → Ticks
-const lifetimeTicks = lifetimeSeconds * config.tickRate;
-
-// Radians → Degrees
-const spreadDegrees = (config.projectile.spreadAngle * 180) / Math.PI;
-
-// Degrees → Radians
-const spreadRadians = (spreadDegrees * Math.PI) / 180;
-```
-
----
-
-## Migration Notes
-
-### From Old to New Structure
-
-**Old structure (before refactoring):**
-```typescript
-// Bullet mechanics scattered across multiple configs
-GameConfig {
-  projectileSpeed: 0.05,
-  projectileLifetime: 120,
-  projectileCooldown: 12,
-}
-
-BulletConfig {
-  rayCount: 1,          // ❌ Affects gameplay
-  spreadAngle: 0.17,    // ❌ Affects gameplay
-  color: 0xffaa00,
-  maxBullets: 100,
-}
-```
-
-**New structure (after refactoring):**
-```typescript
-// All mechanics nested in GameConfig.projectile
-GameConfig {
-  projectile: {
-    speed: 0.05,
-    lifetime: 120,
-    cooldown: 12,
-    rayCount: 1,        // ✅ Gameplay mechanic
-    spreadAngle: 0.17,  // ✅ Gameplay mechanic
-  },
-}
-
-BulletConfig {
-  color: 0xffaa00,      // ✅ Visual only
-  maxBullets: 100,      // ✅ Performance only
-}
-```
-
-**Breaking changes:**
-- `config.projectileSpeed` → `config.projectile.speed`
-- `config.projectileLifetime` → `config.projectile.lifetime`
-- `config.projectileCooldown` → `config.projectile.cooldown`
-- `bulletConfig.rayCount` → `config.projectile.rayCount`
-- `bulletConfig.spreadAngle` → `config.projectile.spreadAngle`
 
 ---
 
 ## See Also
 
-- [Notes](./notes.md) - Development decisions and architecture
-- [Collision System](./collision.md) - How config affects collision detection
-- [Networking](./networking.md) - How config is synchronized across clients
+- [Variables Audit](./variables-audit.md) - Complete list of all constants
+- [Concepts: Movement](./concepts/movement.md) - How movement works on a sphere
+- [Concepts: Collision](./concepts/collision.md) - How collision detection works

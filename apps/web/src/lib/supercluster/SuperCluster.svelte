@@ -2,7 +2,6 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import { GameRenderer } from './renderer';
-	import { DebugGui } from './debug';
 	import {
 		DEFAULT_CONFIG,
 		type GameState,
@@ -28,7 +27,6 @@
 	// ========================================================================
 	let canvas: HTMLCanvasElement;
 	let renderer: GameRenderer | null = null;
-	let debugGui: DebugGui | null = null;
 	let ws: WebSocket | null = null;
 	let connected = $state(false);
 	let gameState = $state<GameState | null>(null);
@@ -55,11 +53,6 @@
 		renderer = new GameRenderer(canvas, config);
 		renderer.start();
 
-		// Setup debug GUI if enabled
-		if (debug && renderer) {
-			debugGui = new DebugGui(renderer);
-		}
-
 		// Setup input handlers
 		setupInputHandlers();
 
@@ -77,11 +70,6 @@
 		// Cleanup
 		cleanupInputHandlers();
 		disconnectWebSocket();
-
-		if (debugGui) {
-			debugGui.dispose();
-			debugGui = null;
-		}
 
 		if (renderer) {
 			renderer.dispose();

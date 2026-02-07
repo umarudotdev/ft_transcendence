@@ -1,6 +1,7 @@
 import { GAME_CONST, type ShipState } from '@ft/supercluster';
 import * as THREE from 'three';
 
+import { SHIP_GEOMETRY } from '../assets/ship-geometry';
 import { RENDERER_CONST } from '../constants/renderer';
 
 // ============================================================================
@@ -26,9 +27,9 @@ export class ShipRenderer {
 		// Create triangle geometry for ship
 		const geometry = this.createTriangleGeometry();
 		const material = new THREE.MeshStandardMaterial({
-			color: 0x888888, // Grey
-			metalness: 0, // No metallic
-			roughness: 0.8, // Matte finish
+			color: SHIP_GEOMETRY.COLOR,
+			metalness: SHIP_GEOMETRY.METALNESS,
+			roughness: SHIP_GEOMETRY.ROUGHNESS,
 			side: THREE.DoubleSide
 		});
 
@@ -75,7 +76,7 @@ export class ShipRenderer {
 		const material = new THREE.LineBasicMaterial({
 			color: RENDERER_CONST.AIM_DOT_COLOR,
 			transparent: true,
-			opacity: 0.3
+			opacity: SHIP_GEOMETRY.AIM_ORBIT_OPACITY
 		});
 
 		const orbit = new THREE.LineLoop(geometry, material);
@@ -88,8 +89,9 @@ export class ShipRenderer {
 		// Ship lies on XY plane (tangent to sphere at (0,0,radius))
 		// Tip points toward -Y (forward/north on sphere)
 		// Back is raised in +Z (up from surface)
-		const size = 4;
-		const height = 2; // Height of the back of the ship
+		const size = SHIP_GEOMETRY.SIZE;
+		const height = SHIP_GEOMETRY.HEIGHT;
+		const width = size * SHIP_GEOMETRY.WIDTH_MULT;
 
 		// Define vertices for a 3D wedge (2 triangles)
 		const vertices = new Float32Array([
@@ -97,10 +99,10 @@ export class ShipRenderer {
 			0,
 			-size,
 			0, // Tip (forward)
-			-size * 0.6,
+			-width,
 			size * 0.5,
 			0, // Back left bottom
-			size * 0.6,
+			width,
 			size * 0.5,
 			0, // Back right bottom
 
@@ -108,51 +110,51 @@ export class ShipRenderer {
 			0,
 			-size,
 			0, // Tip (same as bottom - flat at front)
-			size * 0.6,
+			width,
 			size * 0.5,
 			0, // Back right bottom
-			size * 0.6,
+			width,
 			size * 0.5,
 			height, // Back right top
 
 			0,
 			-size,
 			0, // Tip
-			size * 0.6,
+			width,
 			size * 0.5,
 			height, // Back right top
-			-size * 0.6,
+			-width,
 			size * 0.5,
 			height, // Back left top
 
 			0,
 			-size,
 			0, // Tip
-			-size * 0.6,
+			-width,
 			size * 0.5,
 			height, // Back left top
-			-size * 0.6,
+			-width,
 			size * 0.5,
 			0, // Back left bottom
 
 			// Back face (closes the wedge)
-			-size * 0.6,
+			-width,
 			size * 0.5,
 			0, // Back left bottom
-			-size * 0.6,
+			-width,
 			size * 0.5,
 			height, // Back left top
-			size * 0.6,
+			width,
 			size * 0.5,
 			height, // Back right top
 
-			-size * 0.6,
+			-width,
 			size * 0.5,
 			0, // Back left bottom
-			size * 0.6,
+			width,
 			size * 0.5,
 			height, // Back right top
-			size * 0.6,
+			width,
 			size * 0.5,
 			0 // Back right bottom
 		]);
@@ -186,7 +188,7 @@ export class ShipRenderer {
 
 		// Handle invincibility visual (blinking)
 		if (state.invincible) {
-			this.mesh.visible = Math.floor(Date.now() / 100) % 2 === 0;
+			this.mesh.visible = Math.floor(Date.now() / SHIP_GEOMETRY.INVINCIBLE_BLINK_MS) % 2 === 0;
 		} else {
 			this.mesh.visible = true;
 		}
@@ -220,18 +222,6 @@ export class ShipRenderer {
 
 	setCurrentDirectionAngle(angle: number): void {
 		this.currentDirectionAngle = angle;
-	}
-
-	// ========================================================================
-	// Color Controls (GUI-controlled)
-	// ========================================================================
-	setColor(color: number): void {
-		(this.mesh.material as THREE.MeshStandardMaterial).color.setHex(color);
-	}
-
-	setAimDotColor(color: number): void {
-		(this.aimDot.material as THREE.MeshBasicMaterial).color.setHex(color);
-		(this.aimOrbit.material as THREE.LineBasicMaterial).color.setHex(color);
 	}
 
 	// ========================================================================

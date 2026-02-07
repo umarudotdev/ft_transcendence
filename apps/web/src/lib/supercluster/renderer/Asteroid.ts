@@ -1,5 +1,7 @@
-import { GAME_CONST } from '@ft/supercluster';
+import { GAME_CONST, GAMEPLAY_CONST } from '@ft/supercluster';
 import * as THREE from 'three';
+
+import { RENDERER_CONST } from '../constants/renderer';
 
 // ============================================================================
 // Asteroid Data
@@ -44,9 +46,6 @@ export class AsteroidRenderer {
 	private readonly _scale = new THREE.Vector3();
 	private readonly _euler = new THREE.Euler();
 
-	// Size multipliers for asteroid visual size
-	private readonly SIZE_MULTIPLIERS = [2, 4, 6, 8]; // size 1-4
-
 	constructor(maxAsteroids = 100) {
 		this.group = new THREE.Group();
 
@@ -55,10 +54,10 @@ export class AsteroidRenderer {
 
 		// Create material with rocky asteroid appearance
 		const material = new THREE.MeshStandardMaterial({
-			color: 0x8b7355, // Brownish-gray rock color
-			roughness: 0.9,
-			metalness: 0.1,
-			flatShading: true // Faceted look for rocky appearance
+			color: RENDERER_CONST.ASTEROID_COLOR,
+			roughness: RENDERER_CONST.ASTEROID_ROUGHNESS,
+			metalness: RENDERER_CONST.ASTEROID_METALNESS,
+			flatShading: true
 		});
 
 		// Create instanced mesh
@@ -90,9 +89,9 @@ export class AsteroidRenderer {
 		// Random velocity direction tangent to sphere
 		const velocity = this.randomTangentVector(position);
 
-		// Random rotation speeds
-		const rotationSpeedX = (Math.random() - 0.5) * 2; // -1 to 1 rad/s
-		const rotationSpeedY = (Math.random() - 0.5) * 2;
+		// Random rotation speeds (uses RENDERER_CONST.ASTEROID_ROT_SPEED)
+		const rotationSpeedX = (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_ROT_SPEED;
+		const rotationSpeedY = (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_ROT_SPEED;
 
 		// Random movement speed from GAME_CONST (rad/tick → rad/sec)
 		const speedInRadPerTick =
@@ -250,8 +249,8 @@ export class AsteroidRenderer {
 		const selfRotation = new THREE.Quaternion().setFromEuler(this._euler);
 		this._quaternion.multiply(selfRotation);
 
-		// Scale based on size
-		const visualSize = this.SIZE_MULTIPLIERS[asteroid.size - 1] || 2;
+		// Scale based on size (uses GAMEPLAY_CONST.ASTEROID_DIAM)
+		const visualSize = GAMEPLAY_CONST.ASTEROID_DIAM[asteroid.size - 1] || 2;
 		this._scale.set(visualSize, visualSize, visualSize);
 
 		// Compose matrix
@@ -262,9 +261,9 @@ export class AsteroidRenderer {
 
 		// Set color (red if hit, normal otherwise)
 		if (asteroid.isHit) {
-			this.instancedMesh.setColorAt(index, new THREE.Color(0xff0000)); // Red
+			this.instancedMesh.setColorAt(index, new THREE.Color(RENDERER_CONST.ASTEROID_HIT_COLOR));
 		} else {
-			this.instancedMesh.setColorAt(index, new THREE.Color(0xffffff)); // White (normal)
+			this.instancedMesh.setColorAt(index, new THREE.Color(0xffffff)); // White (neutral tint)
 		}
 	}
 
@@ -332,12 +331,12 @@ export class AsteroidRenderer {
 				id: this.nextId++,
 				position: asteroid.position.clone(),
 				velocity: newVelocity,
-				rotationSpeedX: (Math.random() - 0.5) * 3, // Faster spin
-				rotationSpeedY: (Math.random() - 0.5) * 3,
+				rotationSpeedX: (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_FRAG_ROT,
+				rotationSpeedY: (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_FRAG_ROT,
 				rotationX: Math.random() * Math.PI * 2,
 				rotationY: Math.random() * Math.PI * 2,
 				size: newSize,
-				speed: asteroid.speed * 1.3, // Smaller pieces move 30% faster
+				speed: asteroid.speed * RENDERER_CONST.ASTEROID_FRAG_SPEED_MULT,
 				isHit: false,
 				hitTimer: 0
 			};
@@ -372,14 +371,6 @@ export class AsteroidRenderer {
 
 	getCount(): number {
 		return this.asteroids.length;
-	}
-
-	// ========================================================================
-	// Color Control
-	// ========================================================================
-
-	setColor(color: number): void {
-		(this.instancedMesh.material as THREE.MeshStandardMaterial).color.setHex(color);
 	}
 
 	// ========================================================================

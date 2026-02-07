@@ -59,7 +59,23 @@ export const RENDERER_CONST = Object.freeze({
 	// Bullet Visuals
 	// ========================================================================
 	BULLET_COLOR: 0xffaa00, // Orange-yellow
-	BULLET_MAX_COUNT: 100 // Performance cap
+	BULLET_MAX_COUNT: 100, // Performance cap
+	BULLET_RADIUS: 0.75, // Circle geometry radius
+	BULLET_STRETCH: 2, // Y-scale for ellipse shape
+	BULLET_EMISSIVE_INT: 0.5, // Glow intensity
+	BULLET_ROUGHNESS: 0.3,
+	BULLET_METALNESS: 0.7,
+
+	// ========================================================================
+	// Asteroid Visuals
+	// ========================================================================
+	ASTEROID_COLOR: 0x8b7355, // Brownish-gray rock
+	ASTEROID_HIT_COLOR: 0xff0000, // Red when hit
+	ASTEROID_ROUGHNESS: 0.9, // Very rough
+	ASTEROID_METALNESS: 0.1, // Slightly metallic
+	ASTEROID_ROT_SPEED: 2, // Self-rotation speed (rad/s)
+	ASTEROID_FRAG_ROT: 3, // Fragment rotation speed (rad/s)
+	ASTEROID_FRAG_SPEED_MULT: 1.3 // Fragments move 30% faster
 });
 
 // ========================================================================

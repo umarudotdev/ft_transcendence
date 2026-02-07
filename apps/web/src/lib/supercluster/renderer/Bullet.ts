@@ -33,7 +33,7 @@ export class BulletRenderer {
 	private readonly _matrix = new THREE.Matrix4();
 	private readonly _position = new THREE.Vector3();
 	private readonly _quaternion = new THREE.Quaternion();
-	private readonly _scale = new THREE.Vector3(1, 2, 1); // Scale 2x in Y for ellipse
+	private readonly _scale = new THREE.Vector3(1, RENDERER_CONST.BULLET_STRETCH, 1);
 
 	// Camera position in world space (for billboard orientation)
 	private cameraPosition = new THREE.Vector3(0, 0, 200);
@@ -44,17 +44,16 @@ export class BulletRenderer {
 		this.group = new THREE.Group();
 
 		// Create bullet geometry: ellipse (circle stretched in velocity direction)
-		// CircleGeometry(radius, segments) - will be stretched 2x in Y for ellipse
-		const geometry = new THREE.CircleGeometry(0.75, 16);
+		const geometry = new THREE.CircleGeometry(RENDERER_CONST.BULLET_RADIUS, 16);
 
-		// Create material with laser look (yellow-orange, emissive)
+		// Create material with laser look (emissive glow)
 		const material = new THREE.MeshStandardMaterial({
 			color: RENDERER_CONST.BULLET_COLOR,
 			emissive: RENDERER_CONST.BULLET_COLOR,
-			emissiveIntensity: 0.5,
-			roughness: 0.3,
-			metalness: 0.7,
-			side: THREE.DoubleSide // Visible from both sides
+			emissiveIntensity: RENDERER_CONST.BULLET_EMISSIVE_INT,
+			roughness: RENDERER_CONST.BULLET_ROUGHNESS,
+			metalness: RENDERER_CONST.BULLET_METALNESS,
+			side: THREE.DoubleSide
 		});
 
 		// Create instanced mesh
@@ -321,20 +320,6 @@ export class BulletRenderer {
 
 	getCount(): number {
 		return this.bullets.length;
-	}
-
-	// ========================================================================
-	// Configuration (GUI-controlled values)
-	// ========================================================================
-
-	updateGameConfig(config: GameConfig): void {
-		this.gameConfig = config;
-	}
-
-	setColor(color: number): void {
-		const material = this.instancedMesh.material as THREE.MeshStandardMaterial;
-		material.color.setHex(color);
-		material.emissive.setHex(color);
 	}
 
 	// ========================================================================

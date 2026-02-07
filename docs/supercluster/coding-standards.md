@@ -321,6 +321,189 @@ import { DEFAULT_CONFIG, type GameConfig } from "@ft/supercluster";
 
 ---
 
+## Renderer Architecture
+
+### Class Responsibilities
+
+The renderer is split into focused classes with clear responsibilities:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ GameRenderer (Orchestrator)                                         │
+│ - Three.js infrastructure (webglRenderer, scene, camera, lights)    │
+│ - Render loop (start/stop, animation frame)                         │
+│ - Game logic (movement, shooting, collisions)                       │
+│ - Input handling                                                    │
+├─────────────────────────────────────────────────────────────────────┤
+│ GameStage (Game Objects Container)                                  │
+│ - Creates game objects (world, ship, asteroids, bullets)            │
+│ - Manages object lifecycle (initialize, update, dispose)            │
+│ - Receives scene in constructor, adds objects to it                 │
+├─────────────────────────────────────────────────────────────────────┤
+│ GameOverScreen (UI Overlay)                                         │
+│ - DOM elements (game over text)                                     │
+│ - Three.js effects specific to UI (explosion mesh)                  │
+│ - Show/hide lifecycle                                               │
+├─────────────────────────────────────────────────────────────────────┤
+│ WorldRenderer, ShipRenderer, etc. (Individual Renderers)            │
+│ - Single visual entity                                              │
+│ - Own geometry, materials, update logic                             │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Updated File Structure
+
+```
+apps/web/src/lib/supercluster/
+├── constants/
+│   └── renderer.ts         # RENDERER_CONST (visual only)
+├── renderer/
+│   ├── GameRenderer.ts     # Orchestrator (Three.js + loop + logic)
+│   ├── GameStage.ts        # Game objects container
+│   ├── GameOverScreen.ts   # UI overlay handling
+│   ├── World.ts            # Planet + force field container
+│   ├── ForceField.ts       # Force field visual
+│   ├── Ship.ts             # Ship renderer
+│   ├── Bullet.ts           # Bullet instanced renderer
+│   ├── Asteroid.ts         # Asteroid instanced renderer
+│   ├── CollisionSystem.ts  # Collision detection
+│   └── index.ts            # Re-exports
+└── SuperCluster.svelte     # Svelte component
+```
+
+### When to Extract a Class
+
+Extract into a new class when:
+
+1. **Distinct responsibility** - handles one specific concern
+2. **Reusable lifecycle** - has clear create/update/dispose pattern
+3. **Multiple methods** - more than 2-3 related methods
+4. **Testable unit** - could be tested independently
+
+```typescript
+// ✅ Good - Clear single responsibility
+class GameOverScreen {
+  show(): void { /* ... */ }
+  hide(): void { /* ... */ }
+  dispose(): void { /* ... */ }
+}
+
+// ❌ Bad - Mixed responsibilities stay in orchestrator
+// Don't extract just one or two lines
+```
+
+---
+
+## Explicit Dependency Pattern
+
+### Pass Dependencies via `update()`, Not Constructor
+
+When a class needs external data that changes over time, use an explicit `update()` method:
+
+```typescript
+// ✅ Good - Explicit dependency, no hidden state
+class ForceFieldRenderer {
+  update(cameraPosition: THREE.Vector3): void {
+    // Shader uses cameraPosition
+  }
+}
+
+// Usage is clear
+this.forceField.update(this.camera.position);
+```
+
+```typescript
+// ❌ Bad - Hidden dependency, unclear when it changes
+class ForceFieldRenderer {
+  constructor(camera: THREE.Camera) {
+    this.camera = camera;  // Stores reference, uses silently
+  }
+}
+```
+
+### Why This Matters
+
+1. **Explicit data flow** - Clear what each component needs
+2. **Easier testing** - Pass mock values directly
+3. **No hidden coupling** - Components don't secretly share state
+4. **Debuggable** - Can log/inspect values at update time
+
+### When to Use Constructor Injection
+
+Only inject things that are truly **constant for the object's lifetime**:
+
+```typescript
+// ✅ OK in constructor - Scene doesn't change
+constructor(scene: THREE.Scene) {
+  this.world = new WorldRenderer();
+  scene.add(this.world.group);  // One-time setup
+}
+
+// ✅ OK in constructor - Constants
+constructor() {
+  this.radius = GAME_CONST.SPHERE_RADIUS;  // Never changes
+}
+```
+
+---
+
+## Comment Style Rules
+
+### Section Headers (File/Class Level Only)
+
+Use section headers to organize **files** and **class internals**:
+
+```typescript
+// ============================================================================
+// File-level header (class name, module purpose)
+// ============================================================================
+export class GameRenderer {
+
+  // ========================================================================
+  // Subsection header (group of related methods)
+  // ========================================================================
+  private checkCollisions(): void { /* ... */ }
+}
+```
+
+### Inside Objects and Interfaces (Simple Comments)
+
+Do **NOT** use section headers inside `Object.freeze` or interfaces.
+Use simple `// text` comments:
+
+```typescript
+// ✅ Good - Simple comments inside objects
+export const GAME_CONST = Object.freeze({
+  // Sphere Geometry
+  SPHERE_RADIUS: 100,
+  FORCE_FIELD_RADIUS: 95,
+
+  // Physics
+  TICK_RATE: 60,
+  SHIP_SPEED: 0.01,
+});
+
+// ❌ Bad - Section headers inside objects (too intrusive)
+export const GAME_CONST = Object.freeze({
+  // ========================================================================
+  // Sphere Geometry
+  // ========================================================================
+  SPHERE_RADIUS: 100,
+});
+```
+
+### Summary Table
+
+| Location          | Style                  | Example                                 |
+| ----------------- | ---------------------- | --------------------------------------- |
+| File header       | `// ====` (full width) | Class/module description                |
+| Class sections    | `// ====` (3/4 width)  | "Input Handling", "Collision Detection" |
+| Inside objects    | `// text`              | `// Sphere Geometry`                    |
+| Inside interfaces | `// text`              | `// Optional fields`                    |
+| Inline            | `// text`              | `// rad/tick`                           |
+
+---
+
 ## Quick Reference Card
 
 ```

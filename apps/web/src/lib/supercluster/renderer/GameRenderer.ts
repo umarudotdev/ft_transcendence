@@ -1,11 +1,9 @@
 import {
-	DEFAULT_CONFIG,
 	GAME_CONST,
 	GAMEPLAY_CONST,
 	DEFAULT_GAMEPLAY,
 	createWaveArray,
 	type GameState,
-	type GameConfig,
 	type InputState
 } from '@ft/supercluster';
 import * as THREE from 'three';
@@ -43,9 +41,6 @@ export class GameRenderer {
 	private asteroids: AsteroidRenderer;
 	private bullets: BulletRenderer;
 	private collisionSystem: CollisionSystem;
-
-	// Projectile configuration (lifetime, cooldown, rayCount, spreadAngle)
-	private config: GameConfig;
 
 	private animationId: number | null = null;
 	private lastState: GameState | null = null;
@@ -94,9 +89,8 @@ export class GameRenderer {
 	private gameOverOverlay: HTMLDivElement | null = null;
 	private canvas: HTMLCanvasElement;
 
-	constructor(canvas: HTMLCanvasElement, config: GameConfig = { ...DEFAULT_CONFIG }) {
+	constructor(canvas: HTMLCanvasElement) {
 		this.canvas = canvas;
-		this.config = config;
 
 		// Setup WebGL renderer
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
@@ -135,7 +129,7 @@ export class GameRenderer {
 
 		// Create bullets in WORLD SPACE (not planet children)
 		// This ensures bullets travel at absolute speed regardless of ship movement
-		this.bullets = new BulletRenderer(config);
+		this.bullets = new BulletRenderer();
 		this.scene.add(this.bullets.group);
 
 		// Create collision system (uses GAME_CONST directly)
@@ -314,7 +308,7 @@ export class GameRenderer {
 		}
 
 		// Reset cooldown (convert from ticks to seconds)
-		this.shootCooldownTimer = this.config.projectile.cooldown / GAME_CONST.TICK_RATE;
+		this.shootCooldownTimer = DEFAULT_GAMEPLAY.projectileCooldown / GAME_CONST.TICK_RATE;
 
 		// Ship is at (0, 0, 1) in world space (normalized unit vector)
 		const shipWorldPosition = new THREE.Vector3(0, 0, 1);

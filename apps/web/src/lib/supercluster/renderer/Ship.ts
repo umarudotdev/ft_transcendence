@@ -1,7 +1,7 @@
 import { GAME_CONST, type ShipState } from '@ft/supercluster';
 import * as THREE from 'three';
 
-import { SHIP_GEOMETRY } from '../assets/ship-geometry';
+import { SHIP_GEOMETRY, createShipGeometry } from '../assets/ship-geometry';
 import { RENDERER_CONST } from '../constants/renderer';
 
 // ============================================================================
@@ -24,8 +24,8 @@ export class ShipRenderer {
 		this.group = new THREE.Group();
 		this.group.renderOrder = 100;
 
-		// Create triangle geometry for ship
-		const geometry = this.createTriangleGeometry();
+		// Create ship geometry (from ship-geometry.ts - replace with model loader later)
+		const geometry = createShipGeometry();
 		const material = new THREE.MeshStandardMaterial({
 			color: SHIP_GEOMETRY.COLOR,
 			metalness: SHIP_GEOMETRY.METALNESS,
@@ -82,88 +82,6 @@ export class ShipRenderer {
 		const orbit = new THREE.LineLoop(geometry, material);
 		orbit.renderOrder = 99; // Below ship and dot
 		return orbit;
-	}
-
-	private createTriangleGeometry(): THREE.BufferGeometry {
-		// 3D wedge shape: tip at front (flat), back raised up
-		// Ship lies on XY plane (tangent to sphere at (0,0,radius))
-		// Tip points toward -Y (forward/north on sphere)
-		// Back is raised in +Z (up from surface)
-		const size = SHIP_GEOMETRY.SIZE;
-		const height = SHIP_GEOMETRY.HEIGHT;
-		const width = size * SHIP_GEOMETRY.WIDTH_MULT;
-
-		// Define vertices for a 3D wedge (2 triangles)
-		const vertices = new Float32Array([
-			// Bottom triangle (on the surface)
-			0,
-			-size,
-			0, // Tip (forward)
-			-width,
-			size * 0.5,
-			0, // Back left bottom
-			width,
-			size * 0.5,
-			0, // Back right bottom
-
-			// Top triangle (raised)
-			0,
-			-size,
-			0, // Tip (same as bottom - flat at front)
-			width,
-			size * 0.5,
-			0, // Back right bottom
-			width,
-			size * 0.5,
-			height, // Back right top
-
-			0,
-			-size,
-			0, // Tip
-			width,
-			size * 0.5,
-			height, // Back right top
-			-width,
-			size * 0.5,
-			height, // Back left top
-
-			0,
-			-size,
-			0, // Tip
-			-width,
-			size * 0.5,
-			height, // Back left top
-			-width,
-			size * 0.5,
-			0, // Back left bottom
-
-			// Back face (closes the wedge)
-			-width,
-			size * 0.5,
-			0, // Back left bottom
-			-width,
-			size * 0.5,
-			height, // Back left top
-			width,
-			size * 0.5,
-			height, // Back right top
-
-			-width,
-			size * 0.5,
-			0, // Back left bottom
-			width,
-			size * 0.5,
-			height, // Back right top
-			width,
-			size * 0.5,
-			0 // Back right bottom
-		]);
-
-		const geometry = new THREE.BufferGeometry();
-		geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-		geometry.computeVertexNormals();
-
-		return geometry;
 	}
 
 	// ========================================================================

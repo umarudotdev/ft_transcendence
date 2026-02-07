@@ -70,33 +70,7 @@ export const DEFAULT_GAMEPLAY = Object.freeze({
 });
 ```
 
-### 4. GameConfig (Shared - Projectile Mechanics)
-
-Configuration for projectile behavior (used by BulletRenderer).
-
-**Location:** `packages/supercluster/src/types.ts`
-
-```typescript
-export interface GameConfig {
-  projectile: {
-    lifetime: number;     // Ticks before despawn
-    cooldown: number;     // Ticks between shots
-    rayCount: number;     // Bullets per shot (1-5)
-    spreadAngle: number;  // Angle between rays (radians)
-  };
-}
-
-export const DEFAULT_CONFIG: GameConfig = {
-  projectile: {
-    lifetime: 102,                // ~1.7 sec at 60 ticks/sec
-    cooldown: 18,                 // ~0.3 sec at 60 ticks/sec
-    rayCount: 1,                  // Single shot
-    spreadAngle: Math.PI / 18,    // 10 degrees
-  },
-};
-```
-
-### 5. RENDERER_CONST (Client Only - Visuals)
+### 4. RENDERER_CONST (Client Only - Visuals)
 
 Visual settings that don't affect gameplay.
 
@@ -153,7 +127,7 @@ export const RENDERER_CONST = Object.freeze({
 });
 ```
 
-### 6. SHIP_GEOMETRY (Client Only - Procedural Ship)
+### 5. SHIP_GEOMETRY (Client Only - Procedural Ship)
 
 Constants for the procedural ship shape. Replace with 3D model loader when ready.
 
@@ -201,6 +175,7 @@ const bulletSpeedRadPerSec = GAME_CONST.PROJECTILE_SPEED * GAME_CONST.TICK_RATE;
 ```
 
 **Why this matters:**
+
 - Server runs at fixed tick rate (deterministic)
 - Client renders at variable frame rate (smooth)
 - Conversion happens once per frame: `angle = speedRadPerSec × deltaTime`
@@ -216,8 +191,6 @@ import {
   GAMEPLAY_CONST,
   DEFAULT_GAMEPLAY,
   createWaveArray,
-  type GameConfig,
-  DEFAULT_CONFIG
 } from '@ft/supercluster';
 
 // Client only - renderer constants
@@ -246,14 +219,13 @@ GAME_CONST.PROJECTILE_SPEED  // Defined once in constants.ts
 
 ### Clear Separation
 
-| Constant Type     | Purpose                  | Affects Gameplay? | Location |
-|-------------------|--------------------------|-------------------|----------|
-| GAME_CONST        | Physics, collision       | Yes               | Shared   |
-| GAMEPLAY_CONST    | Game mechanics           | Yes               | Shared   |
-| DEFAULT_GAMEPLAY  | Starting values          | Yes (resets)      | Shared   |
-| GameConfig        | Projectile behavior      | Yes               | Shared   |
-| RENDERER_CONST    | Visual settings          | No                | Client   |
-| SHIP_GEOMETRY     | Ship appearance          | No                | Client   |
+| Constant Type    | Purpose            | Affects Gameplay? | Location |
+| ---------------- | ------------------ | ----------------- | -------- |
+| GAME_CONST       | Physics, collision | Yes               | Shared   |
+| GAMEPLAY_CONST   | Game mechanics     | Yes               | Shared   |
+| DEFAULT_GAMEPLAY | Starting values    | Yes (resets)      | Shared   |
+| RENDERER_CONST   | Visual settings    | No                | Client   |
+| SHIP_GEOMETRY    | Ship appearance    | No                | Client   |
 
 ### Immutability
 

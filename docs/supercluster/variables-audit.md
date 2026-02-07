@@ -49,19 +49,19 @@ apps/web/src/lib/supercluster/
 
 **Location:** `packages/supercluster/src/constants.ts`
 
-| Constant               | Value          | Status | Notes                    |
-| ---------------------- | -------------- | ------ | ------------------------ |
-| `SPHERE_RADIUS`        | `100`          | ✅🔒   | Game sphere radius       |
-| `FORCE_FIELD_RADIUS`   | `95`           | ✅🔒   | Visual boundary          |
-| `PLANET_RADIUS`        | `70`           | ✅🔒   | Visual planet size       |
-| `TICK_RATE`            | `60`           | ✅🔒   | Server ticks per second  |
-| `SHIP_SPEED`           | `0.01`         | ✅🔒   | rad/tick                 |
-| `SHIP_INITIAL_POS`     | `{0, 0, 1}`    | ✅🔒   | Unit vector              |
-| `PROJECTILE_SPEED`     | `0.015`        | ✅🔒   | rad/tick                 |
-| `PROJECTILE_LIFETIME`  | `102`          | ✅🔒   | ticks                    |
-| `PROJECTILE_SPREAD`    | `PI/18`        | ✅🔒   | 10 degrees               |
-| `ASTEROID_SPEED_MIN`   | `0.00167`      | ✅🔒   | rad/tick                 |
-| `ASTEROID_SPEED_MAX`   | `0.005`        | ✅🔒   | rad/tick                 |
+| Constant              | Value       | Status | Notes                   |
+| --------------------- | ----------- | ------ | ----------------------- |
+| `SPHERE_RADIUS`       | `100`       | ✅🔒   | Game sphere radius      |
+| `FORCE_FIELD_RADIUS`  | `95`        | ✅🔒   | Visual boundary         |
+| `PLANET_RADIUS`       | `70`        | ✅🔒   | Visual planet size      |
+| `TICK_RATE`           | `60`        | ✅🔒   | Server ticks per second |
+| `SHIP_SPEED`          | `0.01`      | ✅🔒   | rad/tick                |
+| `SHIP_INITIAL_POS`    | `{0, 0, 1}` | ✅🔒   | Unit vector             |
+| `PROJECTILE_SPEED`    | `0.015`     | ✅🔒   | rad/tick                |
+| `PROJECTILE_LIFETIME` | `102`       | ✅🔒   | ticks                   |
+| `PROJECTILE_SPREAD`   | `PI/18`     | ✅🔒   | 10 degrees              |
+| `ASTEROID_SPEED_MIN`  | `0.00167`   | ✅🔒   | rad/tick                |
+| `ASTEROID_SPEED_MAX`  | `0.005`     | ✅🔒   | rad/tick                |
 
 ---
 
@@ -69,13 +69,13 @@ apps/web/src/lib/supercluster/
 
 **Location:** `packages/supercluster/src/constants.ts`
 
-| Constant           | Value          | Status | Notes                        |
-| ------------------ | -------------- | ------ | ---------------------------- |
-| `HIT_DELAY_SEC`    | `0.5`          | ✅🔒   | Delay before asteroid breaks |
-| `BULLET_RADIUS`    | `1`            | ✅🔒   | Collision radius             |
-| `SHIP_RADIUS`      | `3`            | ✅🔒   | Collision radius             |
-| `ASTEROID_PADDING` | `1.3`          | ✅🔒   | Forgiving collision mult     |
-| `ASTEROID_DIAM`    | `[2,4,6,8]`    | ✅🔒   | Diameters by size 1-4        |
+| Constant           | Value       | Status | Notes                        |
+| ------------------ | ----------- | ------ | ---------------------------- |
+| `HIT_DELAY_SEC`    | `0.5`       | ✅🔒   | Delay before asteroid breaks |
+| `BULLET_RADIUS`    | `1`         | ✅🔒   | Collision radius             |
+| `SHIP_RADIUS`      | `3`         | ✅🔒   | Collision radius             |
+| `ASTEROID_PADDING` | `1.3`       | ✅🔒   | Forgiving collision mult     |
+| `ASTEROID_DIAM`    | `[2,4,6,8]` | ✅🔒   | Diameters by size 1-4        |
 
 ---
 
@@ -83,12 +83,12 @@ apps/web/src/lib/supercluster/
 
 **Location:** `packages/supercluster/src/defaults.ts`
 
-| Variable           | Value           | Status | Resets On     | Notes                   |
-| ------------------ | --------------- | ------ | ------------- | ----------------------- |
-| `shipLives`        | `3`             | ✅🔄   | Restart       | Starting lives          |
-| `shipInvincible`   | `false`         | ✅🔄   | Restart       | Starting state          |
-| `invincibleTimer`  | `2.0`           | ✅🔄   | Death         | Seconds of invincibility|
-| `asteroidWave`     | `{12,8,4,2}`    | ✅🔄   | Restart       | Initial wave counts     |
+| Variable          | Value        | Status | Resets On | Notes                    |
+| ----------------- | ------------ | ------ | --------- | ------------------------ |
+| `shipLives`       | `3`          | ✅🔄   | Restart   | Starting lives           |
+| `shipInvincible`  | `false`      | ✅🔄   | Restart   | Starting state           |
+| `invincibleTimer` | `2.0`        | ✅🔄   | Death     | Seconds of invincibility |
+| `asteroidWave`    | `{12,8,4,2}` | ✅🔄   | Restart   | Initial wave counts      |
 
 Helper: `createWaveArray()` converts wave config to spawn array.
 
@@ -100,71 +100,71 @@ Helper: `createWaveArray()` converts wave config to spawn array.
 
 ### Scene & Camera
 
-| Constant               | Value           | Status | Notes                    |
-| ---------------------- | --------------- | ------ | ------------------------ |
-| `SCENE_BG`             | `0x111122`      | ✅🔒   | Dark blue background     |
-| `CAMERA_FOV`           | `60`            | ✅🔒   | Field of view            |
-| `CAMERA_NEAR`          | `0.1`           | ✅🔒   | Near clip plane          |
-| `CAMERA_FAR`           | `1000`          | ✅🔒   | Far clip plane           |
-| `CAMERA_DIST_MULT`     | `2`             | ✅🔒   | Camera distance mult     |
+| Constant           | Value      | Status | Notes                |
+| ------------------ | ---------- | ------ | -------------------- |
+| `SCENE_BG`         | `0x111122` | ✅🔒   | Dark blue background |
+| `CAMERA_FOV`       | `60`       | ✅🔒   | Field of view        |
+| `CAMERA_NEAR`      | `0.1`      | ✅🔒   | Near clip plane      |
+| `CAMERA_FAR`       | `1000`     | ✅🔒   | Far clip plane       |
+| `CAMERA_DIST_MULT` | `2`        | ✅🔒   | Camera distance mult |
 
 ### Lighting
 
-| Constant               | Value           | Status | Notes                    |
-| ---------------------- | --------------- | ------ | ------------------------ |
-| `AMB_LIGHT_INTENSITY`  | `0.4`           | ✅🔒   | Ambient light            |
-| `DIR_LIGHT_INTENSITY`  | `0.8`           | ✅🔒   | Directional light        |
-| `DIR_LIGHT_POS`        | `{50,50,100}`   | ✅🔒   | Light position           |
+| Constant              | Value         | Status | Notes             |
+| --------------------- | ------------- | ------ | ----------------- |
+| `AMB_LIGHT_INTENSITY` | `0.4`         | ✅🔒   | Ambient light     |
+| `DIR_LIGHT_INTENSITY` | `0.8`         | ✅🔒   | Directional light |
+| `DIR_LIGHT_POS`       | `{50,50,100}` | ✅🔒   | Light position    |
 
 ### Force Field & Planet
 
-| Constant               | Value           | Status | Notes                    |
-| ---------------------- | --------------- | ------ | ------------------------ |
-| `FORCE_FIELD_COLOR`    | `0x00ffaa`      | ✅🔒   | Cyan-green               |
-| `FORCE_FIELD_OPACITY`  | `0.35`          | ✅🔒   |                          |
-| `FORCE_FIELD_BACK_FADE`| `0.0`           | ✅🔒   |                          |
-| `PLANET_COLOR`         | `0x4466aa`      | ✅🔒   | Blue-ish                 |
+| Constant                | Value      | Status | Notes      |
+| ----------------------- | ---------- | ------ | ---------- |
+| `FORCE_FIELD_COLOR`     | `0x00ffaa` | ✅🔒   | Cyan-green |
+| `FORCE_FIELD_OPACITY`   | `0.35`     | ✅🔒   |            |
+| `FORCE_FIELD_BACK_FADE` | `0.0`      | ✅🔒   |            |
+| `PLANET_COLOR`          | `0x4466aa` | ✅🔒   | Blue-ish   |
 
 ### Ship & Aim
 
-| Constant               | Value           | Status | Notes                    |
-| ---------------------- | --------------- | ------ | ------------------------ |
-| `SHIP_ROTATION_SPEED`  | `10`            | ✅🔒   | Lerp speed               |
-| `AIM_DOT_SIZE`         | `1`             | ✅🔒   |                          |
-| `AIM_DOT_COLOR`        | `0xffff00`      | ✅🔒   | Yellow                   |
-| `AIM_DOT_ORBIT_RADIUS` | `4`             | ✅🔒   |                          |
+| Constant               | Value      | Status | Notes      |
+| ---------------------- | ---------- | ------ | ---------- |
+| `SHIP_ROTATION_SPEED`  | `10`       | ✅🔒   | Lerp speed |
+| `AIM_DOT_SIZE`         | `1`        | ✅🔒   |            |
+| `AIM_DOT_COLOR`        | `0xffff00` | ✅🔒   | Yellow     |
+| `AIM_DOT_ORBIT_RADIUS` | `4`        | ✅🔒   |            |
 
 ### Explosion
 
-| Constant               | Value           | Status | Notes                    |
-| ---------------------- | --------------- | ------ | ------------------------ |
-| `EXPLOSION_RADIUS`     | `8`             | ✅🔒   |                          |
-| `EXPLOSION_COLOR`      | `0xff0000`      | ✅🔒   | Red                      |
-| `EXPLOSION_OPACITY`    | `0.7`           | ✅🔒   |                          |
+| Constant            | Value      | Status | Notes |
+| ------------------- | ---------- | ------ | ----- |
+| `EXPLOSION_RADIUS`  | `8`        | ✅🔒   |       |
+| `EXPLOSION_COLOR`   | `0xff0000` | ✅🔒   | Red   |
+| `EXPLOSION_OPACITY` | `0.7`      | ✅🔒   |       |
 
 ### Bullet Visuals
 
-| Constant               | Value           | Status | Notes                    |
-| ---------------------- | --------------- | ------ | ------------------------ |
-| `BULLET_COLOR`         | `0xffaa00`      | ✅🔒   | Orange-yellow            |
-| `BULLET_MAX_COUNT`     | `100`           | ✅🔒   | Performance cap          |
-| `BULLET_RADIUS`        | `0.75`          | ✅🔒   | Circle geometry radius   |
-| `BULLET_STRETCH`       | `2`             | ✅🔒   | Y-scale for ellipse      |
-| `BULLET_EMISSIVE_INT`  | `0.5`           | ✅🔒   | Glow intensity           |
-| `BULLET_ROUGHNESS`     | `0.3`           | ✅🔒   |                          |
-| `BULLET_METALNESS`     | `0.7`           | ✅🔒   |                          |
+| Constant              | Value      | Status | Notes                  |
+| --------------------- | ---------- | ------ | ---------------------- |
+| `BULLET_COLOR`        | `0xffaa00` | ✅🔒   | Orange-yellow          |
+| `BULLET_MAX_COUNT`    | `100`      | ✅🔒   | Performance cap        |
+| `BULLET_RADIUS`       | `0.75`     | ✅🔒   | Circle geometry radius |
+| `BULLET_STRETCH`      | `2`        | ✅🔒   | Y-scale for ellipse    |
+| `BULLET_EMISSIVE_INT` | `0.5`      | ✅🔒   | Glow intensity         |
+| `BULLET_ROUGHNESS`    | `0.3`      | ✅🔒   |                        |
+| `BULLET_METALNESS`    | `0.7`      | ✅🔒   |                        |
 
 ### Asteroid Visuals
 
-| Constant               | Value           | Status | Notes                    |
-| ---------------------- | --------------- | ------ | ------------------------ |
-| `ASTEROID_COLOR`       | `0x8b7355`      | ✅🔒   | Brownish-gray rock       |
-| `ASTEROID_HIT_COLOR`   | `0xff0000`      | ✅🔒   | Red when hit             |
-| `ASTEROID_ROUGHNESS`   | `0.9`           | ✅🔒   | Very rough               |
-| `ASTEROID_METALNESS`   | `0.1`           | ✅🔒   | Slightly metallic        |
-| `ASTEROID_ROT_SPEED`   | `2`             | ✅🔒   | Self-rotation (rad/s)    |
-| `ASTEROID_FRAG_ROT`    | `3`             | ✅🔒   | Fragment rotation (rad/s)|
-| `ASTEROID_FRAG_SPEED_MULT`| `1.3`        | ✅🔒   | Fragments 30% faster     |
+| Constant                   | Value      | Status | Notes                     |
+| -------------------------- | ---------- | ------ | ------------------------- |
+| `ASTEROID_COLOR`           | `0x8b7355` | ✅🔒   | Brownish-gray rock        |
+| `ASTEROID_HIT_COLOR`       | `0xff0000` | ✅🔒   | Red when hit              |
+| `ASTEROID_ROUGHNESS`       | `0.9`      | ✅🔒   | Very rough                |
+| `ASTEROID_METALNESS`       | `0.1`      | ✅🔒   | Slightly metallic         |
+| `ASTEROID_ROT_SPEED`       | `2`        | ✅🔒   | Self-rotation (rad/s)     |
+| `ASTEROID_FRAG_ROT`        | `3`        | ✅🔒   | Fragment rotation (rad/s) |
+| `ASTEROID_FRAG_SPEED_MULT` | `1.3`      | ✅🔒   | Fragments 30% faster      |
 
 ---
 
@@ -174,37 +174,31 @@ Helper: `createWaveArray()` converts wave config to spawn array.
 
 Procedural ship shape configuration. Replace with 3D model loader when ready.
 
-| Constant               | Value           | Status | Notes                    |
-| ---------------------- | --------------- | ------ | ------------------------ |
-| `COLOR`                | `0x888888`      | ✅🔒   | Grey                     |
-| `ROUGHNESS`            | `0.8`           | ✅🔒   | Matte finish             |
-| `METALNESS`            | `0`             | ✅🔒   | No metallic              |
-| `SIZE`                 | `4`             | ✅🔒   | Overall size             |
-| `HEIGHT`               | `2`             | ✅🔒   | Raised back height       |
-| `WIDTH_MULT`           | `0.6`           | ✅🔒   | Width = SIZE * WIDTH_MULT|
-| `AIM_ORBIT_OPACITY`    | `0.3`           | ✅🔒   | Orbit circle transparency|
-| `INVINCIBLE_BLINK_MS`  | `100`           | ✅🔒   | Blink rate (ms)          |
+| Constant              | Value      | Status | Notes                      |
+| --------------------- | ---------- | ------ | -------------------------- |
+| `COLOR`               | `0x888888` | ✅🔒   | Grey                       |
+| `ROUGHNESS`           | `0.8`      | ✅🔒   | Matte finish               |
+| `METALNESS`           | `0`        | ✅🔒   | No metallic                |
+| `SIZE`                | `4`        | ✅🔒   | Overall size               |
+| `HEIGHT`              | `2`        | ✅🔒   | Raised back height         |
+| `WIDTH_MULT`          | `0.6`      | ✅🔒   | Width = SIZE \* WIDTH_MULT |
+| `AIM_ORBIT_OPACITY`   | `0.3`      | ✅🔒   | Orbit circle transparency  |
+| `INVINCIBLE_BLINK_MS` | `100`      | ✅🔒   | Blink rate (ms)            |
 
 ---
 
-## 6. Game Config (GameConfig) ✅
+## 6. Game Config (REMOVED)
 
-**Location:** `packages/supercluster/src/types.ts`
+**Status:** ✅ REMOVED - Values consolidated into existing constants
 
-Projectile mechanics configuration (used by BulletRenderer).
+The `GameConfig` interface and `DEFAULT_CONFIG` have been removed. Values now live in:
 
-```typescript
-interface GameConfig {
-  projectile: {
-    lifetime: number;    // Ticks before despawn
-    cooldown: number;    // Ticks between shots
-    rayCount: number;    // Bullets per shot (1-5)
-    spreadAngle: number; // Angle between rays (radians)
-  };
-}
-```
-
-**Note:** Previously used for lil-gui controls. Now just provides default values.
+| Former GameConfig Value  | Now In           | Constant                  |
+| ------------------------ | ---------------- | ------------------------- |
+| `projectile.lifetime`    | GAME_CONST       | `PROJECTILE_LIFETIME`     |
+| `projectile.cooldown`    | DEFAULT_GAMEPLAY | `projectileCooldown`      |
+| `projectile.rayCount`    | DEFAULT_GAMEPLAY | `projectileRayCount`      |
+| `projectile.spreadAngle` | GAME_CONST       | `PROJECTILE_SPREAD_ANGLE` |
 
 ---
 
@@ -214,18 +208,18 @@ These values are fine as local constants (geometry detail, not configurable):
 
 ### Planet.ts
 
-| Value               | Current | Notes                               |
-| ------------------- | ------- | ----------------------------------- |
-| Sphere segments     | `64`    | Geometry detail level               |
-| Icosphere detail    | `10`    | Force field detail level            |
+| Value            | Current | Notes                    |
+| ---------------- | ------- | ------------------------ |
+| Sphere segments  | `64`    | Geometry detail level    |
+| Icosphere detail | `10`    | Force field detail level |
 
 ### GameRenderer.ts
 
-| Value              | Current   | Notes                               |
-| ------------------ | --------- | ----------------------------------- |
-| Pixel ratio cap    | `2`       | Standard performance cap            |
-| Explosion segments | `32`      | Geometry detail, fine as-is         |
-| Light colors       | `0xffffff`| Standard white, not configurable    |
+| Value              | Current    | Notes                            |
+| ------------------ | ---------- | -------------------------------- |
+| Pixel ratio cap    | `2`        | Standard performance cap         |
+| Explosion segments | `32`       | Geometry detail, fine as-is      |
+| Light colors       | `0xffffff` | Standard white, not configurable |
 
 ---
 
@@ -282,6 +276,15 @@ The ship is currently a procedural triangle/wedge defined in `Ship.ts`.
 - [x] Remove duplicate `SIZE_MULTIPLIERS` (now uses `GAMEPLAY_CONST.ASTEROID_DIAM`)
 - [x] Remove GUI-only methods from renderers
 
+### Phase 6: Remove GameConfig Duplication ✅ COMPLETE
+
+- [x] Remove `GameConfig` interface from types.ts
+- [x] Remove `DEFAULT_CONFIG` constant from types.ts
+- [x] Update BulletRenderer to use GAME_CONST and DEFAULT_GAMEPLAY directly
+- [x] Update GameRenderer to use DEFAULT_GAMEPLAY.projectileCooldown
+- [x] Update SuperCluster.svelte to remove config prop
+- [x] Update documentation
+
 ---
 
 ## 10. Import Reference
@@ -293,8 +296,6 @@ import {
   GAMEPLAY_CONST,
   DEFAULT_GAMEPLAY,
   createWaveArray,
-  type GameConfig,
-  DEFAULT_CONFIG
 } from '@ft/supercluster';
 
 // Client only - renderer constants

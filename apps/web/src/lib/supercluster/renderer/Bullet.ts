@@ -1,4 +1,4 @@
-import { GAME_CONST, type GameConfig } from '@ft/supercluster';
+import { GAME_CONST, DEFAULT_GAMEPLAY } from '@ft/supercluster';
 import * as THREE from 'three';
 
 import { RENDERER_CONST } from '../constants/renderer';
@@ -19,13 +19,12 @@ export interface BulletData {
 // ============================================================================
 // Bullet Renderer
 // Uses InstancedMesh for efficient rendering of many bullets
-// Uses GAME_CONST for physics, GameConfig for GUI-controlled values
+// Uses GAME_CONST for physics, DEFAULT_GAMEPLAY for gameplay values
 // ============================================================================
 export class BulletRenderer {
 	readonly instancedMesh: THREE.InstancedMesh;
 	readonly group: THREE.Group;
 
-	private gameConfig: GameConfig; // For GUI-controlled: lifetime, rayCount, spreadAngle, cooldown
 	private bullets: BulletData[] = [];
 	private nextId = 0;
 
@@ -38,9 +37,7 @@ export class BulletRenderer {
 	// Camera position in world space (for billboard orientation)
 	private cameraPosition = new THREE.Vector3(0, 0, 200);
 
-	constructor(gameConfig: GameConfig) {
-		this.gameConfig = gameConfig;
-
+	constructor() {
 		this.group = new THREE.Group();
 
 		// Create bullet geometry: ellipse (circle stretched in velocity direction)
@@ -84,8 +81,8 @@ export class BulletRenderer {
 			this.bullets.shift();
 		}
 
-		// Convert lifetime from ticks to seconds using GAME_CONST.TICK_RATE
-		const lifetimeSeconds = this.gameConfig.projectile.lifetime / GAME_CONST.TICK_RATE;
+		// Convert lifetime from ticks to seconds using GAME_CONST
+		const lifetimeSeconds = GAME_CONST.PROJECTILE_LIFETIME / GAME_CONST.TICK_RATE;
 
 		const bullet: BulletData = {
 			id: this.nextId++,
@@ -104,14 +101,15 @@ export class BulletRenderer {
 	}
 
 	/**
-	 * Spawn multiple bullets in a spread pattern (uses GameConfig for mechanics)
+	 * Spawn multiple bullets in a spread pattern
+	 * Uses DEFAULT_GAMEPLAY for rayCount and GAME_CONST for spreadAngle
 	 * @param position - Ship position as unit vector
 	 * @param aimDirection - Center aim direction as unit vector tangent to sphere
 	 */
 	spawnSpread(position: THREE.Vector3, aimDirection: THREE.Vector3): BulletData[] {
 		const spawned: BulletData[] = [];
-		const rayCount = this.gameConfig.projectile.rayCount;
-		const spreadAngle = this.gameConfig.projectile.spreadAngle;
+		const rayCount = DEFAULT_GAMEPLAY.projectileRayCount;
+		const spreadAngle = GAME_CONST.PROJECTILE_SPREAD_ANGLE;
 
 		if (rayCount === 1) {
 			// Single bullet, straight ahead

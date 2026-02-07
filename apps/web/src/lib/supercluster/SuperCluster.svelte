@@ -3,9 +3,7 @@
 	import { browser } from '$app/environment';
 	import { GameRenderer } from './renderer';
 	import {
-		DEFAULT_CONFIG,
 		type GameState,
-		type GameConfig,
 		type ClientMessage,
 		type ServerMessage,
 		type InputState
@@ -16,11 +14,10 @@
 	// ========================================================================
 	interface Props {
 		wsUrl?: string;
-		config?: GameConfig;
 		debug?: boolean;
 	}
 
-	let { wsUrl = '', config = DEFAULT_CONFIG, debug = false }: Props = $props();
+	let { wsUrl = '', debug = false }: Props = $props();
 
 	// ========================================================================
 	// State
@@ -50,7 +47,7 @@
 	// ========================================================================
 	onMount(() => {
 		// Initialize renderer (uses GAME_CONST and RENDERER_CONST directly)
-		renderer = new GameRenderer(canvas, config);
+		renderer = new GameRenderer(canvas);
 		renderer.start();
 
 		// Setup input handlers

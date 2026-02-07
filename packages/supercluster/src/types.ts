@@ -152,29 +152,8 @@ export type ServerMessage =
   | WaveMessage;
 
 // ============================================================================
-// Configuration (GUI-controlled values only)
-// Non-GUI values use GAME_CONST directly from constants.ts
-// ============================================================================
-export interface GameConfig {
-  // Projectile mechanics - GUI controlled via lil-gui
-  projectile: {
-    lifetime: number; // Ticks before despawn (GUI: Bullets → Lifetime)
-    cooldown: number; // Ticks between shots (GUI: Bullets → Cooldown)
-    rayCount: number; // Number of bullets per shot 1-5 (GUI: Bullets → Ray Count)
-    spreadAngle: number; // Angle between rays in radians (GUI: Bullets → Spread)
-  };
-}
-
-export const DEFAULT_CONFIG: GameConfig = {
-  projectile: {
-    lifetime: 102, // ~1.7 sec at 60 ticks/sec
-    cooldown: 18, // ~0.3 sec at 60 ticks/sec (5 shots/sec)
-    rayCount: 1, // Single shot
-    spreadAngle: Math.PI / 18, // 10 degrees
-  },
-};
-
-// ============================================================================
-// NOTE: RendererConfig, BulletConfig removed - now in RENDERER_CONST
-// See: apps/web/src/lib/supercluster/constants/renderer.ts
+// NOTE: GameConfig, RendererConfig, BulletConfig removed
+// - Projectile physics: GAME_CONST (PROJECTILE_LIFETIME, PROJECTILE_SPREAD_ANGLE)
+// - Projectile gameplay: DEFAULT_GAMEPLAY (projectileCooldown, projectileRayCount)
+// - Visual settings: RENDERER_CONST (apps/web/src/lib/supercluster/constants/renderer.ts)
 // ============================================================================

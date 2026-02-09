@@ -4,7 +4,7 @@ This document tracks the refactoring of game state types for server-authoritativ
 
 **Goal:** Clean separation between shared types (network messages) and client-only types (Three.js rendering).
 
-**Status:** ✅ Phase 1 Complete | 🔄 Phase 2 In Progress
+**Status:** ✅ Phase 1 Complete | ✅ Phase 1.5 Complete
 
 ---
 
@@ -209,7 +209,133 @@ Remove (now in RENDERER_CONST):
 
 ---
 
-## Phase 2: Add Three.js to Shared Package 🔄
+## Phase 1.5: Extract Input Controller 🔄
+
+**Goal:** Clean separation of input handling from game logic, preparing for server-authoritative gameplay.
+
+### Problem: Input State Duplication
+
+Currently, input state is stored in TWO places:
+
+```
+SuperCluster.svelte:
+  const inputState: InputState = { ... };  ← Copy 1
+  let aimAngle = 0;                         ← Copy 1
+  let mousePressed = false;                 ← Copy 1
+
+GameRenderer.ts:
+  private currentInput: InputState = { ... };  ← Copy 2 (DUPLICATE!)
+  private shipAimAngle = 0;                     ← Copy 2 (DUPLICATE!)
+  private mousePressed = false;                 ← Copy 2 (DUPLICATE!)
+```
+
+This causes confusion about the source of truth and makes the code harder to follow.
+
+### Solution: InputController Class
+
+Create a single source of truth for input state:
+
+```typescript
+// apps/web/src/lib/supercluster/renderer/InputController.ts
+import type { InputState } from "@ft/supercluster";
+
+export class InputController {
+  // Uses existing InputState from shared package - NO new types needed!
+  private _keys: InputState = {
+    forward: false,
+    backward: false,
+    left: false,
+    right: false,
+  };
+  private _aimAngle = 0;
+  private _firePressed = false;
+
+  // Setters (called from Svelte via GameRenderer)
+  setKeys(keys: InputState): void { this._keys = { ...keys }; }
+  setAimAngle(angle: number): void { this._aimAngle = angle; }
+  setFirePressed(pressed: boolean): void { this._firePressed = pressed; }
+
+  // Getters (used by mechanics in GameRenderer)
+  get keys(): InputState { return this._keys; }
+  get aimAngle(): number { return this._aimAngle; }
+  get firePressed(): boolean { return this._firePressed; }
+  get hasMovementInput(): boolean {
+    return this._keys.forward || this._keys.backward ||
+           this._keys.left || this._keys.right;
+  }
+
+  reset(): void { /* reset all to defaults */ }
+}
+```
+
+### Input Flow After Refactor
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ Browser DOM (window.addEventListener)                               │
+│ Captures: keydown, keyup, mousemove, mousedown, mouseup             │
+└─────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│ SuperCluster.svelte                                                 │
+│ - Processes events → InputState                                     │
+│ - Calls renderer.setInput(), setAimAngle(), setFirePressed()        │
+│ - Sends to server via WebSocket (serialization)                     │
+└─────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│ GameRenderer.ts                                                     │
+│ - Delegates to InputController (setInput → input.setKeys)           │
+│ - Reads from InputController in game loop                           │
+│ - Uses for local simulation (until server is ready)                 │
+└─────────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│ InputController (ONE source of truth)                               │
+│ - Stores: keys (InputState), aimAngle, firePressed                  │
+│ - Used by: updateLocalMovement(), shoot()                           │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Key Clarifications
+
+**Ship Angles (two different things):**
+
+| Angle                 | Purpose              | Where it lives  | Sent to server?     |
+| --------------------- | -------------------- | --------------- | ------------------- |
+| `aimAngle`            | Projectile direction | InputController | ✅ Yes (AimInput)   |
+| `targetShipDirection` | Visual ship rotation | GameRenderer    | ❌ No (client-only) |
+
+**Types used:** Existing `InputState` from `packages/supercluster/src/types.ts` - NO new interfaces needed!
+
+**Dead code to remove:** `updateAimFromMouseDelta()` in GameRenderer (unused)
+
+### 1.5.1 Create InputController
+
+**File:** `apps/web/src/lib/supercluster/renderer/InputController.ts`
+
+**Status:** ✅ Complete
+
+### 1.5.2 Update GameRenderer
+
+- Add `private input: InputController`
+- Keep public API (`setInput()`, etc.) - delegate to InputController
+- Update `updateLocalMovement()` to read from `this.input`
+- Update `shoot()` to read from `this.input.aimAngle`
+- Remove `currentInput`, `shipAimAngle`, `mousePressed` fields
+- Delete unused `updateAimFromMouseDelta()`
+
+**Status:** ✅ Complete
+
+### 1.5.3 Update exports
+
+**File:** `apps/web/src/lib/supercluster/renderer/index.ts`
+
+**Status:** ✅ Complete
+
+---
+
+## Phase 2: Add Three.js to Shared Package ⬜
 
 Since Three.js math works on server, we just need to add it as a dependency.
 
@@ -298,6 +424,13 @@ Reflect the new type structure.
 - [x] 1.4: Update GameStatus (remove paused)
 - [x] 1.5: Add sequence numbers to ClientMessage/ServerMessage
 - [x] 1.6: Remove legacy interfaces (RendererConfig, BulletConfig, GameConfig)
+
+### Phase 1.5: Extract Input Controller ✅
+
+- [x] 1.5.1: Create InputController.ts (uses existing InputState type)
+- [x] 1.5.2: Update GameRenderer to use InputController
+- [x] 1.5.3: Delete unused updateAimFromMouseDelta()
+- [x] 1.5.4: Update index.ts exports
 
 ### Phase 2: Add Three.js to Shared (SOON)
 

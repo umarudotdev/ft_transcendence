@@ -361,6 +361,7 @@ apps/web/src/lib/supercluster/
 │   ├── GameRenderer.ts     # Orchestrator (Three.js + loop + logic)
 │   ├── GameStage.ts        # Game objects container
 │   ├── GameOverScreen.ts   # UI overlay handling
+│   ├── InputController.ts  # Input state management
 │   ├── World.ts            # Planet + force field container
 │   ├── ForceField.ts       # Force field visual
 │   ├── Ship.ts             # Ship renderer
@@ -368,7 +369,7 @@ apps/web/src/lib/supercluster/
 │   ├── Asteroid.ts         # Asteroid instanced renderer
 │   ├── CollisionSystem.ts  # Collision detection
 │   └── index.ts            # Re-exports
-└── SuperCluster.svelte     # Svelte component
+└── SuperCluster.svelte     # Svelte component (event capture, WebSocket)
 ```
 
 ### When to Extract a Class
@@ -444,6 +445,82 @@ constructor() {
   this.radius = GAME_CONST.SPHERE_RADIUS;  // Never changes
 }
 ```
+
+---
+
+## Input Handling Pattern
+
+### Single Source of Truth
+
+Input state should be stored in ONE place (InputController), not duplicated:
+
+```typescript
+// ✅ Good - One source of truth
+class InputController {
+  private _keys: InputState = { ... };
+  private _aimAngle = 0;
+  private _firePressed = false;
+
+  // Setters (called from Svelte)
+  setKeys(keys: InputState): void { ... }
+
+  // Getters (read by game logic)
+  get keys(): InputState { return this._keys; }
+}
+
+// GameRenderer delegates and reads
+class GameRenderer {
+  private input: InputController;
+
+  setInput(keys: InputState): void {
+    this.input.setKeys(keys);  // Delegate
+  }
+
+  updateLocalMovement(): void {
+    if (this.input.hasMovementInput) { ... }  // Read
+  }
+}
+```
+
+```typescript
+// ❌ Bad - State duplicated in multiple places
+// SuperCluster.svelte
+const inputState = { forward: false, ... };  // Copy 1
+
+// GameRenderer.ts
+private currentInput = { forward: false, ... };  // Copy 2 - DUPLICATE!
+```
+
+### Input Flow
+
+```
+Browser DOM → Svelte Component → GameRenderer API → InputController
+                    ↓                                      ↓
+              WebSocket (server)               Game Loop reads state
+```
+
+### Use Existing Types
+
+Don't create new interfaces - use existing `InputState` from shared package:
+
+```typescript
+// ✅ Good - Uses existing type
+import type { InputState } from "@ft/supercluster";
+
+class InputController {
+  private _keys: InputState = { ... };
+}
+```
+
+### Visual vs Mechanic State
+
+Keep visual-only state separate from input that goes to server:
+
+| State                 | Purpose              | Where it lives  | Sent to server? |
+| --------------------- | -------------------- | --------------- | --------------- |
+| `aimAngle`            | Projectile direction | InputController | ✅ Yes          |
+| `keys`                | WASD movement        | InputController | ✅ Yes          |
+| `targetShipDirection` | Visual ship rotation | GameRenderer    | ❌ No           |
 
 ---
 

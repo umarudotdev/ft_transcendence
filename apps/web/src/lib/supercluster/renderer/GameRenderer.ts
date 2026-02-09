@@ -10,6 +10,7 @@ import * as THREE from "three";
 import { RENDERER_CONST } from "../constants/renderer";
 import { GameOverScreen } from "./GameOverScreen";
 import { GameStage } from "./GameStage";
+import { InputController } from "./InputController";
 
 // ============================================================================
 // Game Renderer
@@ -25,9 +26,10 @@ import { GameStage } from "./GameStage";
 // - Three.js infrastructure (renderer, scene, camera, lights)
 // - Render loop (start/stop, animation frame)
 // - Game logic (movement, shooting, collisions)
-// - Input handling
+// - Input handling (delegates to InputController)
 //
 // DELEGATES TO:
+// - InputController: Input state management (single source of truth)
 // - GameStage: Game objects (world, ship, asteroids, bullets)
 // - GameOverScreen: Game over visuals (explosion, DOM overlay)
 // ============================================================================
@@ -43,6 +45,9 @@ export class GameRenderer {
 
   // Game over screen
   private gameOverScreen: GameOverScreen;
+
+  // Input controller (single source of truth for input state)
+  private input: InputController;
 
   // Animation state
   private animationId: number | null = null;
@@ -63,19 +68,12 @@ export class GameRenderer {
     GAME_CONST.SHIP_INITIAL_POS.z
   );
 
-  // Ship direction and aim angles
+  // Ship direction (visual only - not sent to server)
   private targetShipDirection = 0; // Where ship tip should point (from WASD)
-  private shipAimAngle = 0; // Where aim dot is (from mouse)
+
+  // Ship state (will come from server in future)
   private shipLives = DEFAULT_GAMEPLAY.shipLives;
   private shipInvincible = DEFAULT_GAMEPLAY.shipInvincible;
-
-  // Current input state
-  private currentInput: InputState = {
-    forward: false,
-    backward: false,
-    left: false,
-    right: false,
-  };
 
   // Reusable objects for movement calculations (avoid GC pressure)
   private readonly _WORLD_X_AXIS = new THREE.Vector3(1, 0, 0); // Pitch axis (forward/backward)
@@ -84,13 +82,15 @@ export class GameRenderer {
 
   // Shooting state
   private shootCooldownTimer = 0; // Time until next shot allowed
-  private mousePressed = false; // Is mouse button currently held down
 
   // Game state
   private isGameOver = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
+
+    // Create input controller (single source of truth for input)
+    this.input = new InputController();
 
     // Setup WebGL renderer
     this.webglRenderer = new THREE.WebGLRenderer({ antialias: true, canvas });
@@ -147,18 +147,11 @@ export class GameRenderer {
 
     // Reset ship state
     this.targetShipDirection = 0;
-    this.shipAimAngle = 0;
     this.shipLives = DEFAULT_GAMEPLAY.shipLives;
     this.shipInvincible = DEFAULT_GAMEPLAY.shipInvincible;
 
-    // Reset input state
-    this.currentInput = {
-      forward: false,
-      backward: false,
-      left: false,
-      right: false,
-    };
-    this.mousePressed = false;
+    // Reset input and shooting state
+    this.input.reset();
     this.shootCooldownTimer = 0;
   }
 
@@ -211,7 +204,7 @@ export class GameRenderer {
         state.ship.position.theta
       )
     );
-    this.shipAimAngle = state.ship.aimAngle;
+    this.input.setAimAngle(state.ship.aimAngle);
     this.shipLives = state.ship.lives;
     this.shipInvincible = state.ship.invincible;
 
@@ -233,7 +226,7 @@ export class GameRenderer {
     this.stage.ship.updateFromState(
       state.ship,
       this.stage.ship.getCurrentDirectionAngle(),
-      this.shipAimAngle
+      this.input.aimAngle
     );
 
     // TODO: Update projectiles
@@ -241,50 +234,23 @@ export class GameRenderer {
   }
 
   // ========================================================================
-  // Input Handling (for local movement before server is implemented)
+  // Input Handling (delegates to InputController)
   // ========================================================================
   setInput(input: InputState): void {
-    this.currentInput = { ...input };
+    this.input.setKeys(input);
   }
 
   setAimAngle(angle: number): void {
-    this.shipAimAngle = angle;
+    this.input.setAimAngle(angle);
     this.updateShipVisuals();
   }
 
   setMousePressed(pressed: boolean): void {
-    this.mousePressed = pressed;
-  }
-
-  /**
-   * Update aim angle from relative mouse movement
-   * Uses tangent-based calculation so aiming feels natural at all positions
-   * @param deltaX - horizontal mouse movement (pixels, right is positive)
-   * @param deltaY - vertical mouse movement (pixels, down is positive)
-   * @param sensitivity - how fast the aim moves (radians per pixel)
-   */
-  updateAimFromMouseDelta(
-    deltaX: number,
-    deltaY: number,
-    sensitivity = 0.005
-  ): void {
-    // Calculate tangent direction at current aim position
-    // Tangent points in the direction of increasing angle (clockwise)
-    const tangentX = Math.cos(this.shipAimAngle);
-    const tangentY = Math.sin(this.shipAimAngle);
-
-    // Project mouse movement onto tangent to get angle change
-    const deltaAngle = (deltaX * tangentX + deltaY * tangentY) * sensitivity;
-
-    this.shipAimAngle += deltaAngle;
-
-    // Normalize to -PI to PI
-    while (this.shipAimAngle > Math.PI) this.shipAimAngle -= Math.PI * 2;
-    while (this.shipAimAngle < -Math.PI) this.shipAimAngle += Math.PI * 2;
+    this.input.setFirePressed(pressed);
   }
 
   getAimAngle(): number {
-    return this.shipAimAngle;
+    return this.input.aimAngle;
   }
 
   /**
@@ -306,8 +272,9 @@ export class GameRenderer {
 
     // Calculate aim direction in world space (on the XY tangent plane)
     // aimAngle: 0 = forward (-Y), positive = clockwise
-    const aimX = Math.sin(this.shipAimAngle);
-    const aimY = -Math.cos(this.shipAimAngle);
+    const aimAngle = this.input.aimAngle;
+    const aimX = Math.sin(aimAngle);
+    const aimY = -Math.cos(aimAngle);
     const aimWorldDirection = new THREE.Vector3(aimX, aimY, 0).normalize();
 
     // Spawn bullets (spread/count from GameConfig)
@@ -396,7 +363,7 @@ export class GameRenderer {
         }
 
         // Continuous shooting while mouse is held
-        if (this.mousePressed && this.shootCooldownTimer <= 0) {
+        if (this.input.firePressed && this.shootCooldownTimer <= 0) {
           this.shoot();
         }
 
@@ -436,24 +403,20 @@ export class GameRenderer {
     // Movement speed in radians per second (convert from rad/tick to rad/sec)
     const speed = GAME_CONST.SHIP_SPEED * GAME_CONST.TICK_RATE;
 
-    // Check if any movement input is active
-    const hasInput =
-      this.currentInput.forward ||
-      this.currentInput.backward ||
-      this.currentInput.left ||
-      this.currentInput.right;
+    // Read input from InputController
+    const keys = this.input.keys;
 
-    if (hasInput) {
+    if (this.input.hasMovementInput) {
       // ====================================================================
       // Calculate target ship direction from WASD input
       // ====================================================================
       let inputX = 0; // Left/right component
       let inputY = 0; // Forward/backward component
 
-      if (this.currentInput.forward) inputY -= 1;
-      if (this.currentInput.backward) inputY += 1;
-      if (this.currentInput.left) inputX += 1;
-      if (this.currentInput.right) inputX -= 1;
+      if (keys.forward) inputY -= 1;
+      if (keys.backward) inputY += 1;
+      if (keys.left) inputX += 1;
+      if (keys.right) inputX -= 1;
 
       // Calculate target direction angle from input vector
       // 0 = forward (-Y in ship space), PI/2 = right (+X), etc.
@@ -472,10 +435,10 @@ export class GameRenderer {
       let pitchAngle = 0; // Forward/backward (rotate around X)
       let yawAngle = 0; // Left/right (rotate around Y)
 
-      if (this.currentInput.forward) pitchAngle += speed * deltaTime;
-      if (this.currentInput.backward) pitchAngle -= speed * deltaTime;
-      if (this.currentInput.left) yawAngle += speed * deltaTime;
-      if (this.currentInput.right) yawAngle -= speed * deltaTime;
+      if (keys.forward) pitchAngle += speed * deltaTime;
+      if (keys.backward) pitchAngle -= speed * deltaTime;
+      if (keys.left) yawAngle += speed * deltaTime;
+      if (keys.right) yawAngle -= speed * deltaTime;
 
       // Create rotation quaternions for pitch and yaw
       // Pitch: rotate around X-axis (forward/backward movement)
@@ -522,11 +485,12 @@ export class GameRenderer {
     // Create a ShipState from current quaternion-based state
     // Convert unit vector position to spherical for compatibility
     const spherical = this.unitVectorToSpherical(this.shipPosition);
+    const aimAngle = this.input.aimAngle;
 
     this.stage.ship.updateFromState(
       {
         position: spherical,
-        aimAngle: this.shipAimAngle,
+        aimAngle: aimAngle,
         lives: this.shipLives,
         invincible: this.shipInvincible,
         invincibleTicks: 0,
@@ -534,7 +498,7 @@ export class GameRenderer {
         rayCountLevel: 0,
       },
       this.stage.ship.getCurrentDirectionAngle(),
-      this.shipAimAngle
+      aimAngle
     );
   }
 

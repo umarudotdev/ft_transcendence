@@ -4,28 +4,28 @@ import * as THREE from "three";
 import { RENDERER_CONST } from "../constants/renderer";
 
 // ============================================================================
-// Bullet Data
+// Projectile Data
 // ============================================================================
-export interface BulletData {
+export interface ProjectileData {
   id: number;
   // Position as unit vector on sphere (x² + y² + z² = 1)
   position: THREE.Vector3;
   // Movement direction as unit vector tangent to sphere
   velocity: THREE.Vector3;
-  // Time remaining before bullet disappears (seconds)
+  // Time remaining before projectile disappears (seconds)
   lifetime: number;
 }
 
 // ============================================================================
-// Bullet Renderer
-// Uses InstancedMesh for efficient rendering of many bullets
+// Projectile Renderer
+// Uses InstancedMesh for efficient rendering of many projectiles
 // Uses GAME_CONST for physics, DEFAULT_GAMEPLAY for gameplay values
 // ============================================================================
-export class BulletRenderer {
+export class ProjectileRenderer {
   readonly instancedMesh: THREE.InstancedMesh;
   readonly group: THREE.Group;
 
-  private bullets: BulletData[] = [];
+  private projectiles: ProjectileData[] = [];
   private nextId = 0;
 
   // Reusable objects for matrix calculations (avoid GC pressure)
@@ -34,7 +34,7 @@ export class BulletRenderer {
   private readonly _quaternion = new THREE.Quaternion();
   private readonly _scale = new THREE.Vector3(
     1,
-    RENDERER_CONST.BULLET_STRETCH,
+    RENDERER_CONST.PROJECTILE_STRETCH,
     1
   );
 
@@ -44,16 +44,19 @@ export class BulletRenderer {
   constructor() {
     this.group = new THREE.Group();
 
-    // Create bullet geometry: ellipse (circle stretched in velocity direction)
-    const geometry = new THREE.CircleGeometry(RENDERER_CONST.BULLET_RADIUS, 16);
+    // Create projectile geometry: ellipse (circle stretched in velocity direction)
+    const geometry = new THREE.CircleGeometry(
+      RENDERER_CONST.PROJECTILE_RADIUS,
+      16
+    );
 
     // Create material with laser look (emissive glow)
     const material = new THREE.MeshStandardMaterial({
-      color: RENDERER_CONST.BULLET_COLOR,
-      emissive: RENDERER_CONST.BULLET_COLOR,
-      emissiveIntensity: RENDERER_CONST.BULLET_EMISSIVE_INT,
-      roughness: RENDERER_CONST.BULLET_ROUGHNESS,
-      metalness: RENDERER_CONST.BULLET_METALNESS,
+      color: RENDERER_CONST.PROJECTILE_COLOR,
+      emissive: RENDERER_CONST.PROJECTILE_COLOR,
+      emissiveIntensity: RENDERER_CONST.PROJECTILE_EMISSIVE_INT,
+      roughness: RENDERER_CONST.PROJECTILE_ROUGHNESS,
+      metalness: RENDERER_CONST.PROJECTILE_METALNESS,
       side: THREE.DoubleSide,
     });
 
@@ -61,7 +64,7 @@ export class BulletRenderer {
     this.instancedMesh = new THREE.InstancedMesh(
       geometry,
       material,
-      RENDERER_CONST.BULLET_MAX_COUNT
+      RENDERER_CONST.PROJECTILE_MAX_COUNT
     );
     this.instancedMesh.count = 0; // Start with no visible instances
     this.instancedMesh.frustumCulled = false; // Always render
@@ -70,43 +73,46 @@ export class BulletRenderer {
   }
 
   // ========================================================================
-  // Spawn Bullets
+  // Spawn Projectiles
   // ========================================================================
 
   /**
-   * Spawn a bullet at a position with a velocity direction
+   * Spawn a projectile at a position with a velocity direction
    * @param position - Unit vector position on sphere
    * @param velocity - Unit vector direction tangent to sphere
    */
-  spawn(position: THREE.Vector3, velocity: THREE.Vector3): BulletData | null {
-    // Check max bullets limit (client performance cap)
-    if (this.bullets.length >= RENDERER_CONST.BULLET_MAX_COUNT) {
-      // Remove oldest bullet to make room
-      this.bullets.shift();
+  spawn(
+    position: THREE.Vector3,
+    velocity: THREE.Vector3
+  ): ProjectileData | null {
+    // Check max projectiles limit (client performance cap)
+    if (this.projectiles.length >= RENDERER_CONST.PROJECTILE_MAX_COUNT) {
+      // Remove oldest projectile to make room
+      this.projectiles.shift();
     }
 
     // Convert lifetime from ticks to seconds using GAME_CONST
     const lifetimeSeconds =
       GAME_CONST.PROJECTILE_LIFETIME / GAME_CONST.TICK_RATE;
 
-    const bullet: BulletData = {
+    const projectile: ProjectileData = {
       id: this.nextId++,
       position: position.clone().normalize(),
       velocity: velocity.clone().normalize(),
       lifetime: lifetimeSeconds,
     };
 
-    this.bullets.push(bullet);
-    this.instancedMesh.count = this.bullets.length;
+    this.projectiles.push(projectile);
+    this.instancedMesh.count = this.projectiles.length;
 
     // Update this instance's matrix
-    this.updateInstanceMatrix(this.bullets.length - 1);
+    this.updateInstanceMatrix(this.projectiles.length - 1);
 
-    return bullet;
+    return projectile;
   }
 
   /**
-   * Spawn multiple bullets in a spread pattern
+   * Spawn multiple projectiles in a spread pattern
    * Uses DEFAULT_GAMEPLAY for rayCount and GAME_CONST for spreadAngle
    * @param position - Ship position as unit vector
    * @param aimDirection - Center aim direction as unit vector tangent to sphere
@@ -114,17 +120,17 @@ export class BulletRenderer {
   spawnSpread(
     position: THREE.Vector3,
     aimDirection: THREE.Vector3
-  ): BulletData[] {
-    const spawned: BulletData[] = [];
+  ): ProjectileData[] {
+    const spawned: ProjectileData[] = [];
     const rayCount = DEFAULT_GAMEPLAY.projectileRayCount;
     const spreadAngle = GAME_CONST.PROJECTILE_SPREAD_ANGLE;
 
     if (rayCount === 1) {
-      // Single bullet, straight ahead
-      const bullet = this.spawn(position, aimDirection);
-      if (bullet) spawned.push(bullet);
+      // Single projectile, straight ahead
+      const projectile = this.spawn(position, aimDirection);
+      if (projectile) spawned.push(projectile);
     } else {
-      // Multiple bullets in a fan pattern
+      // Multiple projectiles in a fan pattern
       // Calculate angles: centered around aim direction
       const halfSpread = ((rayCount - 1) * spreadAngle) / 2;
 
@@ -138,8 +144,8 @@ export class BulletRenderer {
           angleOffset
         );
 
-        const bullet = this.spawn(position, rotatedVelocity);
-        if (bullet) spawned.push(bullet);
+        const projectile = this.spawn(position, rotatedVelocity);
+        if (projectile) spawned.push(projectile);
       }
     }
 
@@ -170,39 +176,39 @@ export class BulletRenderer {
   }
 
   /**
-   * Update all bullets (call each frame)
+   * Update all projectiles (call each frame)
    * @param deltaTime - seconds since last update
-   * @returns number of bullets removed this frame
+   * @returns number of projectiles removed this frame
    */
   update(deltaTime: number): number {
     let removed = 0;
 
-    // Update bullets in reverse order so removal doesn't affect iteration
-    for (let i = this.bullets.length - 1; i >= 0; i--) {
-      const bullet = this.bullets[i];
+    // Update projectiles in reverse order so removal doesn't affect iteration
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const projectile = this.projectiles[i];
 
       // Decrease lifetime
-      bullet.lifetime -= deltaTime;
+      projectile.lifetime -= deltaTime;
 
-      // Remove expired bullets
-      if (bullet.lifetime <= 0) {
-        this.bullets.splice(i, 1);
+      // Remove expired projectiles
+      if (projectile.lifetime <= 0) {
+        this.projectiles.splice(i, 1);
         removed++;
         continue;
       }
 
       // Move along sphere surface
-      this.moveOnSphere(bullet, deltaTime);
+      this.moveOnSphere(projectile, deltaTime);
 
       // Update instance matrix
       this.updateInstanceMatrix(i);
     }
 
     // Update instance count
-    this.instancedMesh.count = this.bullets.length;
+    this.instancedMesh.count = this.projectiles.length;
 
     // Tell Three.js that matrices have changed
-    if (this.bullets.length > 0 || removed > 0) {
+    if (this.projectiles.length > 0 || removed > 0) {
       this.instancedMesh.instanceMatrix.needsUpdate = true;
     }
 
@@ -210,10 +216,10 @@ export class BulletRenderer {
   }
 
   /**
-   * Move a bullet along the sphere surface in its velocity direction
+   * Move a projectile along the sphere surface in its velocity direction
    * Uses GAME_CONST.PROJECTILE_SPEED (rad/tick) converted to rad/sec
    */
-  private moveOnSphere(bullet: BulletData, deltaTime: number): void {
+  private moveOnSphere(projectile: ProjectileData, deltaTime: number): void {
     // Convert projectile speed from rad/tick to rad/sec using GAME_CONST
     const speedRadPerSec = GAME_CONST.PROJECTILE_SPEED * GAME_CONST.TICK_RATE;
 
@@ -223,34 +229,34 @@ export class BulletRenderer {
     if (angle === 0) return;
 
     // Rotate position around the axis perpendicular to both position and velocity
-    // This moves the bullet along a great circle in the velocity direction
+    // This moves the projectile along a great circle in the velocity direction
     const axis = new THREE.Vector3()
-      .crossVectors(bullet.position, bullet.velocity)
+      .crossVectors(projectile.position, projectile.velocity)
       .normalize();
 
     // Create rotation quaternion
     const quat = new THREE.Quaternion().setFromAxisAngle(axis, angle);
 
     // Rotate position
-    bullet.position.applyQuaternion(quat);
-    bullet.position.normalize(); // Prevent drift
+    projectile.position.applyQuaternion(quat);
+    projectile.position.normalize(); // Prevent drift
 
     // Rotate velocity to stay tangent
-    bullet.velocity.applyQuaternion(quat);
-    bullet.velocity.normalize();
+    projectile.velocity.applyQuaternion(quat);
+    projectile.velocity.normalize();
   }
 
   /**
-   * Update the instance matrix for a specific bullet
-   * Uses billboard orientation so bullets always face the camera
-   * Bullets are in world space (not planet-relative)
+   * Update the instance matrix for a specific projectile
+   * Uses billboard orientation so projectiles always face the camera
+   * Projectiles are in world space (not planet-relative)
    */
   private updateInstanceMatrix(index: number): void {
-    const bullet = this.bullets[index];
+    const projectile = this.projectiles[index];
 
     // Position on sphere surface in world space using GAME_CONST
     this._position
-      .copy(bullet.position)
+      .copy(projectile.position)
       .multiplyScalar(GAME_CONST.SPHERE_RADIUS);
 
     // Billboard orientation: plane faces camera while length follows velocity
@@ -258,9 +264,9 @@ export class BulletRenderer {
     // Z-axis (normal) = direction toward camera
     // X-axis (width) = perpendicular to both
 
-    const forward = bullet.velocity.clone().normalize();
+    const forward = projectile.velocity.clone().normalize();
 
-    // Direction from bullet to camera (in world space)
+    // Direction from projectile to camera (in world space)
     const toCamera = new THREE.Vector3()
       .subVectors(this.cameraPosition, this._position)
       .normalize();
@@ -279,7 +285,7 @@ export class BulletRenderer {
     const rotMatrix = new THREE.Matrix4().makeBasis(right, forward, up);
     this._quaternion.setFromRotationMatrix(rotMatrix);
 
-    // Compose matrix (scale is constant for bullets)
+    // Compose matrix (scale is constant for projectiles)
     this._matrix.compose(this._position, this._quaternion, this._scale);
 
     // Set instance matrix
@@ -287,21 +293,21 @@ export class BulletRenderer {
   }
 
   // ========================================================================
-  // Remove Bullets
+  // Remove Projectiles
   // ========================================================================
 
   /**
-   * Remove a bullet by ID
+   * Remove a projectile by ID
    */
   remove(id: number): boolean {
-    const index = this.bullets.findIndex((b) => b.id === id);
+    const index = this.projectiles.findIndex((p) => p.id === id);
     if (index === -1) return false;
 
-    this.bullets.splice(index, 1);
-    this.instancedMesh.count = this.bullets.length;
+    this.projectiles.splice(index, 1);
+    this.instancedMesh.count = this.projectiles.length;
 
     // Rebuild matrices after removal
-    for (let i = index; i < this.bullets.length; i++) {
+    for (let i = index; i < this.projectiles.length; i++) {
       this.updateInstanceMatrix(i);
     }
 
@@ -310,10 +316,10 @@ export class BulletRenderer {
   }
 
   /**
-   * Remove all bullets
+   * Remove all projectiles
    */
   clear(): void {
-    this.bullets = [];
+    this.projectiles = [];
     this.instancedMesh.count = 0;
     this.instancedMesh.instanceMatrix.needsUpdate = true;
   }
@@ -322,16 +328,16 @@ export class BulletRenderer {
   // Getters
   // ========================================================================
 
-  getBullets(): readonly BulletData[] {
-    return this.bullets;
+  getProjectiles(): readonly ProjectileData[] {
+    return this.projectiles;
   }
 
-  getBulletById(id: number): BulletData | undefined {
-    return this.bullets.find((b) => b.id === id);
+  getProjectileById(id: number): ProjectileData | undefined {
+    return this.projectiles.find((p) => p.id === id);
   }
 
   getCount(): number {
-    return this.bullets.length;
+    return this.projectiles.length;
   }
 
   // ========================================================================

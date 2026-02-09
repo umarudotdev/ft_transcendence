@@ -2,7 +2,7 @@ import { GAME_CONST, GAMEPLAY_CONST } from "@ft/supercluster";
 import * as THREE from "three";
 
 import type { AsteroidData, AsteroidRenderer } from "./Asteroid";
-import type { BulletRenderer } from "./Bullet";
+import type { ProjectileRenderer } from "./Projectile";
 
 // ============================================================================
 // Collision System
@@ -11,8 +11,8 @@ import type { BulletRenderer } from "./Bullet";
 // ============================================================================
 
 export interface CollisionEvent {
-  type: "bullet-asteroid" | "ship-asteroid";
-  bulletId?: number;
+  type: "projectile-asteroid" | "ship-asteroid";
+  projectileId?: number;
   asteroidId: number;
 }
 
@@ -26,39 +26,39 @@ export class CollisionSystem {
   // ========================================================================
 
   /**
-   * Check all bullet-asteroid collisions
-   * Bullets are in world space, asteroids are in planet local space
-   * @param planetQuaternion - Current rotation of planet to transform bullets
+   * Check all projectile-asteroid collisions
+   * Projectiles are in world space, asteroids are in planet local space
+   * @param planetQuaternion - Current rotation of planet to transform projectiles
    * @returns Array of collision events
    */
-  checkBulletAsteroidCollisions(
-    bullets: BulletRenderer,
+  checkProjectileAsteroidCollisions(
+    projectiles: ProjectileRenderer,
     asteroids: AsteroidRenderer,
     planetQuaternion: THREE.Quaternion
   ): CollisionEvent[] {
     const collisions: CollisionEvent[] = [];
-    const bulletList = bullets.getBullets();
+    const projectileList = projectiles.getProjectiles();
     const asteroidList = asteroids.getAsteroids();
 
     // Calculate inverse transform once (world → planet local)
     const worldToPlanet = planetQuaternion.clone().invert();
 
-    // Brute force: check every bullet against every asteroid
-    for (const bullet of bulletList) {
-      // Transform bullet position from world space to planet local space
-      const bulletLocalPos = bullet.position
+    // Brute force: check every projectile against every asteroid
+    for (const projectile of projectileList) {
+      // Transform projectile position from world space to planet local space
+      const projectileLocalPos = projectile.position
         .clone()
         .applyQuaternion(worldToPlanet)
         .normalize();
 
       for (const asteroid of asteroidList) {
-        if (this.checkPositionCollision(bulletLocalPos, asteroid)) {
+        if (this.checkPositionCollision(projectileLocalPos, asteroid)) {
           collisions.push({
-            type: "bullet-asteroid",
-            bulletId: bullet.id,
+            type: "projectile-asteroid",
+            projectileId: projectile.id,
             asteroidId: asteroid.id,
           });
-          // Bullet is destroyed on first hit, no need to check further
+          // Projectile is destroyed on first hit, no need to check further
           break;
         }
       }
@@ -112,23 +112,23 @@ export class CollisionSystem {
   }
 
   /**
-   * Check collision between a position (bullet in local space) and asteroid
+   * Check collision between a position (projectile in local space) and asteroid
    * Uses dot product for angular distance on sphere surface
    */
   private checkPositionCollision(
-    bulletLocalPosition: THREE.Vector3,
+    projectileLocalPosition: THREE.Vector3,
     asteroid: AsteroidData
   ): boolean {
     // Calculate angular radii
-    const bulletRadius = this.getBulletAngularRadius();
+    const projectileRadius = this.getProjectileAngularRadius();
     const asteroidRadius = this.getAsteroidAngularRadius(asteroid);
 
     // Dot product gives us cos(angular distance)
-    const dot = bulletLocalPosition.dot(asteroid.position);
+    const dot = projectileLocalPosition.dot(asteroid.position);
 
     // Collision threshold = cos(sum of radii)
     // cos is decreasing, so collision when dot > threshold
-    const threshold = Math.cos(bulletRadius + asteroidRadius);
+    const threshold = Math.cos(projectileRadius + asteroidRadius);
 
     return dot > threshold;
   }
@@ -138,12 +138,12 @@ export class CollisionSystem {
   // ========================================================================
 
   /**
-   * Get bullet angular radius in radians
-   * Bullets are small, so we use a fixed small radius
+   * Get projectile angular radius in radians
+   * Projectiles are small, so we use a fixed small radius
    */
-  private getBulletAngularRadius(): number {
+  private getProjectileAngularRadius(): number {
     // For small angles: angular radius ≈ visual radius / sphere radius
-    return GAMEPLAY_CONST.BULLET_RADIUS / GAME_CONST.SPHERE_RADIUS;
+    return GAMEPLAY_CONST.PROJECTILE_RADIUS / GAME_CONST.SPHERE_RADIUS;
   }
 
   /**

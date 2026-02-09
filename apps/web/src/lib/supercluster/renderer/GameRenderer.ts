@@ -18,9 +18,9 @@ import { InputController } from "./InputController";
 //
 // ARCHITECTURE:
 // - Ship: Fixed at (0,0,gameSphereRadius) in world space, planet rotates under it
-// - Bullets: World space (scene children) - absolute velocity independent of ship movement
+// - Projectiles: World space (scene children) - absolute velocity independent of ship movement
 // - Asteroids: Planet local space (planet children) - rotate with planet
-// - Collisions: Transform bullets from world→planet space for detection
+// - Collisions: Transform projectiles from world→planet space for detection
 //
 // RESPONSIBILITIES:
 // - Three.js infrastructure (renderer, scene, camera, lights)
@@ -30,7 +30,7 @@ import { InputController } from "./InputController";
 //
 // DELEGATES TO:
 // - InputController: Input state management (single source of truth)
-// - GameStage: Game objects (world, ship, asteroids, bullets)
+// - GameStage: Game objects (world, ship, asteroids, projectiles)
 // - GameOverScreen: Game over visuals (explosion, DOM overlay)
 // ============================================================================
 export class GameRenderer {
@@ -254,8 +254,8 @@ export class GameRenderer {
   }
 
   /**
-   * Try to shoot bullets. Respects cooldown.
-   * @returns true if bullets were spawned
+   * Try to shoot projectiles. Respects cooldown.
+   * @returns true if projectiles were spawned
    */
   shoot(): boolean {
     // Check cooldown
@@ -277,8 +277,8 @@ export class GameRenderer {
     const aimY = -Math.cos(aimAngle);
     const aimWorldDirection = new THREE.Vector3(aimX, aimY, 0).normalize();
 
-    // Spawn bullets (spread/count from GameConfig)
-    this.stage.bullets.spawnSpread(shipWorldPosition, aimWorldDirection);
+    // Spawn projectiles (spread/count from GameConfig)
+    this.stage.projectiles.spawnSpread(shipWorldPosition, aimWorldDirection);
 
     return true;
   }
@@ -289,22 +289,22 @@ export class GameRenderer {
 
   /**
    * Check and handle all collisions
-   * Transforms bullets from world space to planet space for collision detection
+   * Transforms projectiles from world space to planet space for collision detection
    */
   private checkCollisions(): void {
-    // Check bullet-asteroid collisions
-    // Pass planetQuaternion to transform bullets from world to planet space
-    const bulletCollisions =
-      this.stage.collisionSystem.checkBulletAsteroidCollisions(
-        this.stage.bullets,
+    // Check projectile-asteroid collisions
+    // Pass planetQuaternion to transform projectiles from world to planet space
+    const projectileCollisions =
+      this.stage.collisionSystem.checkProjectileAsteroidCollisions(
+        this.stage.projectiles,
         this.stage.asteroids,
         this.planetQuaternion
       );
 
-    // Handle bullet collisions
-    for (const collision of bulletCollisions) {
-      // Remove the bullet (bulletId always exists for bullet-asteroid collisions)
-      this.stage.bullets.remove(collision.bulletId!);
+    // Handle projectile collisions
+    for (const collision of projectileCollisions) {
+      // Remove the projectile (projectileId always exists for projectile-asteroid collisions)
+      this.stage.projectiles.remove(collision.projectileId!);
 
       // Mark asteroid as hit - will turn red and break after delay
       this.stage.asteroids.markAsHit(
@@ -375,9 +375,9 @@ export class GameRenderer {
         // Update game objects
         this.stage.update(deltaTime, this.camera.position);
 
-        // Update bullets (needs camera position for shader)
-        this.stage.bullets.setCameraPosition(this.camera.position);
-        this.stage.updateBullets(deltaTime);
+        // Update projectiles (needs camera position for shader)
+        this.stage.projectiles.setCameraPosition(this.camera.position);
+        this.stage.updateProjectiles(deltaTime);
 
         // Check collisions and handle them
         this.checkCollisions();

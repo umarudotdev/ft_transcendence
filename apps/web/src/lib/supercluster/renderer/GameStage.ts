@@ -2,14 +2,14 @@ import { DEFAULT_GAMEPLAY, createWaveArray } from "@ft/supercluster";
 import * as THREE from "three";
 
 import { AsteroidRenderer } from "./Asteroid";
-import { BulletRenderer } from "./Bullet";
 import { CollisionSystem } from "./CollisionSystem";
+import { ProjectileRenderer } from "./Projectile";
 import { ShipRenderer } from "./Ship";
 import { WorldRenderer } from "./World";
 
 // ============================================================================
 // Game Stage
-// Container for all game objects (world, ship, asteroids, bullets)
+// Container for all game objects (world, ship, asteroids, projectiles)
 //
 // Responsibilities:
 // - Creates and manages game object lifecycle
@@ -25,7 +25,7 @@ export class GameStage {
   readonly world: WorldRenderer;
   readonly ship: ShipRenderer;
   readonly asteroids: AsteroidRenderer;
-  readonly bullets: BulletRenderer;
+  readonly projectiles: ProjectileRenderer;
   readonly collisionSystem: CollisionSystem;
 
   constructor(scene: THREE.Scene) {
@@ -41,10 +41,10 @@ export class GameStage {
     this.ship = new ShipRenderer();
     scene.add(this.ship.group);
 
-    // Create bullets in world space (not planet children)
-    // This ensures bullets travel at absolute speed regardless of ship movement
-    this.bullets = new BulletRenderer();
-    scene.add(this.bullets.group);
+    // Create projectiles in world space (not planet children)
+    // This ensures projectiles travel at absolute speed regardless of ship movement
+    this.projectiles = new ProjectileRenderer();
+    scene.add(this.projectiles.group);
 
     // Create collision system (uses GAME_CONST directly)
     this.collisionSystem = new CollisionSystem();
@@ -55,9 +55,9 @@ export class GameStage {
    * Called by constructor and on game restart
    */
   initialize(): void {
-    // Clear any existing asteroids and bullets
+    // Clear any existing asteroids and projectiles
     this.asteroids.clear();
-    this.bullets.clear();
+    this.projectiles.clear();
 
     // Spawn initial asteroids using wave config
     this.asteroids.spawnMultiple(
@@ -91,11 +91,11 @@ export class GameStage {
   }
 
   /**
-   * Update bullets separately (needs camera position for shader)
-   * Called from GameRenderer after setting camera position on bullets
+   * Update projectiles separately (needs camera position for shader)
+   * Called from GameRenderer after setting camera position on projectiles
    */
-  updateBullets(deltaTime: number): void {
-    this.bullets.update(deltaTime);
+  updateProjectiles(deltaTime: number): void {
+    this.projectiles.update(deltaTime);
   }
 
   /**
@@ -105,6 +105,6 @@ export class GameStage {
     this.world.dispose();
     this.ship.dispose();
     this.asteroids.dispose();
-    this.bullets.dispose();
+    this.projectiles.dispose();
   }
 }

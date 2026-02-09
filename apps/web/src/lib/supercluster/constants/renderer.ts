@@ -39,14 +39,14 @@ export const RENDERER_CONST = Object.freeze({
   EXPLOSION_COLOR: 0xff0000, // Red
   EXPLOSION_OPACITY: 0.7,
 
-  // Bullets
-  BULLET_COLOR: 0xffaa00, // Orange-yellow
-  BULLET_MAX_COUNT: 100, // Performance cap
-  BULLET_RADIUS: 0.75, // Circle geometry radius
-  BULLET_STRETCH: 2, // Y-scale for ellipse shape
-  BULLET_EMISSIVE_INT: 0.5, // Glow intensity
-  BULLET_ROUGHNESS: 0.3,
-  BULLET_METALNESS: 0.7,
+  // Projectiles
+  PROJECTILE_COLOR: 0xffaa00, // Orange-yellow
+  PROJECTILE_MAX_COUNT: 100, // Performance cap
+  PROJECTILE_RADIUS: 0.75, // Circle geometry radius
+  PROJECTILE_STRETCH: 2, // Y-scale for ellipse shape
+  PROJECTILE_EMISSIVE_INT: 0.5, // Glow intensity
+  PROJECTILE_ROUGHNESS: 0.3,
+  PROJECTILE_METALNESS: 0.7,
 
   // Asteroids
   ASTEROID_COLOR: 0x8b7355, // Brownish-gray rock

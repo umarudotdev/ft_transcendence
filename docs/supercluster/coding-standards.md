@@ -12,7 +12,7 @@ This document defines naming conventions, code organization, and patterns for th
 | ----------------- | ------------------ | ------------------------------------ | ---------------------------------- |
 | True constants    | `UPPER_SNAKE_CASE` | `SPHERE_RADIUS`, `TICK_RATE`         | Never change, ever                 |
 | Interfaces/Types  | `PascalCase`       | `GameConfig`, `ShipState`            | Type definitions                   |
-| Classes           | `PascalCase`       | `GameRenderer`, `BulletRenderer`     |                                    |
+| Classes           | `PascalCase`       | `GameRenderer`, `ProjectileRenderer` |                                    |
 | Default values    | `UPPER_SNAKE_CASE` | `DEFAULT_GAMEPLAY`, `DEFAULT_SHIP`   | Starting values that reset         |
 | Mutable state     | `camelCase`        | `currentCooldown`, `shipLives`       | Changes during gameplay            |
 | Private internals | `_camelCase`       | `_tempQuat`, `_pitchAxis`            | Reusable objects (GC optimization) |
@@ -194,7 +194,7 @@ apps/web/src/lib/supercluster/
 ├── renderer/
 │   ├── GameRenderer.ts # Main renderer (runtime state here)
 │   ├── Ship.ts
-│   ├── Bullet.ts
+│   ├── Projectile.ts
 │   ├── Asteroid.ts
 │   └── ...
 └── SuperCluster.svelte # Svelte component
@@ -336,7 +336,7 @@ The renderer is split into focused classes with clear responsibilities:
 │ - Input handling                                                    │
 ├─────────────────────────────────────────────────────────────────────┤
 │ GameStage (Game Objects Container)                                  │
-│ - Creates game objects (world, ship, asteroids, bullets)            │
+│ - Creates game objects (world, ship, asteroids, projectiles)        │
 │ - Manages object lifecycle (initialize, update, dispose)            │
 │ - Receives scene in constructor, adds objects to it                 │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -365,7 +365,7 @@ apps/web/src/lib/supercluster/
 │   ├── World.ts            # Planet + force field container
 │   ├── ForceField.ts       # Force field visual
 │   ├── Ship.ts             # Ship renderer
-│   ├── Bullet.ts           # Bullet instanced renderer
+│   ├── Projectile.ts       # Projectile instanced renderer
 │   ├── Asteroid.ts         # Asteroid instanced renderer
 │   ├── CollisionSystem.ts  # Collision detection
 │   └── index.ts            # Re-exports

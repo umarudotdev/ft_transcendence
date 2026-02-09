@@ -4,7 +4,7 @@ This document tracks the refactoring of game state types for server-authoritativ
 
 **Goal:** Clean separation between shared types (network messages) and client-only types (Three.js rendering).
 
-**Status:** ✅ Phase 1 Complete | ✅ Phase 1.5 Complete
+**Status:** ✅ Phase 1 Complete | ✅ Phase 1.5 Complete | ✅ Phase 2 Complete
 
 ---
 
@@ -43,9 +43,9 @@ We CAN use Three.js math in `packages/supercluster` - it works perfectly on serv
 │                        CLIENT RENDERER                                   │
 │               apps/web/src/lib/supercluster/renderer/                    │
 │                                                                          │
-│  Asteroid.ts           Bullet.ts              Ship.ts                   │
-│  ──────────────        ──────────             ────────                  │
-│  AsteroidData          BulletData             ShipRenderer              │
+│  Asteroid.ts           Projectile.ts          Ship.ts                   │
+│  ──────────────        ──────────────         ────────                  │
+│  AsteroidData          ProjectileData         ShipRenderer              │
 │  (+ visual props)      (+ visual props)       (+ visual props)          │
 │                                                                          │
 │  InstancedMesh, Materials, Scene graph = CLIENT ONLY                    │
@@ -335,7 +335,7 @@ export class InputController {
 
 ---
 
-## Phase 2: Add Three.js to Shared Package ⬜
+## Phase 2: Add Three.js to Shared Package ✅
 
 Since Three.js math works on server, we just need to add it as a dependency.
 
@@ -352,7 +352,7 @@ Since Three.js math works on server, we just need to add it as a dependency.
 }
 ```
 
-**Status:** ⬜ Next step
+**Status:** ✅ Complete
 
 ### 2.1 Move simulation logic (FUTURE)
 
@@ -432,9 +432,9 @@ Reflect the new type structure.
 - [x] 1.5.3: Delete unused updateAimFromMouseDelta()
 - [x] 1.5.4: Update index.ts exports
 
-### Phase 2: Add Three.js to Shared (SOON)
+### Phase 2: Add Three.js to Shared ✅
 
-- [ ] 2.1: Add `three` as dependency to packages/supercluster
+- [x] 2.1: Add `three` as dependency to packages/supercluster
 
 ### Phase 3: Move Simulation to Shared (FUTURE)
 

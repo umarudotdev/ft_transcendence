@@ -6,5 +6,5 @@ export { WorldRenderer } from "./World";
 export { ForceFieldRenderer } from "./ForceField";
 export { ShipRenderer } from "./Ship";
 export { AsteroidRenderer, type AsteroidData } from "./Asteroid";
-export { BulletRenderer, type BulletData } from "./Bullet";
+export { ProjectileRenderer, type ProjectileData } from "./Projectile";
 export { CollisionSystem, type CollisionEvent } from "./CollisionSystem";

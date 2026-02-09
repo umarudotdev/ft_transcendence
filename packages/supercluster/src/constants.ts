@@ -37,7 +37,7 @@ export const GAMEPLAY_CONST = Object.freeze({
   HIT_DELAY_SEC: 0.5,
 
   // Collision Detection (used by both server and client)
-  BULLET_RADIUS: 1,
+  PROJECTILE_RADIUS: 1,
   SHIP_RADIUS: 3,
   ASTEROID_PADDING: 1.3, // Multiplier for forgiving collisions
 

@@ -1,30 +1,45 @@
 import { GAME_CONST, GAMEPLAY_CONST } from "@ft/supercluster";
+import type { AsteroidState } from "@ft/supercluster";
 import * as THREE from "three";
 
 import { RENDERER_CONST } from "../constants/renderer";
+
+const EPS = 1e-8;
+const FALLBACK_RADIUS = 1;
+
+// export type AsteroidSize = 1 | 2 | 3 | 4;
+export type AsteroidSize = AsteroidState["size"];
 
 // ============================================================================
 // Asteroid Data
 // ============================================================================
 export interface AsteroidData {
-  id: number;
-  // Position as unit vector on sphere (x² + y² + z² = 1)
-  position: THREE.Vector3;
-  // Movement direction as unit vector tangent to sphere
-  velocity: THREE.Vector3;
+  state: AsteroidState;
+// interface AsteroidState {
+//   id: number;
+//   position: SphericalPosition;
+//   direction: number; // Movement direction on tangent plane (radians)
+//   speed: number; // Angular speed (rad/tick)
+//   size: 1 | 2 | 3 | 4; // 1=smallest, 4=largest
+//   health: number; // Hits remaining (usually 1)
+//   isHit: boolean; // Has been hit, waiting to break
+// }
+//   id: number;
+  position: THREE.Vector3; // Position as unit vector on sphere (x² + y² + z² = 1)
+  direction: THREE.Vector3; // Movement direction as unit vector tangent to sphere
+  speed: number;  // Movement speed (radians per second on sphere surface)
+//   size: AsteroidSize;  // Size (1 = small, 2 = medium, 3 = large, 4 = huge)
+//   isHit: boolean;  // Hit state tracking
+//   hitTimer: number; // Time remaining until break (in seconds)
+  // Render part
   // Self-rotation speeds (radians per second)
   rotationSpeedX: number;
   rotationSpeedY: number;
   // Current rotation angles
   rotationX: number;
   rotationY: number;
-  // Size (1 = small, 2 = medium, 3 = large, 4 = huge)
-  size: number;
-  // Movement speed (radians per second on sphere surface)
-  speed: number;
-  // Hit state tracking
-  isHit: boolean;
-  hitTimer: number; // Time remaining until break (in seconds)
+
+
 }
 
 // ============================================================================
@@ -90,8 +105,10 @@ export class AsteroidRenderer {
       Math.sin(phi) * Math.sin(theta)
     );
 
+    const asteroidSize = this.clampAsteroidSize(size);
+
     // Random velocity direction tangent to sphere
-    const velocity = this.randomTangentVector(position);
+    const direction = this.randomTangentVector(position);
 
     // Random rotation speeds (uses RENDERER_CONST.ASTEROID_ROT_SPEED)
     const rotationSpeedX =
@@ -104,20 +121,29 @@ export class AsteroidRenderer {
       GAME_CONST.ASTEROID_SPEED_MIN +
       Math.random() *
         (GAME_CONST.ASTEROID_SPEED_MAX - GAME_CONST.ASTEROID_SPEED_MIN);
-    const speed = speedInRadPerTick * GAME_CONST.TICK_RATE; // Convert to rad/sec
+    const speedInRadPerSec = speedInRadPerTick * GAME_CONST.TICK_RATE; // Convert to rad/sec
 
     const asteroid: AsteroidData = {
-      id: this.nextId++,
+      state: {
+        id: this.nextId++,
+        sphericalPosition: {phi: 0, theta: 0},
+        direction: 0,
+        angularSpeed: speedInRadPerTick,
+        size: asteroidSize,
+        health: 2 * asteroidSize,
+        isHit: false,
+        hitTimer: 0,
+        },
+    //   id: this.nextId++,
       position,
-      velocity,
+      direction,
+      speed: speedInRadPerSec,
+    //   size: asteroidSize,
+    //   isHit: false,
       rotationSpeedX,
       rotationSpeedY,
       rotationX: Math.random() * Math.PI * 2,
       rotationY: Math.random() * Math.PI * 2,
-      size,
-      speed,
-      isHit: false,
-      hitTimer: 0,
     };
 
     this.asteroids.push(asteroid);
@@ -153,6 +179,15 @@ export class AsteroidRenderer {
     const tangent = random.sub(
       position.clone().multiplyScalar(random.dot(position))
     );
+
+    if (tangent.lengthSq() < EPS) {
+      const fallbackAxis =
+        Math.abs(position.y) < 0.99
+          ? new THREE.Vector3(0, 1, 0)
+          : new THREE.Vector3(1, 0, 0);
+      tangent.crossVectors(position, fallbackAxis);
+    }
+
     tangent.normalize();
 
     return tangent;
@@ -174,11 +209,11 @@ export class AsteroidRenderer {
       const asteroid = this.asteroids[i];
 
       // Handle hit timer
-      if (asteroid.isHit) {
-        asteroid.hitTimer -= deltaTime;
-        if (asteroid.hitTimer <= 0) {
+      if (asteroid.state.isHit) {
+        asteroid.state.hitTimer -= deltaTime;
+        if (asteroid.state.hitTimer <= 0) {
           // Time's up! Break the asteroid
-          asteroidsToBreak.push(asteroid.id);
+          asteroidsToBreak.push(asteroid.state.id);
           continue; // Skip updating matrix for this asteroid
         }
       }
@@ -218,11 +253,31 @@ export class AsteroidRenderer {
 
     if (angle === 0) return;
 
-    // Rotate position around the axis perpendicular to both position and velocity
-    // This moves the asteroid along a great circle in the velocity direction
-    const axis = new THREE.Vector3()
-      .crossVectors(asteroid.position, asteroid.velocity)
-      .normalize();
+    // Reproject velocity onto the tangent plane to prevent radial drift.
+    const tangentVelocity = asteroid.direction
+      .clone()
+      .sub(
+        asteroid.position.clone().multiplyScalar(
+          asteroid.direction.dot(asteroid.position)
+        )
+      );
+
+    if (tangentVelocity.lengthSq() < EPS) {
+      asteroid.direction.copy(this.randomTangentVector(asteroid.position));
+      return;
+    }
+    tangentVelocity.normalize();
+
+    // Rotate around axis perpendicular to position and tangent velocity (great-circle motion).
+    const axis = new THREE.Vector3().crossVectors(
+      asteroid.position,
+      tangentVelocity
+    );
+    if (axis.lengthSq() < EPS) {
+      asteroid.direction.copy(this.randomTangentVector(asteroid.position));
+      return;
+    }
+    axis.normalize();
 
     // Create rotation quaternion
     const quat = new THREE.Quaternion().setFromAxisAngle(axis, angle);
@@ -231,9 +286,9 @@ export class AsteroidRenderer {
     asteroid.position.applyQuaternion(quat);
     asteroid.position.normalize(); // Prevent drift
 
-    // Rotate velocity to stay tangent
-    asteroid.velocity.applyQuaternion(quat);
-    asteroid.velocity.normalize();
+    // Rotate tangent velocity to stay tangent after movement.
+    tangentVelocity.applyQuaternion(quat).normalize();
+    asteroid.direction.copy(tangentVelocity);
   }
 
   /**
@@ -250,7 +305,7 @@ export class AsteroidRenderer {
     // Rotation: first orient to surface, then apply self-rotation
     // Create basis: normal (position), tangent, bitangent
     const normal = asteroid.position.clone();
-    const tangent = asteroid.velocity.clone();
+    const tangent = asteroid.direction.clone();
     const bitangent = new THREE.Vector3().crossVectors(normal, tangent);
 
     // Build rotation matrix from basis vectors
@@ -263,7 +318,8 @@ export class AsteroidRenderer {
     this._quaternion.multiply(selfRotation);
 
     // Scale based on size (uses GAMEPLAY_CONST.ASTEROID_DIAM)
-    const visualSize = GAMEPLAY_CONST.ASTEROID_DIAM[asteroid.size - 1] || 2;
+    const visualSize =
+      GAMEPLAY_CONST.ASTEROID_DIAM[asteroid.state.size - 1] || FALLBACK_RADIUS;
     this._scale.set(visualSize, visualSize, visualSize);
 
     // Compose matrix
@@ -273,7 +329,7 @@ export class AsteroidRenderer {
     this.instancedMesh.setMatrixAt(index, this._matrix);
 
     // Set color (red if hit, normal otherwise)
-    if (asteroid.isHit) {
+    if (asteroid.state.isHit) {
       this.instancedMesh.setColorAt(
         index,
         new THREE.Color(RENDERER_CONST.ASTEROID_HIT_COLOR)
@@ -293,11 +349,11 @@ export class AsteroidRenderer {
    * @param delay - Time in seconds before breaking (default 0.5s)
    */
   markAsHit(id: number, delay = 0.5): boolean {
-    const asteroid = this.asteroids.find((a) => a.id === id);
-    if (!asteroid || asteroid.isHit) return false;
+    const asteroid = this.asteroids.find((a) => a.state.id === id);
+    if (!asteroid || asteroid.state.isHit) return false;
 
-    asteroid.isHit = true;
-    asteroid.hitTimer = delay;
+    asteroid.state.isHit = true;
+    asteroid.state.hitTimer = delay;
     return true;
   }
 
@@ -306,7 +362,7 @@ export class AsteroidRenderer {
    * Returns the removed asteroid data (for spawning smaller ones)
    */
   remove(id: number): AsteroidData | null {
-    const index = this.asteroids.findIndex((a) => a.id === id);
+    const index = this.asteroids.findIndex((a) => a.state.id === id);
     if (index === -1) return null;
 
     const removed = this.asteroids[index];
@@ -333,9 +389,10 @@ export class AsteroidRenderer {
    */
   breakAsteroid(id: number): AsteroidData[] {
     const asteroid = this.remove(id);
-    if (!asteroid || asteroid.size <= 1) return [];
+    if (!asteroid || asteroid.state.size <= 1) return [];
 
-    const newSize = asteroid.size - 1;
+    const newSize = this.getSmallerSize(asteroid.state.size);
+    if (!newSize) return [];
     const count = 2 + Math.floor(Math.random() * 2); // 2-3 pieces
     const newAsteroids: AsteroidData[] = [];
 
@@ -344,19 +401,29 @@ export class AsteroidRenderer {
       const newVelocity = this.randomTangentVector(asteroid.position);
 
       const newAsteroid: AsteroidData = {
-        id: this.nextId++,
+        state: {
+          id: this.nextId++,
+          sphericalPosition: {phi: 0, theta: 0},
+          direction: 0,
+          angularSpeed: 0,
+          size: newSize,
+          health: 2 * newSize,
+          isHit: false,
+          hitTimer: 0,
+        },
+        // id: this.nextId++,
         position: asteroid.position.clone(),
-        velocity: newVelocity,
+        direction: newVelocity,
         rotationSpeedX:
           (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_FRAG_ROT,
         rotationSpeedY:
           (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_FRAG_ROT,
         rotationX: Math.random() * Math.PI * 2,
         rotationY: Math.random() * Math.PI * 2,
-        size: newSize,
+        // size: newSize,
         speed: asteroid.speed * RENDERER_CONST.ASTEROID_FRAG_SPEED_MULT,
-        isHit: false,
-        hitTimer: 0,
+        // isHit: false,
+        // hitTimer: 0,
       };
 
       this.asteroids.push(newAsteroid);
@@ -388,11 +455,22 @@ export class AsteroidRenderer {
   }
 
   getAsteroidById(id: number): AsteroidData | undefined {
-    return this.asteroids.find((a) => a.id === id);
+    return this.asteroids.find((a) => a.state.id === id);
   }
 
   getCount(): number {
     return this.asteroids.length;
+  }
+
+  private clampAsteroidSize(size: number): AsteroidSize {
+    if (size <= 1) return 1;
+    if (size >= 4) return 4;
+    return Math.round(size) as AsteroidSize;
+  }
+
+  private getSmallerSize(size: AsteroidSize): AsteroidSize | null {
+    if (size === 1) return null;
+    return (size - 1) as AsteroidSize;
   }
 
   // ========================================================================

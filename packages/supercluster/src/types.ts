@@ -45,12 +45,13 @@ export interface ProjectileState {
  */
 export interface AsteroidState {
   id: number;
-  position: SphericalPosition;
-  direction: number; // Movement direction on tangent plane (radians)
-  speed: number; // Angular speed (rad/tick)
-  size: 1 | 2 | 3 | 4; // 1=smallest, 4=largest
-  health: number; // Hits remaining (usually 1)
-  isHit: boolean; // Has been hit, waiting to break
+  sphericalPosition: SphericalPosition;
+  direction: number;	// Movement direction on tangent plane (radians)
+  angularSpeed: number;	// Angular speed (rad/tick)
+  size: 1 | 2 | 3 | 4;	// 1=smallest, 4=largest
+  health: number;		// Hits remaining (usually 1)
+  isHit: boolean;		// Has been hit, waiting to break
+  hitTimer: number;		// Time remaining until break (in ticks)
 }
 
 // ============================================================================

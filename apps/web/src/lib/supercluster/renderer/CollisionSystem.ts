@@ -56,7 +56,7 @@ export class CollisionSystem {
           collisions.push({
             type: "projectile-asteroid",
             projectileId: projectile.id,
-            asteroidId: asteroid.id,
+            asteroidId: asteroid.state.id,
           });
           // Projectile is destroyed on first hit, no need to check further
           break;
@@ -101,7 +101,7 @@ export class CollisionSystem {
       if (dot > threshold) {
         collisions.push({
           type: "ship-asteroid",
-          asteroidId: asteroid.id,
+          asteroidId: asteroid.state.id,
         });
         // Ship can only hit one asteroid per frame
         break;
@@ -151,7 +151,11 @@ export class CollisionSystem {
    */
   private getAsteroidAngularRadius(asteroid: AsteroidData): number {
     // Get diameter from constants (sizes 1-4 map to indices 0-3)
-    const visualDiameter = GAMEPLAY_CONST.ASTEROID_DIAM[asteroid.size - 1];
+    const diameterIndex = Math.max(
+      0,
+      Math.min(GAMEPLAY_CONST.ASTEROID_DIAM.length - 1, asteroid.state.size - 1)
+    );
+    const visualDiameter = GAMEPLAY_CONST.ASTEROID_DIAM[diameterIndex];
     const visualRadius = visualDiameter / 2;
 
     // Add collision padding for forgiving collisions

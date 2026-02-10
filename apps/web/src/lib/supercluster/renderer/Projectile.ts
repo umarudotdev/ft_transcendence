@@ -3,6 +3,8 @@ import * as THREE from "three";
 
 import { RENDERER_CONST } from "../constants/renderer";
 
+const EPS = 1e-8;
+
 // ============================================================================
 // Projectile Data
 // ============================================================================
@@ -228,11 +230,29 @@ export class ProjectileRenderer {
 
     if (angle === 0) return;
 
-    // Rotate position around the axis perpendicular to both position and velocity
-    // This moves the projectile along a great circle in the velocity direction
-    const axis = new THREE.Vector3()
-      .crossVectors(projectile.position, projectile.velocity)
-      .normalize();
+    // Reproject velocity onto tangent plane to prevent radial drift.
+    const tangentVelocity = projectile.velocity
+      .clone()
+      .sub(
+        projectile.position.clone().multiplyScalar(
+          projectile.velocity.dot(projectile.position)
+        )
+      );
+
+    if (tangentVelocity.lengthSq() < EPS) {
+      return;
+    }
+    tangentVelocity.normalize();
+
+    // Rotate around axis perpendicular to position and tangent velocity (great-circle motion).
+    const axis = new THREE.Vector3().crossVectors(
+      projectile.position,
+      tangentVelocity
+    );
+    if (axis.lengthSq() < EPS) {
+      return;
+    }
+    axis.normalize();
 
     // Create rotation quaternion
     const quat = new THREE.Quaternion().setFromAxisAngle(axis, angle);
@@ -241,9 +261,9 @@ export class ProjectileRenderer {
     projectile.position.applyQuaternion(quat);
     projectile.position.normalize(); // Prevent drift
 
-    // Rotate velocity to stay tangent
-    projectile.velocity.applyQuaternion(quat);
-    projectile.velocity.normalize();
+    // Rotate tangent velocity to stay tangent after movement.
+    tangentVelocity.applyQuaternion(quat).normalize();
+    projectile.velocity.copy(tangentVelocity);
   }
 
   /**
@@ -273,8 +293,16 @@ export class ProjectileRenderer {
 
     // Right = cross(forward, toCamera), gives us the width direction
     const right = new THREE.Vector3()
-      .crossVectors(forward, toCamera)
-      .normalize();
+      .crossVectors(forward, toCamera);
+
+    if (right.lengthSq() < EPS) {
+      const fallbackAxis =
+        Math.abs(forward.y) < 0.99
+          ? new THREE.Vector3(0, 1, 0)
+          : new THREE.Vector3(1, 0, 0);
+      right.crossVectors(forward, fallbackAxis);
+    }
+    right.normalize();
 
     // Recalculate up (plane normal) to ensure orthogonality
     // up = cross(right, forward)

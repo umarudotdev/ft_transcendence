@@ -368,11 +368,203 @@ This enables server to run the same simulation code.
 
 ---
 
-## Phase 3: Update Client Renderer (FUTURE) ⬜
+## Phase 3: Move Simulation to Shared Package 🔄
 
-This phase happens AFTER we have a server sending state. For now, client generates its own state.
+**Goal:** Extract physics and collision logic to shared package so server can run the same code.
 
-### 3.1 When server sends state
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        SHARED PACKAGE                                    │
+│               packages/supercluster/src/simulation/                      │
+│                                                                          │
+│  collision.ts              movement.ts              (future files)       │
+│  ─────────────             ────────────             ──────────────       │
+│  CollisionResult           moveOnSphere()           spawnAsteroids()     │
+│  checkSphereCollision()    sphericalToCartesian()   breakAsteroid()      │
+│  getAngularRadius()        cartesianToSpherical()                        │
+│                                                                          │
+│  Uses: THREE.Vector3, GAME_CONST, GAMEPLAY_CONST                        │
+│  NO dependencies on: InstancedMesh, Material, Scene                     │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ Import simulation functions
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        CLIENT RENDERER                                   │
+│               apps/web/src/lib/supercluster/renderer/                    │
+│                                                                          │
+│  CollisionSystem.ts        Asteroid.ts              Projectile.ts        │
+│  ──────────────────        ────────────             ──────────────       │
+│  Uses shared collision     Uses shared movement     Uses shared movement │
+│  + transforms positions    + manages meshes         + manages meshes     │
+│  from renderer types                                                     │
+│                                                                          │
+│  Keeps: InstancedMesh, Materials, Three.js rendering                    │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 3.1 Create Shared Collision Module ✅
+
+**File:** `packages/supercluster/src/simulation/collision.ts`
+
+Pure collision detection using angular distance on sphere surface.
+
+```typescript
+import * as THREE from "three";
+import { GAME_CONST, GAMEPLAY_CONST, getAsteroidCollisionRadius } from "../constants";
+
+export interface CollisionResult {
+  collides: boolean;
+  angularDistance: number;  // For debugging/visualization
+}
+
+/**
+ * Check if two positions on a sphere surface are colliding
+ * @param pos1 - First position as unit vector
+ * @param pos2 - Second position as unit vector
+ * @param radius1 - Angular radius of first object (radians)
+ * @param radius2 - Angular radius of second object (radians)
+ */
+export function checkSphereCollision(
+  pos1: THREE.Vector3,
+  pos2: THREE.Vector3,
+  radius1: number,
+  radius2: number
+): CollisionResult {
+  const dot = pos1.dot(pos2);
+  const threshold = Math.cos(radius1 + radius2);
+  return {
+    collides: dot > threshold,
+    angularDistance: Math.acos(Math.max(-1, Math.min(1, dot))),
+  };
+}
+
+/**
+ * Get angular radius for a projectile
+ */
+export function getProjectileAngularRadius(): number {
+  return GAMEPLAY_CONST.PROJECTILE_RADIUS / GAME_CONST.SPHERE_RADIUS;
+}
+
+/**
+ * Get angular radius for ship
+ */
+export function getShipAngularRadius(): number {
+  return GAMEPLAY_CONST.SHIP_RADIUS / GAME_CONST.SPHERE_RADIUS;
+}
+
+/**
+ * Get angular radius for asteroid (with collision padding)
+ */
+export function getAsteroidAngularRadius(size: 1 | 2 | 3 | 4): number {
+  return getAsteroidCollisionRadius(size) / GAME_CONST.SPHERE_RADIUS;
+}
+```
+
+**Status:** ⬜ Not started
+
+### 3.2 Create Shared Movement Module ✅
+
+**File:** `packages/supercluster/src/simulation/movement.ts`
+
+Great-circle motion on sphere surface.
+
+```typescript
+import * as THREE from "three";
+
+const EPS = 1e-8;
+
+/**
+ * Move a position along sphere surface in a direction
+ * @param position - Current position (unit vector, MUTATED)
+ * @param velocity - Movement direction (unit vector tangent to sphere, MUTATED)
+ * @param angle - Angular distance to move (radians)
+ */
+export function moveOnSphere(
+  position: THREE.Vector3,
+  velocity: THREE.Vector3,
+  angle: number
+): void {
+  if (angle === 0) return;
+
+  // Reproject velocity onto tangent plane
+  const tangentVelocity = velocity
+    .clone()
+    .sub(position.clone().multiplyScalar(velocity.dot(position)));
+
+  if (tangentVelocity.lengthSq() < EPS) return;
+  tangentVelocity.normalize();
+
+  // Rotation axis = perpendicular to position and velocity
+  const axis = new THREE.Vector3().crossVectors(position, tangentVelocity);
+  if (axis.lengthSq() < EPS) return;
+  axis.normalize();
+
+  // Rotate position and velocity
+  const quat = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+  position.applyQuaternion(quat).normalize();
+  tangentVelocity.applyQuaternion(quat).normalize();
+  velocity.copy(tangentVelocity);
+}
+
+/**
+ * Convert spherical coordinates to Cartesian unit vector
+ */
+export function sphericalToCartesian(phi: number, theta: number): THREE.Vector3 {
+  return new THREE.Vector3(
+    Math.sin(phi) * Math.sin(theta),
+    Math.cos(phi),
+    Math.sin(phi) * Math.cos(theta)
+  );
+}
+
+/**
+ * Convert Cartesian unit vector to spherical coordinates
+ */
+export function cartesianToSpherical(v: THREE.Vector3): { phi: number; theta: number } {
+  const phi = Math.acos(Math.max(-1, Math.min(1, v.y)));
+  const theta = Math.atan2(v.x, v.z);
+  return { phi, theta: theta < 0 ? theta + 2 * Math.PI : theta };
+}
+```
+
+**Status:** ✅ Complete
+
+### 3.3 Update Shared Package Exports ✅
+
+**File:** `packages/supercluster/src/index.ts`
+
+```typescript
+// Simulation (physics, collision, movement - shared between server and client)
+export * from "./simulation";
+```
+
+**Status:** ✅ Complete
+
+### 3.4 Update Client CollisionSystem ✅
+
+Refactor `apps/web/src/lib/supercluster/renderer/CollisionSystem.ts` to use shared functions.
+
+**Status:** ✅ Complete
+
+### 3.5 Update Client Projectile/Asteroid Movement ✅
+
+Update client renderers to use shared `moveOnSphere()` function.
+
+- **Projectile.ts:** Now uses shared `sharedMoveOnSphere()` from `@ft/supercluster`
+- **Asteroid.ts:** Keeps local implementation with renderer-specific fallback behavior (random direction when degenerate) - appropriate for autonomous game objects
+
+**Status:** ✅ Complete
+
+---
+
+## Phase 4: Server State Sync (FUTURE) ⬜
+
+This phase happens AFTER we have a server sending state.
+
+### 4.1 When server sends state
 
 Client will need to:
 
@@ -436,15 +628,23 @@ Reflect the new type structure.
 
 - [x] 2.1: Add `three` as dependency to packages/supercluster
 
-### Phase 3: Move Simulation to Shared (FUTURE)
+### Phase 3: Move Simulation to Shared 🔄
 
-- [ ] 3.1: Move CollisionSystem to shared
-- [ ] 3.2: Move moveOnSphere functions to shared
+- [x] 3.1: Create collision.ts in packages/supercluster/src/simulation/
+- [x] 3.2: Create movement.ts in packages/supercluster/src/simulation/
+- [x] 3.3: Update packages/supercluster/src/index.ts exports
+- [x] 3.4: Update client CollisionSystem.ts to use shared functions
+- [x] 3.5: Update client Projectile/Asteroid to use shared movement
 
-### Phase 4: Documentation (DONE)
+### Phase 4: Server State Sync (FUTURE)
 
-- [x] 4.1: Create client-side-prediction.md ✅
-- [ ] 4.2: Update variables-audit.md
+- [ ] 4.1: Implement server-to-client state sync
+- [ ] 4.2: Client reconciliation with server state
+
+### Phase 5: Documentation
+
+- [x] 5.1: Create client-side-prediction.md ✅
+- [ ] 5.2: Update variables-audit.md
 
 ---
 

@@ -24,6 +24,6 @@ export * from "./types";
 export * from "./network";
 
 // ========================================================================
-// Engine (for client-side prediction and server game logic)
-// TODO: export * from './simulation';
+// Simulation (physics, collision, movement - shared between server and client)
 // ========================================================================
+export * from "./simulation";

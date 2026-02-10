@@ -1,4 +1,9 @@
-import { GAME_CONST, GAMEPLAY_CONST } from "@ft/supercluster";
+import {
+  checkSphereCollisionFast,
+  getAsteroidAngularRadiusSafe,
+  getProjectileAngularRadius,
+  getShipAngularRadius,
+} from "@ft/supercluster";
 import * as THREE from "three";
 
 import type { AsteroidData, AsteroidRenderer } from "./Asteroid";
@@ -7,7 +12,7 @@ import type { ProjectileRenderer } from "./Projectile";
 // ============================================================================
 // Collision System
 // Handles collision detection between game objects on sphere surface
-// Uses GAME_CONST for physics constants (immutable)
+// Uses shared collision functions from @ft/supercluster
 // ============================================================================
 
 export interface CollisionEvent {
@@ -17,9 +22,9 @@ export interface CollisionEvent {
 }
 
 export class CollisionSystem {
-  constructor() {
-    // No config needed - uses GAME_CONST directly
-  }
+  // Cached angular radii (these don't change during gameplay)
+  private readonly projectileRadius = getProjectileAngularRadius();
+  private readonly shipRadius = getShipAngularRadius();
 
   // ========================================================================
   // Collision Detection
@@ -52,7 +57,9 @@ export class CollisionSystem {
         .normalize();
 
       for (const asteroid of asteroidList) {
-        if (this.checkPositionCollision(projectileLocalPos, asteroid)) {
+        if (
+          this.checkProjectileAsteroidCollision(projectileLocalPos, asteroid)
+        ) {
           collisions.push({
             type: "projectile-asteroid",
             projectileId: projectile.id,
@@ -89,16 +96,18 @@ export class CollisionSystem {
       .applyQuaternion(worldToPlanet)
       .normalize();
 
-    // Ship collision radius
-    const shipRadius = GAMEPLAY_CONST.SHIP_RADIUS / GAME_CONST.SPHERE_RADIUS;
-
     // Check ship against all asteroids
     for (const asteroid of asteroidList) {
-      const asteroidRadius = this.getAsteroidAngularRadius(asteroid);
-      const dot = shipLocal.dot(asteroid.position);
-      const threshold = Math.cos(shipRadius + asteroidRadius);
+      const asteroidRadius = getAsteroidAngularRadiusSafe(asteroid.state.size);
 
-      if (dot > threshold) {
+      if (
+        checkSphereCollisionFast(
+          shipLocal,
+          asteroid.position,
+          this.shipRadius,
+          asteroidRadius
+        )
+      ) {
         collisions.push({
           type: "ship-asteroid",
           asteroidId: asteroid.state.id,
@@ -112,56 +121,18 @@ export class CollisionSystem {
   }
 
   /**
-   * Check collision between a position (projectile in local space) and asteroid
-   * Uses dot product for angular distance on sphere surface
+   * Check collision between a projectile (in local space) and asteroid
    */
-  private checkPositionCollision(
+  private checkProjectileAsteroidCollision(
     projectileLocalPosition: THREE.Vector3,
     asteroid: AsteroidData
   ): boolean {
-    // Calculate angular radii
-    const projectileRadius = this.getProjectileAngularRadius();
-    const asteroidRadius = this.getAsteroidAngularRadius(asteroid);
-
-    // Dot product gives us cos(angular distance)
-    const dot = projectileLocalPosition.dot(asteroid.position);
-
-    // Collision threshold = cos(sum of radii)
-    // cos is decreasing, so collision when dot > threshold
-    const threshold = Math.cos(projectileRadius + asteroidRadius);
-
-    return dot > threshold;
-  }
-
-  // ========================================================================
-  // Angular Radius Calculations
-  // ========================================================================
-
-  /**
-   * Get projectile angular radius in radians
-   * Projectiles are small, so we use a fixed small radius
-   */
-  private getProjectileAngularRadius(): number {
-    // For small angles: angular radius ≈ visual radius / sphere radius
-    return GAMEPLAY_CONST.PROJECTILE_RADIUS / GAME_CONST.SPHERE_RADIUS;
-  }
-
-  /**
-   * Get asteroid angular radius in radians based on its size
-   */
-  private getAsteroidAngularRadius(asteroid: AsteroidData): number {
-    // Get diameter from constants (sizes 1-4 map to indices 0-3)
-    const diameterIndex = Math.max(
-      0,
-      Math.min(GAMEPLAY_CONST.ASTEROID_DIAM.length - 1, asteroid.state.size - 1)
+    const asteroidRadius = getAsteroidAngularRadiusSafe(asteroid.state.size);
+    return checkSphereCollisionFast(
+      projectileLocalPosition,
+      asteroid.position,
+      this.projectileRadius,
+      asteroidRadius
     );
-    const visualDiameter = GAMEPLAY_CONST.ASTEROID_DIAM[diameterIndex];
-    const visualRadius = visualDiameter / 2;
-
-    // Add collision padding for forgiving collisions
-    const collisionRadius = visualRadius * GAMEPLAY_CONST.ASTEROID_PADDING;
-
-    // For small angles: angular radius ≈ visual radius / sphere radius
-    return collisionRadius / GAME_CONST.SPHERE_RADIUS;
   }
 }

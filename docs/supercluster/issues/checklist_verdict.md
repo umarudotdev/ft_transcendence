@@ -8,8 +8,8 @@
 2. **Add projectile sub-stepping or swept collision**
 3. **Precompute asteroid angular radii by size**
 4. **Use dot-product early rejection**
-5. *(Later)* Swap-remove instead of splice
-6. *(Later)* Fully separate collision system from renderer
+5. _(Later)_ Swap-remove instead of splice
+6. _(Later)_ Fully separate collision system from renderer
 
 ---
 

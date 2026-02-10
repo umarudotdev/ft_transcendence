@@ -52,11 +52,11 @@ export class GameRenderer {
   // Animation state
   private animationId: number | null = null;
   private lastState: GameState | null = null;
-  private lastTime: number = 0;  //previous frame timestamp in milliseconds
-  private simulationAccumulator = 0;  // accumulated seconds of sim time not yet processed
-  private readonly fixedSimulationStep = 1 / GAME_CONST.TICK_RATE;  // sim step size in seconds (at 60 Hz, ~0.0167 s)
-  private readonly maxFrameDelta = 0.1;  // clamp each frame delta to 100 ms to avoid huge catch-up bursts
-  private readonly maxSimulationSteps = 8;  // max fixed sim steps processed in one rendered frame
+  private lastTime: number = 0; //previous frame timestamp in milliseconds
+  private simulationAccumulator = 0; // accumulated seconds of sim time not yet processed
+  private readonly fixedSimulationStep = 1 / GAME_CONST.TICK_RATE; // sim step size in seconds (at 60 Hz, ~0.0167 s)
+  private readonly maxFrameDelta = 0.1; // clamp each frame delta to 100 ms to avoid huge catch-up bursts
+  private readonly maxSimulationSteps = 8; // max fixed sim steps processed in one rendered frame
 
   // ========================================================================
   // Quaternion-based rotation system (no gimbal lock, smooth pole crossing)

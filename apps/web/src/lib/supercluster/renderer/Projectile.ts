@@ -1,4 +1,8 @@
-import { GAME_CONST, DEFAULT_GAMEPLAY } from "@ft/supercluster";
+import {
+  GAME_CONST,
+  DEFAULT_GAMEPLAY,
+  moveOnSphere as sharedMoveOnSphere,
+} from "@ft/supercluster";
 import * as THREE from "three";
 
 import { RENDERER_CONST } from "../constants/renderer";
@@ -219,7 +223,7 @@ export class ProjectileRenderer {
 
   /**
    * Move a projectile along the sphere surface in its velocity direction
-   * Uses GAME_CONST.PROJECTILE_SPEED (rad/tick) converted to rad/sec
+   * Uses shared moveOnSphere from @ft/supercluster
    */
   private moveOnSphere(projectile: ProjectileData, deltaTime: number): void {
     // Convert projectile speed from rad/tick to rad/sec using GAME_CONST
@@ -228,42 +232,8 @@ export class ProjectileRenderer {
     // Angular distance to move this frame
     const angle = speedRadPerSec * deltaTime;
 
-    if (angle === 0) return;
-
-    // Reproject velocity onto tangent plane to prevent radial drift.
-    const tangentVelocity = projectile.velocity
-      .clone()
-      .sub(
-        projectile.position.clone().multiplyScalar(
-          projectile.velocity.dot(projectile.position)
-        )
-      );
-
-    if (tangentVelocity.lengthSq() < EPS) {
-      return;
-    }
-    tangentVelocity.normalize();
-
-    // Rotate around axis perpendicular to position and tangent velocity (great-circle motion).
-    const axis = new THREE.Vector3().crossVectors(
-      projectile.position,
-      tangentVelocity
-    );
-    if (axis.lengthSq() < EPS) {
-      return;
-    }
-    axis.normalize();
-
-    // Create rotation quaternion
-    const quat = new THREE.Quaternion().setFromAxisAngle(axis, angle);
-
-    // Rotate position
-    projectile.position.applyQuaternion(quat);
-    projectile.position.normalize(); // Prevent drift
-
-    // Rotate tangent velocity to stay tangent after movement.
-    tangentVelocity.applyQuaternion(quat).normalize();
-    projectile.velocity.copy(tangentVelocity);
+    // Use shared movement function (mutates position and velocity)
+    sharedMoveOnSphere(projectile.position, projectile.velocity, angle);
   }
 
   /**
@@ -292,8 +262,7 @@ export class ProjectileRenderer {
       .normalize();
 
     // Right = cross(forward, toCamera), gives us the width direction
-    const right = new THREE.Vector3()
-      .crossVectors(forward, toCamera);
+    const right = new THREE.Vector3().crossVectors(forward, toCamera);
 
     if (right.lengthSq() < EPS) {
       const fallbackAxis =

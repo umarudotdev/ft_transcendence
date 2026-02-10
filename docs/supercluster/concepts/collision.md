@@ -304,11 +304,11 @@ for (const asteroid of asteroids) {
 
 #### Performance Trade-offs
 
-| Collision Type     | Transforms Needed                 |
-| ------------------ | --------------------------------- |
-| Projectile vs Asteroid | N projectiles (world → planet local)  |
-| Ship vs Asteroid   | 1 transform (ship → planet local) |
-| Ship vs Projectile     | 0 (both in world space)           |
+| Collision Type         | Transforms Needed                    |
+| ---------------------- | ------------------------------------ |
+| Projectile vs Asteroid | N projectiles (world → planet local) |
+| Ship vs Asteroid       | 1 transform (ship → planet local)    |
+| Ship vs Projectile     | 0 (both in world space)              |
 
 **Trade-off Analysis**:
 

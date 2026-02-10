@@ -99,8 +99,12 @@
 		</Sidebar.Group>
 	</Sidebar.Content>
 
-	<!-- Footer with Theme Toggle -->
-	<Sidebar.Footer class="flex items-center justify-center p-4">
+	<!-- Footer -->
+	<Sidebar.Footer class="flex flex-col items-center gap-3 p-4">
 		<ThemeToggle />
+		<div class="flex flex-col items-center gap-1 text-[10px] text-muted-foreground">
+			<a href="/privacy" class="transition-colors hover:text-foreground">Privacy</a>
+			<a href="/terms" class="transition-colors hover:text-foreground">Terms</a>
+		</div>
 	</Sidebar.Footer>
 </Sidebar.Root>

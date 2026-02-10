@@ -32,4 +32,10 @@
 	<div class="relative z-10 w-full max-w-md">
 		{@render children()}
 	</div>
+
+	<div class="absolute bottom-4 left-0 right-0 z-10 flex justify-center gap-4 text-xs text-muted-foreground">
+		<a href="/privacy" class="transition-colors hover:text-foreground">Privacy Policy</a>
+		<span>|</span>
+		<a href="/terms" class="transition-colors hover:text-foreground">Terms of Service</a>
+	</div>
 </div>

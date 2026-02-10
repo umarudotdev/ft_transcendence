@@ -20,7 +20,6 @@ Record baseline status before implementation patches and define objective accept
   - Projectile-asteroid checks are brute-force O(N*M).
   - Broad-phase is currently absent (optimization opportunity, not correctness bug).
 - Documentation:
-  - Some legacy `Bullet` naming remains in docs.
 
 ## Phase Completion Criteria
 
@@ -52,4 +51,3 @@ Implementation should proceed in small patches:
 2. Phase 2 (tunneling)
 3. Phase 3 (performance)
 4. Phase 4 (docs consistency)
-

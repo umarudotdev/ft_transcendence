@@ -285,7 +285,7 @@ This is crucial to understand:
 │  │  $state() changes    │      │  (requestAnimationFrame)     │ │
 │  │                      │      │                              │ │
 │  │  Example:            │      │  Example:                    │ │
-│  │  debug overlay       │      │  ship, asteroids, bullets    │ │
+│  │  debug overlay       │      │  ship, asteroids, projectiles    │ │
 │  │  "Connected: true"   │      │  moving on screen            │ │
 │  └──────────────────────┘      └──────────────────────────────┘ │
 │           │                              ▲                       │

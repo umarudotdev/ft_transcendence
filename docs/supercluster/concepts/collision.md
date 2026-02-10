@@ -235,9 +235,9 @@ Understanding coordinate spaces is crucial for collision detection.
 
 **World Space**: The fixed reference frame. The camera is here. The ship's logical position (`shipPosition`) is tracked here.
 
-#### Current Implementation: World Space Bullets
+#### Current Implementation: World Space Projectiles
 
-**Design Decision**: Bullets are in **world space** (scene children) to ensure absolute velocity independent of ship movement direction. This fixes the reference frame issue where bullets appeared slower when moving in the same direction as the ship.
+**Design Decision**: Projectiles are in **world space** (scene children) to ensure absolute velocity independent of ship movement direction. This fixes the reference frame issue where projectiles appeared slower when moving in the same direction as the ship.
 
 ```
 World Space (fixed reference frame):
@@ -245,7 +245,7 @@ World Space (fixed reference frame):
 │                                         │
 │         🚀 Ship (shipPosition)          │
 │                                         │
-│         💫 Bullet (world space)         │
+│         💫 Projectile (world space)         │
 │                                         │
 │         📷 Camera                       │
 │                                         │
@@ -263,15 +263,15 @@ Planet Local Space (rotates with planet):
 
 #### Collision Check Strategy
 
-**Bullet vs Asteroid**: Transform bullets from world to planet local space:
+**Projectile vs Asteroid**: Transform projectiles from world to planet local space:
 
 ```typescript
 // Calculate inverse transform once per frame
 const worldToPlanet = planetQuaternion.clone().invert();
 
-for (const bullet of bullets) {
-  // Transform bullet position from world space to planet local space
-  const bulletLocalPos = bullet.position
+for (const projectile of projectiles) {
+  // Transform projectile position from world space to planet local space
+  const bulletLocalPos = projectile.position
     .clone()
     .applyQuaternion(worldToPlanet)
     .normalize();
@@ -306,18 +306,18 @@ for (const asteroid of asteroids) {
 
 | Collision Type     | Transforms Needed                 |
 | ------------------ | --------------------------------- |
-| Bullet vs Asteroid | N bullets (world → planet local)  |
+| Projectile vs Asteroid | N projectiles (world → planet local)  |
 | Ship vs Asteroid   | 1 transform (ship → planet local) |
-| Ship vs Bullet     | 0 (both in world space)           |
+| Ship vs Projectile     | 0 (both in world space)           |
 
 **Trade-off Analysis**:
 
-- Transform N bullets (typically 10-100) instead of keeping them in planet space
-- **Benefit**: Consistent bullet physics - bullets always travel at absolute speed
+- Transform N projectiles (typically 10-100) instead of keeping them in planet space
+- **Benefit**: Consistent projectile physics - projectiles always travel at absolute speed
 - **Cost**: O(N) quaternion transforms per frame
-- **Optimization**: Calculate `worldToPlanet` once, reuse for all bullets
+- **Optimization**: Calculate `worldToPlanet` once, reuse for all projectiles
 
-**Alternative Design (Not Used)**: Keeping bullets in planet local space would eliminate bullet transforms but reintroduce the reference frame issue where bullet speed appeared inconsistent based on ship movement direction.
+**Alternative Design (Not Used)**: Keeping projectiles in planet local space would eliminate projectile transforms but reintroduce the reference frame issue where projectile speed appeared inconsistent based on ship movement direction.
 
 ---
 
@@ -507,7 +507,7 @@ export interface Collidable {
   id: number;
   position: THREE.Vector3;  // Unit vector
   angularRadius: number;    // Radians
-  type: 'ship' | 'asteroid' | 'bullet' | 'powerup';
+  type: 'ship' | 'asteroid' | 'projectile' | 'powerup';
 }
 
 export interface Collision {
@@ -600,7 +600,7 @@ export class SphericalCollisionSystem {
           const b = candidates[j];
 
           // Skip same-type collisions if needed
-          if (a.type === b.type && a.type === 'bullet') continue;
+          if (a.type === b.type && a.type === 'projectile') continue;
 
           // Skip already checked pairs
           const pairKey = a.id < b.id ? `${a.id}-${b.id}` : `${b.id}-${a.id}`;
@@ -744,14 +744,14 @@ export class GameRenderer {
       });
     }
 
-    // Add bullets (also in planet local space - no transform needed!)
-    // Bullets are children of planet group, just like asteroids
-    for (const bullet of this.bullets.getBullets()) {
+    // Add projectiles (also in planet local space - no transform needed!)
+    // Projectiles are children of planet group, just like asteroids
+    for (const projectile of this.projectiles.getBullets()) {
       this.collisionSystem.insert({
-        id: bullet.id,
-        position: bullet.position,  // Already in planet local space!
-        angularRadius: 0.005,  // Small angular radius for bullets
-        type: 'bullet',
+        id: projectile.id,
+        position: projectile.position,  // Already in planet local space!
+        angularRadius: 0.005,  // Small angular radius for projectiles
+        type: 'projectile',
       });
     }
 
@@ -767,7 +767,7 @@ export class GameRenderer {
   private handleCollision(collision: Collision): void {
     const { a, b } = collision;
 
-    // Ensure consistent ordering (ship/bullet first)
+    // Ensure consistent ordering (ship/projectile first)
     const [obj1, obj2] = a.type === 'asteroid' ? [b, a] : [a, b];
 
     if (obj1.type === 'ship' && obj2.type === 'asteroid') {
@@ -776,10 +776,10 @@ export class GameRenderer {
       // TODO: Reduce lives, trigger invincibility frames
     }
 
-    if (obj1.type === 'bullet' && obj2.type === 'asteroid') {
-      // Bullet hit asteroid - destroy bullet, break/destroy asteroid
-      console.log('Bullet hit asteroid!', obj2.id);
-      this.bullets.remove(obj1.id);
+    if (obj1.type === 'projectile' && obj2.type === 'asteroid') {
+      // Projectile hit asteroid - destroy projectile, break/destroy asteroid
+      console.log('Projectile hit asteroid!', obj2.id);
+      this.projectiles.remove(obj1.id);
       this.asteroids.breakAsteroid(obj2.id);
     }
   }
@@ -790,7 +790,7 @@ export class GameRenderer {
 
 1. **Ship**: Only object that needs transformation (world → planet local)
 2. **Asteroids**: Already in planet local space (children of planet group)
-3. **Bullets**: Also in planet local space (will be children of planet group)
+3. **Projectiles**: Also in planet local space (will be children of planet group)
 4. **Transforms per frame**: Just 1 (for the ship), regardless of object count
 
 ````
@@ -840,24 +840,24 @@ const collidableSize =
 
 ---
 
-## Bullet System Considerations
+## Projectile System Considerations
 
-### Bullet as Point vs Ray
+### Projectile as Point vs Ray
 
 **Option 1: Point collision (simpler)**
 
-- Treat bullet as a point (angularRadius ≈ 0)
+- Treat projectile as a point (angularRadius ≈ 0)
 - Check if point is within asteroid's angular radius
-- Miss fast-moving bullets (tunneling problem)
+- Miss fast-moving projectiles (tunneling problem)
 
 **Option 2: Ray/segment collision (more accurate)**
 
-- Store bullet's previous position
+- Store projectile's previous position
 - Check if the arc from prev to current intersects any asteroid
-- Prevents tunneling for fast bullets
+- Prevents tunneling for fast projectiles
 
 ```typescript
-interface Bullet {
+interface Projectile {
   id: number;
   position: THREE.Vector3;      // Current position (unit vector)
   prevPosition: THREE.Vector3;  // Previous frame position
@@ -866,16 +866,16 @@ interface Bullet {
 }
 
 function checkBulletAsteroidCollision(
-  bullet: Bullet,
+  projectile: Projectile,
   asteroid: Collidable
 ): boolean {
   // Check if asteroid is near the arc from prevPosition to position
 
-  // 1. Quick rejection: is asteroid anywhere near the bullet's path?
-  const midpoint = bullet.prevPosition.clone()
-    .add(bullet.position)
+  // 1. Quick rejection: is asteroid anywhere near the projectile's path?
+  const midpoint = projectile.prevPosition.clone()
+    .add(projectile.position)
     .normalize();
-  const pathRadius = bullet.prevPosition.angleTo(bullet.position) / 2;
+  const pathRadius = projectile.prevPosition.angleTo(projectile.position) / 2;
 
   const distToMidpoint = Math.acos(midpoint.dot(asteroid.position));
   if (distToMidpoint > pathRadius + asteroid.angularRadius + 0.1) {
@@ -889,19 +889,19 @@ function checkBulletAsteroidCollision(
 }
 ```
 
-### Bullet Array Optimization
+### Projectile Array Optimization
 
-For "array of bullets" (stream of projectiles), consider:
+For "array of projectiles" (stream of projectiles), consider:
 
 ```typescript
-// Instead of individual bullets, track the stream
+// Instead of individual projectiles, track the stream
 interface BulletStream {
   startPosition: THREE.Vector3;  // Where stream originated
   direction: THREE.Vector3;       // Direction on sphere
   startTime: number;              // When firing started
   endTime: number | null;         // When firing stopped (null = still firing)
-  speed: number;                  // Bullet speed
-  spacing: number;                // Angular distance between bullets
+  speed: number;                  // Projectile speed
+  spacing: number;                // Angular distance between projectiles
 }
 
 // Check collision with entire stream at once
@@ -912,7 +912,7 @@ function checkStreamCollision(
 ): boolean {
   // Calculate which "segment" of the stream could hit the asteroid
   // Based on timing and positions
-  // Much more efficient than checking 100 individual bullets
+  // Much more efficient than checking 100 individual projectiles
 }
 ```
 
@@ -962,12 +962,12 @@ class SimpleLatitudeBands {
 3. Check ship vs all asteroids each frame
 4. Test with 12 asteroids
 
-### Phase 2: Add Bullets
+### Phase 2: Add Projectiles
 
-1. Create Bullet class with position, velocity
-2. Spawn bullets at ship position + aim direction
-3. Move bullets along great circles
-4. Check bullets vs asteroids (brute force first)
+1. Create Projectile class with position, velocity
+2. Spawn projectiles at ship position + aim direction
+3. Move projectiles along great circles
+4. Check projectiles vs asteroids (brute force first)
 
 ### Phase 3: Spatial Partitioning
 
@@ -977,7 +977,7 @@ class SimpleLatitudeBands {
 
 ### Phase 4: Optimization
 
-1. Object pooling for bullets
+1. Object pooling for projectiles
 2. Batch collision responses
 3. Consider Web Workers for physics
 

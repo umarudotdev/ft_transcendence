@@ -18,7 +18,7 @@ Current implementation already uses angular-space collision via dot/cos threshol
 - `apps/web/src/lib/supercluster/renderer/CollisionSystem.ts:126`
 - `apps/web/src/lib/supercluster/renderer/CollisionSystem.ts:131`
 
-### 3.2 Bullet tunneling
+### 3.2 Projectile tunneling
 Status: Real issue.
 
 Current flow is discrete:

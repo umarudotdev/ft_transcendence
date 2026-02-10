@@ -62,7 +62,8 @@ Acceptance:
 - compile-time rejection of invalid size assignments
 - runtime avoids NaN collision radius if unexpected size appears
 
-## Phase 2 - Tunneling Mitigation (Topic 4)
+## Phase 2 - Tunneling Mitigation (Topic 4) (Completed)
+Status: Completed on 2026-02-10.
 
 ### 2.1 Choose first implementation
 - Preferred first step: fixed simulation step (or projectile sub-steps).
@@ -90,10 +91,10 @@ Acceptance:
 - collision pass cost grows slower with object count
 - no regression in collision correctness
 
-## Phase 4 - Documentation Cleanup (Topic 5)
-1. Replace legacy `Bullet` references with `Projectile` in supercluster docs.
-2. Keep one canonical explanation of coordinate spaces and collision flow.
-3. Link all related docs to canonical source to prevent drift.
+## Phase 4 - Documentation Cleanup (Topic 5) (Completed)
+Status: Completed on 2026-02-10.
+1. Keep one canonical explanation of coordinate spaces and collision flow.
+2. Link all related docs to canonical source to prevent drift.
 
 Acceptance:
 - naming consistent across docs and code

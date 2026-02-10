@@ -59,7 +59,7 @@ apps/web/src/lib/supercluster/
 ├── renderer/
 │   ├── GameRenderer.ts # ONLY rendering (receives GameState, draws it)
 │   ├── Ship.ts         # Ship visuals
-│   ├── Bullet.ts       # Bullet visuals
+│   ├── Projectile.ts       # Projectile visuals
 │   ├── Asteroid.ts     # Asteroid visuals
 │   ├── Planet.ts       # Planet visuals
 │   └── CollisionSystem.ts  # Visual collision (uses COLLISION_CONST)
@@ -173,8 +173,8 @@ interface GameStateUpdate {
     hitTimer: number;   // Time until break
   }>;
 
-  // All bullets
-  bullets: Array<{
+  // All projectiles
+  projectiles: Array<{
     id: number;
     phi: number;
     theta: number;
@@ -234,7 +234,7 @@ interface GameStateUpdate {
 
 - [ ] Multiple players per game
 - [ ] Player spawn positions
-- [ ] Bullet ownership
+- [ ] Projectile ownership
 - [ ] Score per player
 - [ ] Lag compensation
 

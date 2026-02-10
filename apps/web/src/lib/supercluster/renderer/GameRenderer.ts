@@ -53,6 +53,10 @@ export class GameRenderer {
   private animationId: number | null = null;
   private lastState: GameState | null = null;
   private lastTime: number = 0;
+  private simulationAccumulator = 0;
+  private readonly fixedSimulationStep = 1 / GAME_CONST.TICK_RATE;
+  private readonly maxFrameDelta = 0.1;
+  private readonly maxSimulationSteps = 8;
 
   // ========================================================================
   // Quaternion-based rotation system (no gimbal lock, smooth pole crossing)
@@ -153,6 +157,7 @@ export class GameRenderer {
     // Reset input and shooting state
     this.input.reset();
     this.shootCooldownTimer = 0;
+    this.simulationAccumulator = 0;
   }
 
   /**
@@ -347,40 +352,35 @@ export class GameRenderer {
   start(): void {
     if (this.animationId !== null) return;
     this.lastTime = performance.now();
+    this.simulationAccumulator = 0;
 
     const animate = (currentTime: number): void => {
       this.animationId = requestAnimationFrame(animate);
 
-      // Calculate delta time in seconds
-      const deltaTime = (currentTime - this.lastTime) / 1000;
+      // Calculate frame delta and clamp to avoid spiral-of-death after tab switches.
+      const rawDeltaTime = (currentTime - this.lastTime) / 1000;
+      const deltaTime = Math.min(rawDeltaTime, this.maxFrameDelta);
       this.lastTime = currentTime;
 
       // Skip game updates if game is over
       if (!this.isGameOver) {
-        // Update cooldown timer
-        if (this.shootCooldownTimer > 0) {
-          this.shootCooldownTimer -= deltaTime;
+        // Run fixed-step simulation to reduce tunneling on frame spikes.
+        this.simulationAccumulator += deltaTime;
+        let stepCount = 0;
+
+        while (
+          this.simulationAccumulator >= this.fixedSimulationStep &&
+          stepCount < this.maxSimulationSteps
+        ) {
+          this.updateSimulation(this.fixedSimulationStep);
+          this.simulationAccumulator -= this.fixedSimulationStep;
+          stepCount++;
         }
 
-        // Continuous shooting while mouse is held
-        if (this.input.firePressed && this.shootCooldownTimer <= 0) {
-          this.shoot();
+        // Drop leftover accumulated time if we hit step cap.
+        if (stepCount === this.maxSimulationSteps) {
+          this.simulationAccumulator = 0;
         }
-
-        // Update local movement (only when not receiving server state)
-        if (!this.lastState) {
-          this.updateLocalMovement(deltaTime);
-        }
-
-        // Update game objects
-        this.stage.update(deltaTime, this.camera.position);
-
-        // Update projectiles (needs camera position for shader)
-        this.stage.projectiles.setCameraPosition(this.camera.position);
-        this.stage.updateProjectiles(deltaTime);
-
-        // Check collisions and handle them
-        this.checkCollisions();
       } else {
         // Still update world for force field shader even when game over
         this.stage.world.update(this.camera.position);
@@ -390,6 +390,33 @@ export class GameRenderer {
     };
 
     animate(performance.now());
+  }
+
+  private updateSimulation(deltaTime: number): void {
+    // Update cooldown timer
+    if (this.shootCooldownTimer > 0) {
+      this.shootCooldownTimer -= deltaTime;
+    }
+
+    // Continuous shooting while mouse is held
+    if (this.input.firePressed && this.shootCooldownTimer <= 0) {
+      this.shoot();
+    }
+
+    // Update local movement (only when not receiving server state)
+    if (!this.lastState) {
+      this.updateLocalMovement(deltaTime);
+    }
+
+    // Update game objects
+    this.stage.update(deltaTime, this.camera.position);
+
+    // Update projectiles (needs camera position for shader)
+    this.stage.projectiles.setCameraPosition(this.camera.position);
+    this.stage.updateProjectiles(deltaTime);
+
+    // Check collisions and handle them
+    this.checkCollisions();
   }
 
   stop(): void {

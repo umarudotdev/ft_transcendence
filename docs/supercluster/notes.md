@@ -371,7 +371,7 @@ if (dot > threshold) // Collision!
 **Coordinate Spaces**: Keep everything in planet local space for efficiency.
 
 - Asteroids: planet local (no transform needed)
-- Bullets: planet local (no transform needed)
+- Projectiles: planet local (no transform needed)
 - Ship: transform once from world to planet local
 
 For comprehensive documentation including spatial partitioning and implementation details:

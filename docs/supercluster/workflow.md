@@ -146,10 +146,10 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 **Tasks**:
 
 - [ ] Create `BulletRenderer` class using InstancedMesh
-- [ ] Bullet geometry: small elongated shape (capsule or cylinder)
+- [ ] Projectile geometry: small elongated shape (capsule or cylinder)
 - [ ] Spawn at ship position in aim direction
-- [ ] Store bullet data: position (unit vector), velocity (tangent vector), lifetime
-- [ ] Bullets are children of planet group (same coordinate space as asteroids)
+- [ ] Store projectile data: position (unit vector), velocity (tangent vector), lifetime
+- [ ] Projectiles are children of planet group (same coordinate space as asteroids)
       **Test**: Click creates visible projectile
 
 ### Step 2.3: Projectile Movement
@@ -157,15 +157,15 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 **Goal**: Projectiles travel along sphere surface
 **Tasks**:
 
-- [ ] Move bullet along great circle path (same math as asteroids)
-- [ ] Update bullet position each frame using quaternion rotation
-- [ ] Remove bullet after traveling set distance or time (lifetime)
-- [ ] Bullet speed configurable via GameConfig
+- [ ] Move projectile along great circle path (same math as asteroids)
+- [ ] Update projectile position each frame using quaternion rotation
+- [ ] Remove projectile after traveling set distance or time (lifetime)
+- [ ] Projectile speed configurable via GameConfig
       **Test**: Projectiles travel and disappear
 
 ### Step 2.4: Ship Shooting Cooldown
 
-**Goal**: Prevent bullet spam
+**Goal**: Prevent projectile spam
 **Tasks**:
 
 - [ ] Add `shootCooldown` to GameConfig (e.g., 0.2 seconds)
@@ -235,15 +235,15 @@ apps/web/src/lib/supercluster/      # Three.js renderer (client-only)
 
 > **Architecture Reference**: See [collision.md](./collision.md) for detailed design, algorithms, and implementation guide.
 
-### Step 4.1: Basic Bullet vs Asteroid Collision
+### Step 4.1: Basic Projectile vs Asteroid Collision
 
-**Goal**: Bullets destroy asteroids on contact
+**Goal**: Projectiles destroy asteroids on contact
 **Tasks**:
 
 - [ ] Create `CollisionSystem` class
-- [ ] Each frame, check all bullets against all asteroids
+- [ ] Each frame, check all projectiles against all asteroids
 - [ ] Use dot product collision: `dot > cos(bulletRadius + asteroidRadius)`
-- [ ] On hit: remove bullet, call `breakAsteroid()` or remove asteroid
+- [ ] On hit: remove projectile, call `breakAsteroid()` or remove asteroid
 - [ ] No coordinate transform needed (both in planet local space)
       **Test**: Shooting asteroid makes it break or disappear
 

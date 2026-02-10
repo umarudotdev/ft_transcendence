@@ -36,7 +36,7 @@ apps/web/src/lib/supercluster/
 ├── renderer/
 │   ├── GameRenderer.ts   # Main renderer
 │   ├── Ship.ts           # Ship + aim dot
-│   ├── Bullet.ts         # Projectiles
+│   ├── Projectile.ts         # Projectiles
 │   ├── Asteroid.ts       # Asteroids
 │   ├── Planet.ts         # Planet + force field
 │   └── CollisionSystem.ts
@@ -142,7 +142,7 @@ Helper: `createWaveArray()` converts wave config to spawn array.
 | `EXPLOSION_COLOR`   | `0xff0000` | ✅🔒   | Red   |
 | `EXPLOSION_OPACITY` | `0.7`      | ✅🔒   |       |
 
-### Bullet Visuals
+### Projectile Visuals
 
 | Constant              | Value      | Status | Notes                  |
 | --------------------- | ---------- | ------ | ---------------------- |
@@ -271,7 +271,7 @@ The ship is currently a procedural triangle/wedge defined in `Ship.ts`.
 ### Phase 5: Consolidate Renderer Hardcodes ✅ COMPLETE
 
 - [x] Move Ship.ts hardcoded values to `SHIP_GEOMETRY` (assets/ship-geometry.ts)
-- [x] Move Bullet.ts hardcoded values to `RENDERER_CONST`
+- [x] Move Projectile.ts hardcoded values to `RENDERER_CONST`
 - [x] Move Asteroid.ts hardcoded values to `RENDERER_CONST`
 - [x] Remove duplicate `SIZE_MULTIPLIERS` (now uses `GAMEPLAY_CONST.ASTEROID_DIAM`)
 - [x] Remove GUI-only methods from renderers

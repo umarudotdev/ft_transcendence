@@ -102,7 +102,7 @@ export const RENDERER_CONST = Object.freeze({
   AIM_DOT_COLOR: 0xffff00,
   AIM_DOT_ORBIT_RADIUS: 4,
 
-  // Bullet Visuals
+  // Projectile Visuals
   BULLET_COLOR: 0xffaa00,
   BULLET_MAX_COUNT: 100,
   BULLET_RADIUS: 0.75,
@@ -210,7 +210,7 @@ All values defined once in their appropriate constant objects:
 
 ```typescript
 // ❌ Bad: Hardcoded values scattered
-const bulletSpeed = 0.015;  // in Bullet.ts
+const bulletSpeed = 0.015;  // in Projectile.ts
 const bulletSpeed = 0.015;  // also in GameRenderer.ts
 
 // ✅ Good: Single source of truth

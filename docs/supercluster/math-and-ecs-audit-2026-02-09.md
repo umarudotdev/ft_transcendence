@@ -75,7 +75,6 @@
 - Examples:
   - `docs/supercluster/workflow.md:148`
   - `docs/supercluster/future-architecture.md:62`
-- Docs still reference `Bullet.ts` and older assumptions in some sections.
 - Current code uses `Projectile.ts` and world-space projectile model.
 
 **Recommended fix**
@@ -143,4 +142,3 @@ interface AsteroidData {
 2. Harden movement math against degenerate cross products (axis/billboard basis guards).
 3. Make asteroid size type-safe (`1 | 2 | 3 | 4`) and add runtime guard.
 4. Add broad-phase only if/when perf profiling justifies it.
-5. Clean up docs terminology (`Bullet` -> `Projectile`) for consistency.

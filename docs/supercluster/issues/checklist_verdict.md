@@ -5,7 +5,7 @@
 ## Concrete next steps
 
 1. **Ensure all collisions use angular distance**
-2. **Add bullet sub-stepping or swept collision**
+2. **Add projectile sub-stepping or swept collision**
 3. **Precompute asteroid angular radii by size**
 4. **Use dot-product early rejection**
 5. *(Later)* Swap-remove instead of splice

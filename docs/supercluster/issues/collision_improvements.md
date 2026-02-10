@@ -9,7 +9,7 @@ This section summarizes the key collision correctness and robustness upgrades fo
 If you check collisions like:
 
 ```ts
-bullet.position.distanceTo(asteroid.position) < radiusSum
+projectile.position.distanceTo(asteroid.position) < radiusSum
 ```
 
 this is only valid for flat space.  
@@ -36,9 +36,9 @@ function angularDistance(a: THREE.Vector3, b: THREE.Vector3): number {
 
 ---
 
-## 3.2 Bullet tunneling (fast bullets skipping hits)
+## 3.2 Projectile tunneling (fast projectiles skipping hits)
 
-Bullets can move far between frames:
+Projectiles can move far between frames:
 
 - high speed
 - small asteroids
@@ -52,13 +52,13 @@ Check collision against the **arc path** traveled this frame.
 
 ### Solution B: Sub-stepping (simpler)
 
-Split bullet motion into smaller steps:
+Split projectile motion into smaller steps:
 
 ```ts
 const steps = Math.ceil(angle / maxSafeAngle);
 
 for (...) {
-  move bullet by angle/steps;
+  move projectile by angle/steps;
   test collision;
 }
 ```
@@ -72,7 +72,7 @@ Very common in arcade shooters.
 Naive loops are:
 
 ```
-for bullet
+for projectile
   for asteroid
     test collision
 ```
@@ -82,7 +82,7 @@ O(N×M).
 On a sphere you can reject cheaply using dot products:
 
 ```ts
-if (bullet.position.dot(asteroid.position) < cosThreshold) continue;
+if (projectile.position.dot(asteroid.position) < cosThreshold) continue;
 ```
 
 Only do expensive math when close.

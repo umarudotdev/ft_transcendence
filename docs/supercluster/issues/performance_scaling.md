@@ -1,6 +1,6 @@
 # 4. Performance & scaling notes (collision-adjacent)
 
-These are improvements that matter once bullet/asteroid counts grow.
+These are improvements that matter once projectile/asteroid counts grow.
 
 ---
 
@@ -28,8 +28,8 @@ O(1) removal.
 
 Long-term cleaner architecture:
 
-- **BulletSystem** → owns bullet data + collision
-- **BulletRenderer** → only draws bullet data
+- **BulletSystem** → owns projectile data + collision
+- **BulletRenderer** → only draws projectile data
 
 You are already close to this split.
 

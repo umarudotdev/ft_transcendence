@@ -76,14 +76,9 @@ export class GameRenderer {
     GAME_CONST.SHIP_INITIAL_POS.y,
     GAME_CONST.SHIP_INITIAL_POS.z
   );
-  private readonly initialShipPosition = new THREE.Vector3(
-    GAME_CONST.SHIP_INITIAL_POS.x,
-    GAME_CONST.SHIP_INITIAL_POS.y,
-    GAME_CONST.SHIP_INITIAL_POS.z
-  ).normalize();
 
   // Ship direction (visual only - not sent to server)
-  private targetShipDirection = 0; // Where ship tip should point (from WASD)
+  private targetShipDirection = Math.PI; // Where ship tip should point (from WASD)
 
   // Ship state (will come from server in future)
   private shipLives = DEFAULT_GAMEPLAY.shipLives;
@@ -159,7 +154,7 @@ export class GameRenderer {
     this.mechanicsController = "client";
 
     // Reset ship state
-    this.targetShipDirection = 0;
+    this.targetShipDirection = Math.PI;
     this.shipLives = DEFAULT_GAMEPLAY.shipLives;
     this.shipInvincible = DEFAULT_GAMEPLAY.shipInvincible;
 
@@ -231,11 +226,15 @@ export class GameRenderer {
     }
 
     // Rebuild planet quaternion from authoritative ship position.
-    // Ship is fixed at initial world position while the planet rotates beneath it.
-    this.planetQuaternion.setFromUnitVectors(
-      this.initialShipPosition,
-      this.shipPosition
-    );
+    // Authoritative orientation from server state (no reconstruction from position-only).
+    this.planetQuaternion
+      .set(
+        state.ship.orientation.x,
+        state.ship.orientation.y,
+        state.ship.orientation.z,
+        state.ship.orientation.w
+      )
+      .normalize();
 
     // Apply to visuals
     this.stage.world.group.quaternion.copy(this.planetQuaternion);
@@ -499,6 +498,12 @@ export class GameRenderer {
           x: Math.sin(this.targetShipDirection),
           y: -Math.cos(this.targetShipDirection),
           z: 0,
+        },
+        orientation: {
+          x: this.planetQuaternion.x,
+          y: this.planetQuaternion.y,
+          z: this.planetQuaternion.z,
+          w: this.planetQuaternion.w,
         },
         aimAngle: aimAngle,
         lives: this.shipLives,

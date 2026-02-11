@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import type { InputState, Vec3 } from "../types";
+import type { InputState, Quat, Vec3 } from "../types";
 
 const WORLD_X_AXIS = new THREE.Vector3(1, 0, 0);
 const WORLD_Y_AXIS = new THREE.Vector3(0, 1, 0);
@@ -13,10 +13,12 @@ export function getTargetDirectionFromInput(keys: InputState): number | null {
   let inputX = 0;
   let inputY = 0;
 
-  if (keys.forward) inputY -= 1;
-  if (keys.backward) inputY += 1;
-  if (keys.left) inputX += 1;
-  if (keys.right) inputX -= 1;
+  // Canonical convention:
+  // forward = 0, right = +PI/2, backward = PI, left = -PI/2
+  if (keys.forward) inputY += 1;
+  if (keys.backward) inputY -= 1;
+  if (keys.right) inputX += 1;
+  if (keys.left) inputX -= 1;
 
   if (inputX === 0 && inputY === 0) return null;
 
@@ -91,16 +93,22 @@ export function stepShipOnSphere(
 export function stepShipState(
   shipPosition: Vec3,
   shipDirection: Vec3,
+  shipOrientation: Quat,
   keys: InputState,
   deltaTicks: number,
   speedRadPerTick: number
-): { moved: boolean; position: Vec3; direction: Vec3 } {
+): { moved: boolean; position: Vec3; direction: Vec3; orientation: Quat } {
   const position = new THREE.Vector3(
     shipPosition.x,
     shipPosition.y,
     shipPosition.z
   ).normalize();
-  const planetQuaternion = new THREE.Quaternion();
+  const planetQuaternion = new THREE.Quaternion(
+    shipOrientation.x,
+    shipOrientation.y,
+    shipOrientation.z,
+    shipOrientation.w
+  ).normalize();
   const scratchQuat = new THREE.Quaternion();
 
   const moved = stepShipOnSphere(
@@ -117,8 +125,8 @@ export function stepShipState(
     targetDirection === null
       ? shipDirection
       : {
-          x: Math.sin(targetDirection),
-          y: -Math.cos(targetDirection),
+          x: -Math.sin(targetDirection),
+          y: Math.cos(targetDirection),
           z: 0,
         };
 
@@ -126,5 +134,11 @@ export function stepShipState(
     moved,
     position: { x: position.x, y: position.y, z: position.z },
     direction,
+    orientation: {
+      x: planetQuaternion.x,
+      y: planetQuaternion.y,
+      z: planetQuaternion.z,
+      w: planetQuaternion.w,
+    },
   };
 }

@@ -36,8 +36,9 @@ function createInitialGameState(): GameState {
         y: GAME_CONST.SHIP_INITIAL_POS.y,
         z: GAME_CONST.SHIP_INITIAL_POS.z,
       },
-      direction: { x: 0, y: -1, z: 0 },
-      aimAngle: 0,
+      direction: { x: 0, y: 1, z: 0 },
+      orientation: { x: 0, y: 0, z: 0, w: 1 },
+      aimAngle: Math.PI,
       lives: DEFAULT_GAMEPLAY.shipLives,
       invincible: DEFAULT_GAMEPLAY.shipInvincible,
       invincibleTicks: 0,
@@ -207,12 +208,14 @@ export class GameRuntimeService {
         const stepped = stepShipState(
           this.state.ship.position,
           this.state.ship.direction,
+          this.state.ship.orientation,
           controllingSession.keys,
           1,
           GAME_CONST.SHIP_SPEED
         );
         this.state.ship.position = stepped.position;
         this.state.ship.direction = stepped.direction;
+        this.state.ship.orientation = stepped.orientation;
       }
     }
 
@@ -232,6 +235,7 @@ export class GameRuntimeService {
           ...this.state.ship,
           position: { ...this.state.ship.position },
           direction: { ...this.state.ship.direction },
+          orientation: { ...this.state.ship.orientation },
         },
       },
       lastInputSeq: this.lastProcessedInputSeq,

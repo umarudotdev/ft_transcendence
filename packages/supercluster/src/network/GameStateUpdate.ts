@@ -70,6 +70,7 @@ export function createEmptyGameState(): GameStateUpdate {
         z: GAME_CONST.SHIP_INITIAL_POS.z,
       },
       direction: { x: 0, y: -1, z: 0 },
+      orientation: { x: 0, y: 0, z: 0, w: 1 },
       aimAngle: 0,
       lives: 3,
       invincible: false,

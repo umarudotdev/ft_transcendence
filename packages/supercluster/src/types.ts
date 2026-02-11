@@ -12,6 +12,13 @@ export interface Vec3 {
   z: number;
 }
 
+export interface Quat {
+  x: number;
+  y: number;
+  z: number;
+  w: number;
+}
+
 // ============================================================================
 // Game Entities
 // ============================================================================
@@ -23,6 +30,7 @@ export interface Vec3 {
 export interface ShipState {
   position: Vec3;
   direction: Vec3; // Tangent direction unit vector
+  orientation: Quat; // World rotation quaternion for authoritative apply
   aimAngle: number; // Direction of aim on tangent plane (radians)
   lives: number;
   invincible: boolean; // After taking damage

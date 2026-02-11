@@ -10,7 +10,9 @@ import type {
   ProjectileState,
   ShipState,
   GameStatus,
+  Vec3,
 } from "../types";
+import { GAME_CONST } from "../constants";
 
 /**
  * Complete game state sent to client for rendering
@@ -49,8 +51,7 @@ export interface GameStateUpdate {
  */
 export interface PowerUpState {
   id: number;
-  phi: number;
-  theta: number;
+  position: Vec3;
   type: "cooldown" | "spread";
 }
 
@@ -63,7 +64,12 @@ export function createEmptyGameState(): GameStateUpdate {
     timestamp: 0,
     lastInputSeq: 0,
     ship: {
-      position: { phi: Math.PI / 2, theta: Math.PI / 2 },
+      position: {
+        x: GAME_CONST.SHIP_INITIAL_POS.x,
+        y: GAME_CONST.SHIP_INITIAL_POS.y,
+        z: GAME_CONST.SHIP_INITIAL_POS.z,
+      },
+      direction: { x: 0, y: -1, z: 0 },
       aimAngle: 0,
       lives: 3,
       invincible: false,

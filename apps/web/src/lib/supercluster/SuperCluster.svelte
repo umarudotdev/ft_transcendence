@@ -27,9 +27,11 @@
 	let ws: WebSocket | null = null;
 	let connected = $state(false);
 	let gameState = $state<GameState | null>(null);
+	let mechanicsController = $state<'client' | 'server'>('client');
 	let isMounted = false;
 	let shouldReconnect = true;
 	let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+	let debugPollTimer: ReturnType<typeof setInterval> | null = null;
 
 	// Input state
 	const inputState: InputState = {
@@ -55,6 +57,12 @@
 		// Initialize renderer (uses GAME_CONST and RENDERER_CONST directly)
 		renderer = new GameRenderer(canvas);
 		renderer.start();
+		mechanicsController = renderer.getMechanicsController();
+
+		debugPollTimer = setInterval(() => {
+			if (!renderer) return;
+			mechanicsController = renderer.getMechanicsController();
+		}, 200);
 
 		// Setup input handlers
 		setupInputHandlers();
@@ -75,6 +83,10 @@
 		if (reconnectTimer) {
 			clearTimeout(reconnectTimer);
 			reconnectTimer = null;
+		}
+		if (debugPollTimer) {
+			clearInterval(debugPollTimer);
+			debugPollTimer = null;
 		}
 
 		// Cleanup
@@ -101,6 +113,7 @@
 
 		ws.onopen = () => {
 			connected = true;
+			sendMessage({ type: 'ready' });
 			if (debug) console.log('WebSocket connected');
 		};
 
@@ -346,6 +359,7 @@
 			<p>Wave: {gameState.wave}</p>
 			<p>Status: {gameState.gameStatus}</p>
 			<p>Connected: {connected}</p>
+			<p>Mechanics: {mechanicsController}</p>
 		</div>
 	{/if}
 </div>

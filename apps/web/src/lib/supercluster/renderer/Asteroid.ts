@@ -112,8 +112,8 @@ export class AsteroidRenderer {
     const asteroid: AsteroidData = {
       state: {
         id: this.nextId++,
-        sphericalPosition: { phi: 0, theta: 0 },
-        direction: 0,
+        position: { x: position.x, y: position.y, z: position.z },
+        direction: { x: direction.x, y: direction.y, z: direction.z },
         angularSpeed: speedInRadPerTick,
         size: asteroidSize,
         health: 2 * asteroidSize,
@@ -272,6 +272,14 @@ export class AsteroidRenderer {
     // Rotate tangent velocity to stay tangent after movement.
     tangentVelocity.applyQuaternion(quat).normalize();
     asteroid.direction.copy(tangentVelocity);
+
+    // Keep shared state position in sync with renderer position.
+    asteroid.state.position.x = asteroid.position.x;
+    asteroid.state.position.y = asteroid.position.y;
+    asteroid.state.position.z = asteroid.position.z;
+    asteroid.state.direction.x = asteroid.direction.x;
+    asteroid.state.direction.y = asteroid.direction.y;
+    asteroid.state.direction.z = asteroid.direction.z;
   }
 
   /**
@@ -386,8 +394,16 @@ export class AsteroidRenderer {
       const newAsteroid: AsteroidData = {
         state: {
           id: this.nextId++,
-          sphericalPosition: { phi: 0, theta: 0 },
-          direction: 0,
+          position: {
+            x: asteroid.position.x,
+            y: asteroid.position.y,
+            z: asteroid.position.z,
+          },
+          direction: {
+            x: newVelocity.x,
+            y: newVelocity.y,
+            z: newVelocity.z,
+          },
           angularSpeed: 0,
           size: newSize,
           health: 2 * newSize,

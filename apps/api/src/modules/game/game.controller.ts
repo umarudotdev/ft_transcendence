@@ -1,6 +1,8 @@
 import { Elysia } from "elysia";
+import type { ClientMessage } from "@ft/supercluster";
 
 import { logger } from "../../common/logger";
+import { GameRuntimeService } from "./game.runtime.service";
 
 const AIM_LOG_INTERVAL_MS = 200;
 let lastAimLogAt = 0;
@@ -46,7 +48,8 @@ function activeKeys(keys: ParsedClientMessage["keys"]): string[] {
 }
 
 export const gameController = new Elysia({ prefix: "/game" }).ws("/ws", {
-  open() {
+  open(ws) {
+    GameRuntimeService.registerClient(ws.raw as unknown as WebSocket);
     logger.ws("open", {
       module: "supercluster-game",
       action: "connected",
@@ -61,6 +64,11 @@ export const gameController = new Elysia({ prefix: "/game" }).ws("/ws", {
       });
       return;
     }
+
+    GameRuntimeService.handleClientMessage(
+      ws.raw as unknown as WebSocket,
+      parsed as ClientMessage
+    );
 
     switch (parsed.type) {
       case "input":
@@ -111,10 +119,9 @@ export const gameController = new Elysia({ prefix: "/game" }).ws("/ws", {
         break;
     }
 
-    // Debug acknowledgement only; renderer ignores unknown message types.
-    ws.send(JSON.stringify({ type: "ack", receivedType: parsed.type }));
   },
-  close() {
+  close(ws) {
+    GameRuntimeService.unregisterClient(ws.raw as unknown as WebSocket);
     logger.ws("close", {
       module: "supercluster-game",
       action: "disconnected",

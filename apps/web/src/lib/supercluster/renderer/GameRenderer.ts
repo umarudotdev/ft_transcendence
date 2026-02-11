@@ -2,8 +2,11 @@ import {
   GAME_CONST,
   GAMEPLAY_CONST,
   DEFAULT_GAMEPLAY,
+  getTargetDirectionFromInput,
+  stepShipOnSphere,
   type GameState,
   type InputState,
+  type Vec3,
 } from "@ft/supercluster";
 import * as THREE from "three";
 
@@ -34,6 +37,8 @@ import { InputController } from "./InputController";
 // - GameOverScreen: Game over visuals (explosion, DOM overlay)
 // ============================================================================
 export class GameRenderer {
+  private mechanicsController: "client" | "server" = "client";
+
   // Three.js infrastructure (owned by GameRenderer)
   private webglRenderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
@@ -71,6 +76,11 @@ export class GameRenderer {
     GAME_CONST.SHIP_INITIAL_POS.y,
     GAME_CONST.SHIP_INITIAL_POS.z
   );
+  private readonly initialShipPosition = new THREE.Vector3(
+    GAME_CONST.SHIP_INITIAL_POS.x,
+    GAME_CONST.SHIP_INITIAL_POS.y,
+    GAME_CONST.SHIP_INITIAL_POS.z
+  ).normalize();
 
   // Ship direction (visual only - not sent to server)
   private targetShipDirection = 0; // Where ship tip should point (from WASD)
@@ -80,8 +90,6 @@ export class GameRenderer {
   private shipInvincible = DEFAULT_GAMEPLAY.shipInvincible;
 
   // Reusable objects for movement calculations (avoid GC pressure)
-  private readonly _WORLD_X_AXIS = new THREE.Vector3(1, 0, 0); // Pitch axis (forward/backward)
-  private readonly _WORLD_Y_AXIS = new THREE.Vector3(0, 1, 0); // Yaw axis (left/right)
   private readonly _tempQuat = new THREE.Quaternion();
 
   // Shooting state
@@ -148,6 +156,7 @@ export class GameRenderer {
     this.shipPosition.set(x, y, z);
     this.planetQuaternion.identity();
     this.stage.world.group.quaternion.copy(this.planetQuaternion);
+    this.mechanicsController = "client";
 
     // Reset ship state
     this.targetShipDirection = 0;
@@ -201,36 +210,39 @@ export class GameRenderer {
   // ========================================================================
   updateState(state: GameState): void {
     this.lastState = state;
+    this.mechanicsController = "server";
 
     // Update internal state from server
-    this.shipPosition.copy(
-      this.sphericalToUnitVector(
-        state.ship.position.phi,
-        state.ship.position.theta
-      )
-    );
+    this.shipPosition
+      .set(state.ship.position.x, state.ship.position.y, state.ship.position.z)
+      .normalize();
     this.input.setAimAngle(state.ship.aimAngle);
     this.shipLives = state.ship.lives;
     this.shipInvincible = state.ship.invincible;
+    const stateDirectionLengthSq =
+      state.ship.direction.x * state.ship.direction.x +
+      state.ship.direction.y * state.ship.direction.y +
+      state.ship.direction.z * state.ship.direction.z;
+    if (stateDirectionLengthSq > 1e-8) {
+      this.targetShipDirection = Math.atan2(
+        state.ship.direction.x,
+        -state.ship.direction.y
+      );
+    }
 
-    // Rebuild planet quaternion from server state
-    this.planetQuaternion.identity();
-    this._tempQuat.setFromAxisAngle(
-      this._WORLD_X_AXIS,
-      -(state.ship.position.phi - Math.PI / 2)
+    // Rebuild planet quaternion from authoritative ship position.
+    // Ship is fixed at initial world position while the planet rotates beneath it.
+    this.planetQuaternion.setFromUnitVectors(
+      this.initialShipPosition,
+      this.shipPosition
     );
-    this.planetQuaternion.multiply(this._tempQuat);
-    this._tempQuat.setFromAxisAngle(
-      this._WORLD_Y_AXIS,
-      state.ship.position.theta - Math.PI / 2
-    );
-    this.planetQuaternion.multiply(this._tempQuat);
 
     // Apply to visuals
     this.stage.world.group.quaternion.copy(this.planetQuaternion);
+    this.stage.ship.setCurrentDirectionAngle(this.targetShipDirection);
     this.stage.ship.updateFromState(
       state.ship,
-      this.stage.ship.getCurrentDirectionAngle(),
+      this.targetShipDirection,
       this.input.aimAngle
     );
 
@@ -393,6 +405,16 @@ export class GameRenderer {
   }
 
   private updateSimulation(deltaTime: number): void {
+    if (this.lastState) {
+      this.mechanicsController = "server";
+      // Phase 0 isolation:
+      // when authoritative snapshots are present, keep renderer visual updates only.
+      this.stage.world.update(this.camera.position);
+      this.stage.projectiles.setCameraPosition(this.camera.position);
+      return;
+    }
+    this.mechanicsController = "client";
+
     // Update cooldown timer
     if (this.shootCooldownTimer > 0) {
       this.shootCooldownTimer -= deltaTime;
@@ -403,10 +425,8 @@ export class GameRenderer {
       this.shoot();
     }
 
-    // Update local movement (only when not receiving server state)
-    if (!this.lastState) {
-      this.updateLocalMovement(deltaTime);
-    }
+    // Update local movement
+    this.updateLocalMovement(deltaTime);
 
     // Update game objects
     this.stage.update(deltaTime, this.camera.position);
@@ -427,73 +447,30 @@ export class GameRenderer {
   }
 
   private updateLocalMovement(deltaTime: number): void {
-    // Movement speed in radians per second (convert from rad/tick to rad/sec)
-    const speed = GAME_CONST.SHIP_SPEED * GAME_CONST.TICK_RATE;
+    const deltaTicks = deltaTime * GAME_CONST.TICK_RATE;
 
     // Read input from InputController
     const keys = this.input.keys;
 
+    const targetDirection = getTargetDirectionFromInput(keys);
+    if (targetDirection !== null) {
+      this.targetShipDirection = targetDirection;
+    }
+
     if (this.input.hasMovementInput) {
-      // ====================================================================
-      // Calculate target ship direction from WASD input
-      // ====================================================================
-      let inputX = 0; // Left/right component
-      let inputY = 0; // Forward/backward component
+      const moved = stepShipOnSphere(
+        this.planetQuaternion,
+        this.shipPosition,
+        keys,
+        deltaTicks,
+        GAME_CONST.SHIP_SPEED,
+        this._tempQuat
+      );
 
-      if (keys.forward) inputY -= 1;
-      if (keys.backward) inputY += 1;
-      if (keys.left) inputX += 1;
-      if (keys.right) inputX -= 1;
-
-      // Calculate target direction angle from input vector
-      // 0 = forward (-Y in ship space), PI/2 = right (+X), etc.
-      if (inputX !== 0 || inputY !== 0) {
-        this.targetShipDirection = Math.atan2(inputX, inputY);
+      if (moved) {
+        // Apply updated world rotation to visual world group.
+        this.stage.world.group.quaternion.copy(this.planetQuaternion);
       }
-
-      // ====================================================================
-      // Quaternion-based movement (no gimbal lock, smooth pole crossing)
-      // ====================================================================
-      // We rotate the planet quaternion based on input.
-      // The ship position (unit vector) is rotated inversely to track
-      // where the ship "actually" is on the planet surface.
-
-      // Calculate rotation angles for this frame
-      let pitchAngle = 0; // Forward/backward (rotate around X)
-      let yawAngle = 0; // Left/right (rotate around Y)
-
-      if (keys.forward) pitchAngle += speed * deltaTime;
-      if (keys.backward) pitchAngle -= speed * deltaTime;
-      if (keys.left) yawAngle += speed * deltaTime;
-      if (keys.right) yawAngle -= speed * deltaTime;
-
-      // Create rotation quaternions for pitch and yaw
-      // Pitch: rotate around X-axis (forward/backward movement)
-      if (pitchAngle !== 0) {
-        this._tempQuat.setFromAxisAngle(this._WORLD_X_AXIS, pitchAngle);
-        this.planetQuaternion.premultiply(this._tempQuat);
-
-        // Rotate ship position inversely (ship moves opposite to planet rotation)
-        this._tempQuat.invert();
-        this.shipPosition.applyQuaternion(this._tempQuat);
-      }
-
-      // Yaw: rotate around Y-axis (left/right movement)
-      if (yawAngle !== 0) {
-        this._tempQuat.setFromAxisAngle(this._WORLD_Y_AXIS, yawAngle);
-        this.planetQuaternion.premultiply(this._tempQuat);
-
-        // Rotate ship position inversely
-        this._tempQuat.invert();
-        this.shipPosition.applyQuaternion(this._tempQuat);
-      }
-
-      // Normalize to prevent drift from floating point errors
-      this.planetQuaternion.normalize();
-      this.shipPosition.normalize();
-
-      // Apply planet rotation to the visual
-      this.stage.world.group.quaternion.copy(this.planetQuaternion);
     }
 
     // ====================================================================
@@ -509,14 +486,20 @@ export class GameRenderer {
   // Ship Visual Updates
   // ========================================================================
   private updateShipVisuals(): void {
-    // Create a ShipState from current quaternion-based state
-    // Convert unit vector position to spherical for compatibility
-    const spherical = this.unitVectorToSpherical(this.shipPosition);
     const aimAngle = this.input.aimAngle;
 
     this.stage.ship.updateFromState(
       {
-        position: spherical,
+        position: {
+          x: this.shipPosition.x,
+          y: this.shipPosition.y,
+          z: this.shipPosition.z,
+        },
+        direction: {
+          x: Math.sin(this.targetShipDirection),
+          y: -Math.cos(this.targetShipDirection),
+          z: 0,
+        },
         aimAngle: aimAngle,
         lives: this.shipLives,
         invincible: this.shipInvincible,
@@ -529,46 +512,15 @@ export class GameRenderer {
     );
   }
 
-  // ========================================================================
-  // Coordinate Conversion Utilities
-  // ========================================================================
-
   /**
-   * Convert unit vector (x, y, z) to spherical coordinates (phi, theta)
-   * phi: polar angle from Y-axis (0 to π)
-   * theta: azimuthal angle in XZ plane (0 to 2π)
+   * Get current ship position as a unit vector.
    */
-  private unitVectorToSpherical(v: THREE.Vector3): {
-    phi: number;
-    theta: number;
-  } {
-    // phi = angle from +Y axis = acos(y)
-    const phi = Math.acos(Math.max(-1, Math.min(1, v.y)));
-
-    // theta = angle in XZ plane from +X axis = atan2(z, x)
-    // Adjust to match our coordinate system where theta=PI/2 is +Z
-    let theta = Math.atan2(v.z, v.x);
-    if (theta < 0) theta += Math.PI * 2;
-
-    return { phi, theta };
-  }
-
-  /**
-   * Convert spherical coordinates to unit vector
-   */
-  private sphericalToUnitVector(phi: number, theta: number): THREE.Vector3 {
-    return new THREE.Vector3(
-      Math.sin(phi) * Math.cos(theta),
-      Math.cos(phi),
-      Math.sin(phi) * Math.sin(theta)
-    );
-  }
-
-  /**
-   * Get current ship position as spherical coordinates (for debug GUI)
-   */
-  getShipSpherical(): { phi: number; theta: number } {
-    return this.unitVectorToSpherical(this.shipPosition);
+  getShipPosition(): Vec3 {
+    return {
+      x: this.shipPosition.x,
+      y: this.shipPosition.y,
+      z: this.shipPosition.z,
+    };
   }
 
   render(): void {
@@ -599,6 +551,10 @@ export class GameRenderer {
 
   getScene(): THREE.Scene {
     return this.scene;
+  }
+
+  getMechanicsController(): "client" | "server" {
+    return this.mechanicsController;
   }
 
   // ========================================================================

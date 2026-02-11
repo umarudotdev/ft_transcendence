@@ -6,3 +6,4 @@
 
 export * from "./collision";
 export * from "./movement";
+export * from "./ship";

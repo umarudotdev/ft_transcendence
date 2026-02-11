@@ -4,11 +4,12 @@
 // ============================================================================
 
 // ============================================================================
-// Spherical Position
+// Vector Position
 // ============================================================================
-export interface SphericalPosition {
-  phi: number; // Polar angle from Y-axis (0 to PI)
-  theta: number; // Azimuthal angle in XZ plane (0 to 2*PI)
+export interface Vec3 {
+  x: number;
+  y: number;
+  z: number;
 }
 
 // ============================================================================
@@ -20,7 +21,8 @@ export interface SphericalPosition {
  * Power-up levels increase during gameplay, reset on game restart
  */
 export interface ShipState {
-  position: SphericalPosition;
+  position: Vec3;
+  direction: Vec3; // Tangent direction unit vector
   aimAngle: number; // Direction of aim on tangent plane (radians)
   lives: number;
   invincible: boolean; // After taking damage
@@ -34,8 +36,8 @@ export interface ShipState {
  */
 export interface ProjectileState {
   id: number;
-  position: SphericalPosition;
-  direction: number; // Movement direction on sphere (radians)
+  position: Vec3;
+  direction: Vec3; // Movement direction unit vector tangent to sphere
   age: number; // Ticks since spawn
 }
 
@@ -45,8 +47,8 @@ export interface ProjectileState {
  */
 export interface AsteroidState {
   id: number;
-  sphericalPosition: SphericalPosition;
-  direction: number; // Movement direction on tangent plane (radians)
+  position: Vec3;
+  direction: Vec3; // Movement direction unit vector tangent to sphere
   angularSpeed: number; // Angular speed (rad/tick)
   size: 1 | 2 | 3 | 4; // 1=smallest, 4=largest
   health: number; // Hits remaining (usually 1)

@@ -85,45 +85,6 @@ export function moveOnSphereStraight(
 }
 
 // ============================================================================
-// Coordinate Conversion
-// ============================================================================
-
-/**
- * Convert spherical coordinates to Cartesian unit vector
- * Uses standard physics convention:
- * - phi: polar angle from Y-axis (0 = north pole, PI = south pole)
- * - theta: azimuthal angle in XZ plane (0 = +Z, PI/2 = +X)
- *
- * @param phi - Polar angle (radians, 0 to PI)
- * @param theta - Azimuthal angle (radians, 0 to 2*PI)
- */
-export function sphericalToCartesian(
-  phi: number,
-  theta: number
-): THREE.Vector3 {
-  return new THREE.Vector3(
-    Math.sin(phi) * Math.sin(theta),
-    Math.cos(phi),
-    Math.sin(phi) * Math.cos(theta)
-  );
-}
-
-/**
- * Convert Cartesian unit vector to spherical coordinates
- *
- * @param v - Unit vector (must be normalized)
- * @returns Object with phi (0 to PI) and theta (0 to 2*PI)
- */
-export function cartesianToSpherical(v: THREE.Vector3): {
-  phi: number;
-  theta: number;
-} {
-  const phi = Math.acos(Math.max(-1, Math.min(1, v.y)));
-  const theta = Math.atan2(v.x, v.z);
-  return { phi, theta: theta < 0 ? theta + 2 * Math.PI : theta };
-}
-
-// ============================================================================
 // Direction Calculation
 // ============================================================================
 
@@ -142,7 +103,7 @@ export function getTangentDirection(
   // Calculate local basis vectors at position
   const up = new THREE.Vector3(0, 1, 0);
 
-  // East direction (tangent toward increasing theta)
+  // First tangent basis axis from world-up and local normal.
   let east = new THREE.Vector3().crossVectors(up, position);
   if (east.lengthSq() < EPS) {
     // At poles, use X axis as reference
@@ -150,7 +111,7 @@ export function getTangentDirection(
   }
   east.normalize();
 
-  // North direction (tangent toward decreasing phi)
+  // Second tangent basis axis orthogonal to both normal and east.
   const north = new THREE.Vector3().crossVectors(position, east).normalize();
 
   // Combine based on angle

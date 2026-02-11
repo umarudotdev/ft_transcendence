@@ -16,6 +16,7 @@
     "@elysiajs/cors": "^1.4.1",
     "@elysiajs/openapi": "^1.4.13",
     "@elysiajs/static": "^1.4.7",
+    "@ft/supercluster": "workspace:*",
     "@node-rs/argon2": "^2.0.2",
     "@oslojs/encoding": "^1.1.0",
     "@oslojs/otp": "^1.1.0",

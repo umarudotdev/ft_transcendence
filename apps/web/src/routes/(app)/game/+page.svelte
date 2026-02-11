@@ -1,7 +1,14 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { SuperCluster } from '$lib/supercluster';
 	import { Button } from '$lib/components/ui/button';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+
+	const wsUrl = browser
+		? import.meta.env.DEV
+			? 'ws://localhost:3000/api/game/ws'
+			: `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/api/game/ws`
+		: '';
 </script>
 
 <svelte:head>
@@ -18,6 +25,6 @@
 	</div> -->
 
 	<div class="relative flex-1 overflow-hidden rounded-lg border bg-black">
-		<SuperCluster debug={true} />
+		<SuperCluster debug={true} {wsUrl} />
 	</div>
 </div>

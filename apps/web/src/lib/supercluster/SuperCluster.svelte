@@ -27,6 +27,9 @@
 	let ws: WebSocket | null = null;
 	let connected = $state(false);
 	let gameState = $state<GameState | null>(null);
+	let isMounted = false;
+	let shouldReconnect = true;
+	let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// Input state
 	const inputState: InputState = {
@@ -40,12 +43,15 @@
 
 	// Sequence tracking for client-side prediction
 	let inputSeq = 0; // Monotonically increasing sequence number
-	let clientTick = 0; // Client's local tick counter
+	let clientTick = 0; // Logical client tick for input ordering
 
 	// ========================================================================
 	// Lifecycle
 	// ========================================================================
 	onMount(() => {
+		isMounted = true;
+		shouldReconnect = true;
+
 		// Initialize renderer (uses GAME_CONST and RENDERER_CONST directly)
 		renderer = new GameRenderer(canvas);
 		renderer.start();
@@ -64,6 +70,13 @@
 	});
 
 	onDestroy(() => {
+		isMounted = false;
+		shouldReconnect = false;
+		if (reconnectTimer) {
+			clearTimeout(reconnectTimer);
+			reconnectTimer = null;
+		}
+
 		// Cleanup
 		cleanupInputHandlers();
 		disconnectWebSocket();
@@ -96,9 +109,11 @@
 			if (debug) console.log('WebSocket disconnected');
 
 			// Attempt reconnection after delay
-			setTimeout(() => {
-				if (wsUrl) connectWebSocket();
-			}, 2000);
+			if (isMounted && shouldReconnect) {
+				reconnectTimer = setTimeout(() => {
+					if (isMounted && shouldReconnect && wsUrl) connectWebSocket();
+				}, 2000);
+			}
 		};
 
 		ws.onerror = (error) => {
@@ -113,6 +128,8 @@
 
 	function disconnectWebSocket(): void {
 		if (ws) {
+			shouldReconnect = false;
+			ws.onclose = null;
 			ws.close();
 			ws = null;
 		}
@@ -122,6 +139,22 @@
 		if (ws && ws.readyState === WebSocket.OPEN) {
 			ws.send(JSON.stringify(message));
 		}
+	}
+
+	function nextSequence(): { seq: number; tick: number } {
+		inputSeq++;
+		clientTick++;
+		return { seq: inputSeq, tick: clientTick };
+	}
+
+	/**
+	 * Single source of truth for movement input:
+	 * inputState drives both renderer input and WS payload.
+	 */
+	function pushInputState(): void {
+		renderer?.setInput(inputState);
+		const { seq, tick } = nextSequence();
+		sendMessage({ type: 'input', seq, tick, keys: { ...inputState } });
 	}
 
 	function handleServerMessage(message: ServerMessage): void {
@@ -158,8 +191,6 @@
 	// ========================================================================
 	// Input Handling
 	// ========================================================================
-	let mousePressed = false;
-
 	function setupInputHandlers(): void {
 		if (!browser) return;
 		window.addEventListener('keydown', handleKeyDown);
@@ -214,10 +245,7 @@
 		}
 
 		if (changed) {
-			inputSeq++;
-			sendMessage({ type: 'input', seq: inputSeq, tick: clientTick, keys: { ...inputState } });
-			// Also update local renderer for immediate feedback
-			renderer?.setInput(inputState);
+			pushInputState();
 		}
 	}
 
@@ -257,10 +285,7 @@
 		}
 
 		if (changed) {
-			inputSeq++;
-			sendMessage({ type: 'input', seq: inputSeq, tick: clientTick, keys: { ...inputState } });
-			// Also update local renderer for immediate feedback
-			renderer?.setInput(inputState);
+			pushInputState();
 		}
 	}
 
@@ -280,18 +305,18 @@
 		// This gives: 0 = down/forward, PI/2 = right, PI = up, -PI/2 = left
 		aimAngle = Math.atan2(dx, dy);
 
-		inputSeq++;
-		sendMessage({ type: 'aim', seq: inputSeq, angle: aimAngle });
+		const { seq } = nextSequence();
+		sendMessage({ type: 'aim', seq, angle: aimAngle });
 		renderer?.setAimAngle(aimAngle);
 	}
 
 	function handleMouseDown(_event: MouseEvent): void {
-		mousePressed = true;
+		const { seq } = nextSequence();
+		sendMessage({ type: 'shoot', seq });
 		renderer?.setMousePressed(true);
 	}
 
 	function handleMouseUp(_event: MouseEvent): void {
-		mousePressed = false;
 		renderer?.setMousePressed(false);
 	}
 

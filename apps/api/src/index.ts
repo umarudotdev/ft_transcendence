@@ -11,6 +11,7 @@ import { env } from "./env";
 import { authController } from "./modules/auth/auth.controller";
 import { chatController } from "./modules/chat/chat.controller";
 import { gamificationController } from "./modules/gamification/gamification.controller";
+import { gameController } from "./modules/game/game.controller";
 import { moderationController } from "./modules/moderation/moderation.controller";
 import { notificationsController } from "./modules/notifications/notifications.controller";
 import { rankingsController } from "./modules/rankings/rankings.controller";
@@ -100,6 +101,7 @@ const app = new Elysia()
       .use(usersController)
       .use(rankingsController)
       .use(gamificationController)
+      .use(gameController)
       .use(notificationsController)
       .use(moderationController)
       .use(chatController)

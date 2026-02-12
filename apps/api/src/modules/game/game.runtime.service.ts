@@ -1,5 +1,5 @@
 import {
-  DEFAULT_GAMEPLAY,
+  createInitialShipState,
   GAME_CONST,
   stepShipState,
   type ClientMessage,
@@ -30,21 +30,7 @@ const DEFAULT_KEYS: InputState = {
 function createInitialGameState(): GameState {
   return {
     tick: 0,
-    ship: {
-      position: {
-        x: GAME_CONST.SHIP_INITIAL_POS.x,
-        y: GAME_CONST.SHIP_INITIAL_POS.y,
-        z: GAME_CONST.SHIP_INITIAL_POS.z,
-      },
-      direction: { x: 0, y: 1, z: 0 },
-      orientation: { x: 0, y: 0, z: 0, w: 1 },
-      aimAngle: Math.PI,
-      lives: DEFAULT_GAMEPLAY.shipLives,
-      invincible: DEFAULT_GAMEPLAY.shipInvincible,
-      invincibleTicks: 0,
-      cooldownLevel: 0,
-      rayCountLevel: 0,
-    },
+    ship: createInitialShipState(),
     projectiles: [],
     asteroids: [],
     score: 0,
@@ -207,14 +193,12 @@ export class GameRuntimeService {
       if (controllingSession) {
         const stepped = stepShipState(
           this.state.ship.position,
-          this.state.ship.direction,
           this.state.ship.orientation,
           controllingSession.keys,
           1,
           GAME_CONST.SHIP_SPEED
         );
         this.state.ship.position = stepped.position;
-        this.state.ship.direction = stepped.direction;
         this.state.ship.orientation = stepped.orientation;
       }
     }
@@ -234,7 +218,6 @@ export class GameRuntimeService {
         ship: {
           ...this.state.ship,
           position: { ...this.state.ship.position },
-          direction: { ...this.state.ship.direction },
           orientation: { ...this.state.ship.orientation },
         },
       },

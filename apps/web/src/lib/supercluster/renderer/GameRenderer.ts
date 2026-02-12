@@ -77,8 +77,8 @@ export class GameRenderer {
     GAME_CONST.SHIP_INITIAL_POS.z
   );
 
-  // Ship direction (visual only - not sent to server)
-  private targetShipDirection = Math.PI; // Where ship tip should point (from WASD)
+  // Ship heading angle (visual only - not part of authoritative state)
+  private targetHeadingAngle = 0; // Where ship tip should point (from WASD)
 
   // Ship state (will come from server in future)
   private shipLives = DEFAULT_GAMEPLAY.shipLives;
@@ -154,7 +154,7 @@ export class GameRenderer {
     this.mechanicsController = "client";
 
     // Reset ship state
-    this.targetShipDirection = Math.PI;
+    this.targetHeadingAngle = 0;
     this.shipLives = DEFAULT_GAMEPLAY.shipLives;
     this.shipInvincible = DEFAULT_GAMEPLAY.shipInvincible;
 
@@ -214,18 +214,6 @@ export class GameRenderer {
     this.input.setAimAngle(state.ship.aimAngle);
     this.shipLives = state.ship.lives;
     this.shipInvincible = state.ship.invincible;
-    const stateDirectionLengthSq =
-      state.ship.direction.x * state.ship.direction.x +
-      state.ship.direction.y * state.ship.direction.y +
-      state.ship.direction.z * state.ship.direction.z;
-    if (stateDirectionLengthSq > 1e-8) {
-      this.targetShipDirection = Math.atan2(
-        state.ship.direction.x,
-        -state.ship.direction.y
-      );
-    }
-
-    // Rebuild planet quaternion from authoritative ship position.
     // Authoritative orientation from server state (no reconstruction from position-only).
     this.planetQuaternion
       .set(
@@ -238,10 +226,13 @@ export class GameRenderer {
 
     // Apply to visuals
     this.stage.world.group.quaternion.copy(this.planetQuaternion);
-    this.stage.ship.setCurrentDirectionAngle(this.targetShipDirection);
+    const shipDirectionAngle = this.stage.ship.lerpDirection(
+      this.targetHeadingAngle,
+      this.fixedSimulationStep
+    );
     this.stage.ship.updateFromState(
       state.ship,
-      this.targetShipDirection,
+      shipDirectionAngle,
       this.input.aimAngle
     );
 
@@ -254,6 +245,10 @@ export class GameRenderer {
   // ========================================================================
   setInput(input: InputState): void {
     this.input.setKeys(input);
+    const targetDirection = getTargetDirectionFromInput(input);
+    if (targetDirection !== null) {
+      this.targetHeadingAngle = targetDirection;
+    }
   }
 
   setAimAngle(angle: number): void {
@@ -287,10 +282,11 @@ export class GameRenderer {
     const shipWorldPosition = new THREE.Vector3(0, 0, 1);
 
     // Calculate aim direction in world space (on the XY tangent plane)
-    // aimAngle: 0 = forward (-Y), positive = clockwise
+    // Canonical aim convention:
+    // 0 = up (+Y), +PI/2 = right (+X), PI = down (-Y), -PI/2 = left (-X)
     const aimAngle = this.input.aimAngle;
     const aimX = Math.sin(aimAngle);
-    const aimY = -Math.cos(aimAngle);
+    const aimY = Math.cos(aimAngle);
     const aimWorldDirection = new THREE.Vector3(aimX, aimY, 0).normalize();
 
     // Spawn projectiles (spread/count from GameConfig)
@@ -453,7 +449,7 @@ export class GameRenderer {
 
     const targetDirection = getTargetDirectionFromInput(keys);
     if (targetDirection !== null) {
-      this.targetShipDirection = targetDirection;
+      this.targetHeadingAngle = targetDirection;
     }
 
     if (this.input.hasMovementInput) {
@@ -475,7 +471,7 @@ export class GameRenderer {
     // ====================================================================
     // Lerp ship direction toward target (always, even without input)
     // ====================================================================
-    this.stage.ship.lerpDirection(this.targetShipDirection, deltaTime);
+    this.stage.ship.lerpDirection(this.targetHeadingAngle, deltaTime);
 
     // Update ship visuals
     this.updateShipVisuals();
@@ -493,11 +489,6 @@ export class GameRenderer {
           x: this.shipPosition.x,
           y: this.shipPosition.y,
           z: this.shipPosition.z,
-        },
-        direction: {
-          x: Math.sin(this.targetShipDirection),
-          y: -Math.cos(this.targetShipDirection),
-          z: 0,
         },
         orientation: {
           x: this.planetQuaternion.x,

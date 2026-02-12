@@ -1,4 +1,8 @@
-import { DEFAULT_GAMEPLAY, GAME_CONST, createWaveArray } from "@ft/supercluster";
+import {
+  DEFAULT_GAMEPLAY,
+  createInitialShipState,
+  createWaveArray,
+} from "@ft/supercluster";
 import * as THREE from "three";
 
 import { AsteroidRenderer } from "./Asteroid";
@@ -66,21 +70,7 @@ export class GameStage {
 
     // Reset ship visual state
     this.ship.updateFromState(
-      {
-        position: {
-          x: GAME_CONST.SHIP_INITIAL_POS.x,
-          y: GAME_CONST.SHIP_INITIAL_POS.y,
-          z: GAME_CONST.SHIP_INITIAL_POS.z,
-        },
-        direction: { x: 0, y: -1, z: 0 },
-        orientation: { x: 0, y: 0, z: 0, w: 1 },
-        aimAngle: 0,
-        lives: DEFAULT_GAMEPLAY.shipLives,
-        invincible: DEFAULT_GAMEPLAY.shipInvincible,
-        invincibleTicks: 0,
-        cooldownLevel: 0,
-        rayCountLevel: 0,
-      },
+      createInitialShipState(),
       0,
       0
     );

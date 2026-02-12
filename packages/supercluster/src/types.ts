@@ -29,7 +29,6 @@ export interface Quat {
  */
 export interface ShipState {
   position: Vec3;
-  direction: Vec3; // Tangent direction unit vector
   orientation: Quat; // World rotation quaternion for authoritative apply
   aimAngle: number; // Direction of aim on tangent plane (radians)
   lives: number;

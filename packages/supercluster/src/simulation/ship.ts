@@ -13,8 +13,8 @@ export function getTargetDirectionFromInput(keys: InputState): number | null {
   let inputX = 0;
   let inputY = 0;
 
-  // Canonical convention:
-  // forward = 0, right = +PI/2, backward = PI, left = -PI/2
+  // Canonical heading convention:
+  // forward = 0 (up), right = +PI/2, backward = PI, left = -PI/2
   if (keys.forward) inputY += 1;
   if (keys.backward) inputY -= 1;
   if (keys.right) inputX += 1;
@@ -22,7 +22,7 @@ export function getTargetDirectionFromInput(keys: InputState): number | null {
 
   if (inputX === 0 && inputY === 0) return null;
 
-  // 0 = forward (-Y ship-space), PI/2 = right (+X ship-space)
+  // 0 = forward/up (+Y in local tangent space), PI/2 = right (+X)
   return Math.atan2(inputX, inputY);
 }
 
@@ -92,12 +92,11 @@ export function stepShipOnSphere(
  */
 export function stepShipState(
   shipPosition: Vec3,
-  shipDirection: Vec3,
   shipOrientation: Quat,
   keys: InputState,
   deltaTicks: number,
   speedRadPerTick: number
-): { moved: boolean; position: Vec3; direction: Vec3; orientation: Quat } {
+): { moved: boolean; position: Vec3; orientation: Quat } {
   const position = new THREE.Vector3(
     shipPosition.x,
     shipPosition.y,
@@ -120,20 +119,9 @@ export function stepShipState(
     scratchQuat
   );
 
-  const targetDirection = getTargetDirectionFromInput(keys);
-  const direction =
-    targetDirection === null
-      ? shipDirection
-      : {
-          x: -Math.sin(targetDirection),
-          y: Math.cos(targetDirection),
-          z: 0,
-        };
-
   return {
     moved,
     position: { x: position.x, y: position.y, z: position.z },
-    direction,
     orientation: {
       x: planetQuaternion.x,
       y: planetQuaternion.y,

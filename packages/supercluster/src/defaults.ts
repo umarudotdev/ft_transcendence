@@ -1,3 +1,6 @@
+import { GAME_CONST } from "./constants";
+import type { ShipState } from "./types";
+
 // ============================================================================
 // Gameplay Defaults (DEFAULT_GAMEPLAY)
 // Starting values that RESET on game restart or player death
@@ -61,6 +64,26 @@ export const POWER_UP_PROGRESSION = Object.freeze({
   // Each pickup increases ray count by this amount
   rayCountIncreases: Object.freeze([1, 1, 1, 1]),
 });
+
+// ========================================================================
+// Shared Initial Entity State
+// ========================================================================
+export function createInitialShipState(): ShipState {
+  return {
+    position: {
+      x: GAME_CONST.SHIP_INITIAL_POS.x,
+      y: GAME_CONST.SHIP_INITIAL_POS.y,
+      z: GAME_CONST.SHIP_INITIAL_POS.z,
+    },
+    orientation: { x: 0, y: 0, z: 0, w: 1 },
+    aimAngle: 0,
+    lives: DEFAULT_GAMEPLAY.shipLives,
+    invincible: DEFAULT_GAMEPLAY.shipInvincible,
+    invincibleTicks: 0,
+    cooldownLevel: 0,
+    rayCountLevel: 0,
+  };
+}
 
 // ========================================================================
 // Helper: Create asteroid wave array for spawning

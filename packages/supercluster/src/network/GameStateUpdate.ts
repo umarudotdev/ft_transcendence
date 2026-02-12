@@ -12,7 +12,7 @@ import type {
   GameStatus,
   Vec3,
 } from "../types";
-import { GAME_CONST } from "../constants";
+import { createInitialShipState } from "../defaults";
 
 /**
  * Complete game state sent to client for rendering
@@ -63,21 +63,7 @@ export function createEmptyGameState(): GameStateUpdate {
     tick: 0,
     timestamp: 0,
     lastInputSeq: 0,
-    ship: {
-      position: {
-        x: GAME_CONST.SHIP_INITIAL_POS.x,
-        y: GAME_CONST.SHIP_INITIAL_POS.y,
-        z: GAME_CONST.SHIP_INITIAL_POS.z,
-      },
-      direction: { x: 0, y: -1, z: 0 },
-      orientation: { x: 0, y: 0, z: 0, w: 1 },
-      aimAngle: 0,
-      lives: 3,
-      invincible: false,
-      invincibleTicks: 0,
-      cooldownLevel: 0,
-      rayCountLevel: 0,
-    },
+    ship: createInitialShipState(),
     asteroids: [],
     projectiles: [],
     powerUps: [],

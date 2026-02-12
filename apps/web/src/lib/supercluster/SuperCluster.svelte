@@ -312,11 +312,11 @@
 		const dx = event.clientX - rect.left - centerX;
 		const dy = event.clientY - rect.top - centerY;
 
-		// atan2(dx, dy) because:
+		// Canonical aim convention:
+		// - 0 = up, +PI/2 = right, PI = down, -PI/2 = left
 		// - dx: positive = right on screen
-		// - dy: positive = down on screen = forward (angle 0)
-		// This gives: 0 = down/forward, PI/2 = right, PI = up, -PI/2 = left
-		aimAngle = Math.atan2(dx, dy);
+		// - dy: positive = down on screen
+		aimAngle = Math.atan2(dx, -dy);
 
 		const { seq } = nextSequence();
 		sendMessage({ type: 'aim', seq, angle: aimAngle });

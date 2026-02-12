@@ -70,7 +70,7 @@ export class ShipRenderer {
       points.push(
         new THREE.Vector3(
           Math.sin(angle) * radius,
-          -Math.cos(angle) * radius, // Negative because forward is -Y
+          Math.cos(angle) * radius,
           0
         )
       );
@@ -103,13 +103,14 @@ export class ShipRenderer {
     this.group.position.set(0, 0, GAME_CONST.SPHERE_RADIUS);
 
     // Apply direction rotation (where ship tip points)
-    // directionAngle: 0 = forward (-Y), PI/2 = right (+X), etc.
-    this.mesh.rotation.set(0, 0, -directionAngle);
+    // Canonical heading convention: 0 = up (+Y), PI/2 = right (+X)
+    // Geometry tip points toward -Y in model space, so add PI offset.
+    this.mesh.rotation.set(0, 0, Math.PI - directionAngle);
 
     // Position aim dot on orbit circle around ship
-    // aimAngle: 0 = forward, positive = clockwise
+    // Canonical aim convention: 0 = up, positive = clockwise
     const dotX = Math.sin(aimAngle) * RENDERER_CONST.AIM_DOT_ORBIT_RADIUS;
-    const dotY = -Math.cos(aimAngle) * RENDERER_CONST.AIM_DOT_ORBIT_RADIUS; // Negative because forward is -Y
+    const dotY = Math.cos(aimAngle) * RENDERER_CONST.AIM_DOT_ORBIT_RADIUS;
     this.aimDot.position.set(dotX, dotY, 0);
 
     // Handle invincibility visual (blinking)

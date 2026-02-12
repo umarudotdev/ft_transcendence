@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import type { InputState } from "../types";
 
 // ============================================================================
 // Movement Module
@@ -7,6 +8,8 @@ import * as THREE from "three";
 // ============================================================================
 
 const EPS = 1e-8;
+const WORLD_X_AXIS = new THREE.Vector3(1, 0, 0);
+const WORLD_Y_AXIS = new THREE.Vector3(0, 1, 0);
 
 // ============================================================================
 // Sphere Surface Movement
@@ -119,4 +122,64 @@ export function getTangentDirection(
     .addScaledVector(north, Math.cos(angle))
     .addScaledVector(east, Math.sin(angle))
     .normalize();
+}
+
+/**
+ * Shared ship movement step on sphere using quaternion integration.
+ *
+ * Mutates `planetQuaternion` and `shipPosition` in place.
+ *
+ * @param planetQuaternion - World rotation accumulator
+ * @param shipPosition - Unit vector ship position on sphere
+ * @param keys - Movement input snapshot
+ * @param deltaTicks - Simulation delta in ticks
+ * @param speedRadPerTick - Ship movement speed in rad/tick
+ * @param scratchQuat - Reusable quaternion scratch (avoids allocations)
+ * @returns true when movement was applied
+ */
+export function stepShipOnSphere(
+  planetQuaternion: THREE.Quaternion,
+  shipPosition: THREE.Vector3,
+  keys: InputState,
+  deltaTicks: number,
+  speedRadPerTick: number,
+  scratchQuat: THREE.Quaternion
+): boolean {
+  let pitchAngle = 0;
+  let yawAngle = 0;
+
+  if (keys.forward) pitchAngle += speedRadPerTick * deltaTicks;
+  if (keys.backward) pitchAngle -= speedRadPerTick * deltaTicks;
+  if (keys.left) yawAngle += speedRadPerTick * deltaTicks;
+  if (keys.right) yawAngle -= speedRadPerTick * deltaTicks;
+
+  let moved = false;
+
+  // Pitch: rotate around X axis.
+  if (pitchAngle !== 0) {
+    scratchQuat.setFromAxisAngle(WORLD_X_AXIS, pitchAngle);
+    planetQuaternion.premultiply(scratchQuat);
+
+    // Ship moves opposite to planet rotation.
+    scratchQuat.invert();
+    shipPosition.applyQuaternion(scratchQuat);
+    moved = true;
+  }
+
+  // Yaw: rotate around Y axis.
+  if (yawAngle !== 0) {
+    scratchQuat.setFromAxisAngle(WORLD_Y_AXIS, yawAngle);
+    planetQuaternion.premultiply(scratchQuat);
+
+    scratchQuat.invert();
+    shipPosition.applyQuaternion(scratchQuat);
+    moved = true;
+  }
+
+  if (moved) {
+    planetQuaternion.normalize();
+    shipPosition.normalize();
+  }
+
+  return moved;
 }

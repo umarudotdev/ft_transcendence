@@ -2,7 +2,7 @@ import {
   GAME_CONST,
   GAMEPLAY_CONST,
   DEFAULT_GAMEPLAY,
-  getTargetDirectionFromInput,
+  getTargetHeadingFromInput,
   stepShipOnSphere,
   type GameState,
   type InputState,
@@ -245,7 +245,7 @@ export class GameRenderer {
   // ========================================================================
   setInput(input: InputState): void {
     this.input.setKeys(input);
-    const targetDirection = getTargetDirectionFromInput(input);
+    const targetDirection = getTargetHeadingFromInput(input);
     if (targetDirection !== null) {
       this.targetHeadingAngle = targetDirection;
     }
@@ -447,7 +447,7 @@ export class GameRenderer {
     // Read input from InputController
     const keys = this.input.keys;
 
-    const targetDirection = getTargetDirectionFromInput(keys);
+    const targetDirection = getTargetHeadingFromInput(keys);
     if (targetDirection !== null) {
       this.targetHeadingAngle = targetDirection;
     }

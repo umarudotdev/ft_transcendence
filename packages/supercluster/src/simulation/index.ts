@@ -5,5 +5,6 @@
 // ============================================================================
 
 export * from "./collision";
+export * from "./input";
 export * from "./movement";
 export * from "./ship";

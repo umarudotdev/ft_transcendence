@@ -1,6 +1,7 @@
 import {
   createInitialShipState,
   GAME_CONST,
+  normalizeAimAngle,
   stepShipState,
   type ClientMessage,
   type GameState,
@@ -81,12 +82,6 @@ function isClientMessage(value: unknown): value is ClientMessage {
     default:
       return false;
   }
-}
-
-function normalizeAngle(angle: number): number {
-  const twoPi = Math.PI * 2;
-  const normalized = angle % twoPi;
-  return normalized < 0 ? normalized + twoPi : normalized;
 }
 
 export class GameRuntimeService {
@@ -170,7 +165,7 @@ export class GameRuntimeService {
         break;
 
       case "aim":
-        session.aimAngle = normalizeAngle(message.angle);
+        session.aimAngle = normalizeAimAngle(message.angle);
         if (this.controllingClient === ws) {
           this.state.ship.aimAngle = session.aimAngle;
         }

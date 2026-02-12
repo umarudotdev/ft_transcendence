@@ -1,4 +1,4 @@
-import type { InputState } from "@ft/supercluster";
+import { normalizeAimAngle, type InputState } from "@ft/supercluster";
 
 // ============================================================================
 // Input Controller
@@ -23,8 +23,8 @@ export class InputController {
     right: false,
   };
 
-  // Aim angle in radians (direction for projectiles)
-  // 0 = forward (-Y in screen space), positive = clockwise
+  // Aim angle in radians
+  // Canonical convention: 0 = up (+Y), positive = clockwise
   private _aimAngle = 0;
 
   // Fire button state (mouse pressed)
@@ -47,7 +47,7 @@ export class InputController {
    * @param angle - Aim direction in radians
    */
   setAimAngle(angle: number): void {
-    this._aimAngle = angle;
+    this._aimAngle = normalizeAimAngle(angle);
   }
 
   /**

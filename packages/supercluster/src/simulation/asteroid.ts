@@ -114,3 +114,64 @@ export function createAsteroidFragments(
 
   return { asteroids, nextAsteroidId };
 }
+
+/**
+ * Resolve asteroid hit timers, recover damage gate, and spawn fragments for destroyed asteroids.
+ * Pure state transition for asteroid lifecycle.
+ */
+export function stepAsteroidHitLifecycle(
+  asteroids: readonly AsteroidState[],
+  nextAsteroidId: number
+): { asteroids: AsteroidState[]; nextAsteroidId: number } {
+  if (asteroids.length === 0) {
+    return {
+      asteroids: [],
+      nextAsteroidId,
+    };
+  }
+
+  const survivors: AsteroidState[] = [];
+  let currentNextId = nextAsteroidId;
+
+  for (const asteroid of asteroids) {
+    if (!asteroid.isHit) {
+      survivors.push(asteroid);
+      continue;
+    }
+
+    const nextTimer = asteroid.hitTimer - 1;
+    if (nextTimer > 0) {
+      survivors.push({
+        ...asteroid,
+        hitTimer: nextTimer,
+      });
+      continue;
+    }
+
+    if (asteroid.health <= 0) {
+      if (asteroid.size > 1) {
+        const fragmentCount = 2 + Math.floor(Math.random() * 2);
+        const fragments = createAsteroidFragments(
+          asteroid,
+          currentNextId,
+          fragmentCount
+        );
+        currentNextId = fragments.nextAsteroidId;
+        survivors.push(...fragments.asteroids);
+      }
+      continue;
+    }
+
+    survivors.push({
+      ...asteroid,
+      canTakeDamage: true,
+      isHit: false,
+      hitTimer: 0,
+    });
+  }
+
+  return {
+    asteroids: survivors,
+    nextAsteroidId: currentNextId,
+  };
+}

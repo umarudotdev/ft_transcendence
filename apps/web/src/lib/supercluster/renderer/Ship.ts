@@ -147,14 +147,6 @@ export class ShipRenderer {
     return this.currentDirectionAngle;
   }
 
-  getCurrentDirectionAngle(): number {
-    return this.currentDirectionAngle;
-  }
-
-  setCurrentDirectionAngle(angle: number): void {
-    this.currentDirectionAngle = angle;
-  }
-
   // ========================================================================
   // Cleanup
   // ========================================================================

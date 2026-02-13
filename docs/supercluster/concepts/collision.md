@@ -6,6 +6,27 @@ This document describes the collision detection system for SuperCluster, optimiz
 
 ---
 
+## Naming and Responsibility
+
+Use a strict naming split:
+
+- `hit` functions:
+  - detection only (who intersects who),
+  - no gameplay state mutation,
+  - examples: `findProjectileAsteroidHits(...)`, `findShipAsteroidHit(...)`.
+
+- `collision` functions:
+  - full resolution (apply gameplay rules and produce next state/events),
+  - examples: `resolveProjectileAsteroidCollisions(...)`, `resolveShipAsteroidCollision(...)`.
+
+- runtime `resolveCollisions()`:
+  - orchestrates calls,
+  - maps returned simulation events to side effects (WS messages, score updates).
+
+This convention avoids mixing detection math with game-rule transitions.
+
+---
+
 ## Core Concepts
 
 ### Unit Vectors for Position

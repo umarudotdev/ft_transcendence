@@ -1,17 +1,19 @@
 import {
+  applyShipCollisionDamage,
   createInitialShipState,
   createWaveArray,
-  findProjectileAsteroidHits,
   findShipAsteroidHit,
   GAME_CONST,
   GAMEPLAY_CONST,
   normalizeAimAngle,
+  resolveProjectileAsteroidCollisions,
   spawnProjectilesFromAim,
+  stepAsteroidHitLifecycle,
   stepAsteroids,
   stepProjectiles,
-  stepShipState,
+  stepShipInvincibilityState,
+  stepShipOrientationState,
   createAsteroidWave,
-  createAsteroidFragments,
   DEFAULT_GAMEPLAY,
   type ClientMessage,
   type GameState,
@@ -213,14 +215,12 @@ export class GameRuntimeService {
     if (controller) {
       const controllingSession = this.sessions.get(controller);
       if (controllingSession) {
-        const stepped = stepShipState(
-          this.state.ship.position,
+        const stepped = stepShipOrientationState(
           this.state.ship.orientation,
           controllingSession.keys,
           1,
           GAME_CONST.SHIP_SPEED
         );
-        this.state.ship.position = stepped.position;
         this.state.ship.orientation = stepped.orientation;
 
         if (this.shootCooldownTicks > 0) {
@@ -253,142 +253,67 @@ export class GameRuntimeService {
     this.resolveCollisions();
     this.resolveAsteroidHitLifecycle();
     this.resolveShipCollision();
-    this.stepShipInvincibility();
+    this.state.ship = stepShipInvincibilityState(this.state.ship);
 
     this.state.tick += 1;
     this.broadcastState();
   }
 
   private static resolveCollisions(): void {
-    const hits = findProjectileAsteroidHits(
+    const resolution = resolveProjectileAsteroidCollisions(
       this.state.projectiles,
-      this.state.asteroids
+      this.state.asteroids,
+      this.asteroidHitDelayTicks
     );
-    if (hits.length === 0) return;
+    this.state.projectiles = resolution.projectiles;
+    this.state.asteroids = resolution.asteroids;
 
-    const consumedProjectileIds = new Set<number>();
-    const asteroidHitIds = new Set<number>();
-    const damagedAsteroidIds = new Set<number>();
-    for (const hit of hits) {
-      consumedProjectileIds.add(hit.projectileId);
-      asteroidHitIds.add(hit.asteroidId);
-    }
-
-    this.state.projectiles = this.state.projectiles.filter(
-      (projectile) => !consumedProjectileIds.has(projectile.id)
-    );
-
-    const nextAsteroids = this.state.asteroids.map((asteroid) => {
-      if (!asteroidHitIds.has(asteroid.id)) return asteroid;
-      if (!asteroid.canTakeDamage) return asteroid;
-      damagedAsteroidIds.add(asteroid.id);
-
-      const nextHealth = Math.max(asteroid.health - 1, 0);
-      return {
-        ...asteroid,
-        health: nextHealth,
-        canTakeDamage: false,
-        isHit: true,
-        hitTimer: this.asteroidHitDelayTicks,
-      };
-    });
-    this.state.asteroids = nextAsteroids;
-
-    for (const asteroidId of damagedAsteroidIds) {
+    for (const event of resolution.events) {
+      if (event.type !== "asteroid_damaged" || event.asteroidId === undefined) {
+        continue;
+      }
+      const points = event.points ?? 0;
       this.broadcastMessage({
         type: "hit",
-        targetId: asteroidId,
-        points: 10,
+        targetId: event.asteroidId,
+        points,
       });
-      this.state.score += 10;
+      this.state.score += points;
     }
   }
 
   private static resolveAsteroidHitLifecycle(): void {
-    if (this.state.asteroids.length === 0) return;
-    const survivors: GameState["asteroids"] = [];
-
-    for (const asteroid of this.state.asteroids) {
-      if (!asteroid.isHit) {
-        survivors.push(asteroid);
-        continue;
-      }
-
-      const nextTimer = asteroid.hitTimer - 1;
-      if (nextTimer > 0) {
-        survivors.push({
-          ...asteroid,
-          hitTimer: nextTimer,
-        });
-        continue;
-      }
-
-      if (asteroid.health <= 0) {
-        if (asteroid.size > 1) {
-          const fragmentCount = 2 + Math.floor(Math.random() * 2);
-          const fragments = createAsteroidFragments(
-            asteroid,
-            this.nextAsteroidId,
-            fragmentCount
-          );
-          this.nextAsteroidId = fragments.nextAsteroidId;
-          survivors.push(...fragments.asteroids);
-        }
-        continue;
-      }
-
-      survivors.push({
-        ...asteroid,
-        canTakeDamage: true,
-        isHit: false,
-        hitTimer: 0,
-      });
-    }
-
-    this.state.asteroids = survivors;
+    const stepped = stepAsteroidHitLifecycle(
+      this.state.asteroids,
+      this.nextAsteroidId
+    );
+    this.state.asteroids = stepped.asteroids;
+    this.nextAsteroidId = stepped.nextAsteroidId;
   }
 
   private static resolveShipCollision(): void {
-    if (this.state.ship.invincible) return;
-    if (this.state.ship.lives <= 0) return;
-
-    const hitAsteroidId = findShipAsteroidHit(this.state.ship, this.state.asteroids);
-    if (hitAsteroidId === null) return;
-
-    const nextLives = Math.max(this.state.ship.lives - 1, 0);
-    this.state.ship.lives = nextLives;
-    this.state.ship.invincible = true;
-    this.state.ship.invincibleTicks = Math.max(
-      1,
+    const hitDetected =
+      findShipAsteroidHit(this.state.ship, this.state.asteroids) !== null;
+    const damageResult = applyShipCollisionDamage(
+      this.state.ship,
+      hitDetected,
       Math.round(DEFAULT_GAMEPLAY.invincibleTimer * GAME_CONST.TICK_RATE)
     );
+    this.state.ship = damageResult.ship;
+    if (damageResult.event === "none") return;
 
     this.broadcastMessage({
       type: "damage",
-      lives: nextLives,
+      lives: this.state.ship.lives,
     });
 
-    if (nextLives <= 0) {
+    if (damageResult.event === "ship_destroyed") {
       this.state.gameStatus = "gameOver";
       this.broadcastMessage({
         type: "gameOver",
         finalScore: this.state.score,
         wave: this.state.wave,
       });
-    }
-  }
-
-  private static stepShipInvincibility(): void {
-    if (!this.state.ship.invincible) return;
-    if (this.state.ship.invincibleTicks <= 0) {
-      this.state.ship.invincible = false;
-      this.state.ship.invincibleTicks = 0;
-      return;
-    }
-    this.state.ship.invincibleTicks -= 1;
-    if (this.state.ship.invincibleTicks <= 0) {
-      this.state.ship.invincible = false;
-      this.state.ship.invincibleTicks = 0;
     }
   }
 

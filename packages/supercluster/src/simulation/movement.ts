@@ -1,6 +1,5 @@
 import * as THREE from "three";
-import type { InputState } from "../types";
-import type { Vec3 } from "../types";
+import type { InputState, Quat, Vec3 } from "../types";
 
 // ============================================================================
 // Movement Module
@@ -18,6 +17,18 @@ export function vec3ToThree(value: Vec3): THREE.Vector3 {
 
 export function threeToVec3(value: THREE.Vector3): Vec3 {
   return { x: value.x, y: value.y, z: value.z };
+}
+
+export function quatToThree(value: Quat): THREE.Quaternion {
+  return new THREE.Quaternion(value.x, value.y, value.z, value.w);
+}
+
+export function threeToQuat(value: THREE.Quaternion): Quat {
+  return { x: value.x, y: value.y, z: value.z, w: value.w };
+}
+
+export function dotVec3(a: Vec3, b: Vec3): number {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 export function normalizeVec3(

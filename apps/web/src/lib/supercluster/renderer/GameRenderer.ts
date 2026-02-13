@@ -245,7 +245,6 @@ export class GameRenderer {
 
   setAimAngle(angle: number): void {
     this.input.setAimAngle(angle);
-    // this.updateShipVisuals();
   }
 
   setMousePressed(pressed: boolean): void {
@@ -319,37 +318,6 @@ export class GameRenderer {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
     }
-  }
-
-  // ========================================================================
-  // Ship Visual Updates
-  // ========================================================================
-  private updateShipVisuals(): void {
-    const aimAngle = this.input.aimAngle;
-
-    this.stage.ship.updateFromState(
-      {
-        position: {
-          x: this.shipPosition.x,
-          y: this.shipPosition.y,
-          z: this.shipPosition.z,
-        },
-        orientation: {
-          x: this.planetQuaternion.x,
-          y: this.planetQuaternion.y,
-          z: this.planetQuaternion.z,
-          w: this.planetQuaternion.w,
-        },
-        aimAngle: aimAngle,
-        lives: this.shipLives,
-        invincible: this.shipInvincible,
-        invincibleTicks: 0,
-        cooldownLevel: 0,
-        rayCountLevel: 0,
-      },
-      this.stage.ship.getCurrentDirectionAngle(),
-      aimAngle
-    );
   }
 
   /**

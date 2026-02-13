@@ -19,7 +19,7 @@ export const GAME_CONST = Object.freeze({
 
   // Projectile Physics
   PROJECTILE_SPEED: 0.015, // Angular velocity (rad/tick) = 0.9 rad/sec
-  PROJECTILE_LIFETIME: 102, // Ticks before despawn (~1.7 sec)
+  PROJECTILE_AGE_TICKS: 102, // Max age in ticks before despawn (~1.7 sec)
   PROJECTILE_SPREAD_ANGLE: Math.PI / 18, // 10 degrees between rays
 
   // Asteroid Physics

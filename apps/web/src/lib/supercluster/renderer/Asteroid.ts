@@ -1,6 +1,6 @@
 import type { AsteroidState } from "@ft/supercluster";
 
-import { GAME_CONST, GAMEPLAY_CONST } from "@ft/supercluster";
+import { GAME_CONST, GAMEPLAY_CONST, vec3ToThree } from "@ft/supercluster";
 import * as THREE from "three";
 
 import { RENDERER_CONST } from "../constants/renderer";
@@ -8,39 +8,25 @@ import { RENDERER_CONST } from "../constants/renderer";
 const EPS = 1e-8;
 const FALLBACK_RADIUS = 1;
 
-// export type AsteroidSize = 1 | 2 | 3 | 4;
 export type AsteroidSize = AsteroidState["size"];
 
-// ============================================================================
-// Asteroid Data
-// ============================================================================
 export interface AsteroidData {
   state: AsteroidState;
-  // Render part
-  position: THREE.Vector3; // Position as unit vector on sphere (x² + y² + z² = 1)
-  direction: THREE.Vector3; // Movement direction as unit vector tangent to sphere
-  speed: number; // Movement speed (radians per second on sphere surface)
-  // Self-rotation speeds (radians per second)
+  position: THREE.Vector3;
+  direction: THREE.Vector3;
   rotationSpeedX: number;
   rotationSpeedY: number;
-  // Current rotation angles
   rotationX: number;
   rotationY: number;
 }
 
-// ============================================================================
-// Asteroid Renderer
-// Uses InstancedMesh for efficient rendering of many asteroids
-// Uses GAME_CONST for all physics/geometry constants
-// ============================================================================
+// Snapshot-driven asteroid renderer. No local mechanics.
 export class AsteroidRenderer {
   readonly instancedMesh: THREE.InstancedMesh;
   readonly group: THREE.Group;
 
   private asteroids: AsteroidData[] = [];
-  private nextId = 0;
 
-  // Reusable objects for matrix calculations
   private readonly _matrix = new THREE.Matrix4();
   private readonly _position = new THREE.Vector3();
   private readonly _quaternion = new THREE.Quaternion();
@@ -50,10 +36,7 @@ export class AsteroidRenderer {
   constructor(maxAsteroids = 100) {
     this.group = new THREE.Group();
 
-    // Create shared geometry (rocky asteroid shape)
     const geometry = new THREE.IcosahedronGeometry(1, 0);
-
-    // Create material with rocky asteroid appearance
     const material = new THREE.MeshStandardMaterial({
       color: RENDERER_CONST.ASTEROID_COLOR,
       roughness: RENDERER_CONST.ASTEROID_ROUGHNESS,
@@ -61,429 +44,125 @@ export class AsteroidRenderer {
       flatShading: true,
     });
 
-    // Create instanced mesh
-    this.instancedMesh = new THREE.InstancedMesh(
-      geometry,
-      material,
-      maxAsteroids
-    );
-    this.instancedMesh.count = 0; // Start with no visible instances
-    this.instancedMesh.frustumCulled = false; // Always render (they're on a sphere)
+    this.instancedMesh = new THREE.InstancedMesh(geometry, material, maxAsteroids);
+    this.instancedMesh.count = 0;
+    this.instancedMesh.frustumCulled = false;
 
     this.group.add(this.instancedMesh);
   }
 
-  // ========================================================================
-  // Spawn Asteroids
-  // ========================================================================
+  syncFromStates(states: readonly AsteroidState[]): void {
+    const previousById = new Map<number, AsteroidData>();
+    for (const asteroid of this.asteroids) {
+      previousById.set(asteroid.state.id, asteroid);
+    }
 
-  /**
-   * Spawn an asteroid at a random position on the sphere
-   */
-  spawnRandom(size: number): AsteroidData {
-    // Random position on unit sphere using spherical coordinates
-    const phi = Math.acos(2 * Math.random() - 1); // 0 to PI (uniform distribution)
-    const theta = Math.random() * Math.PI * 2; // 0 to 2*PI
+    const tickSeconds = 1 / GAME_CONST.TICK_RATE;
+    this.asteroids = states.map((state) => {
+      const previous = previousById.get(state.id);
+      const rotationSpeedX =
+        previous?.rotationSpeedX ??
+        (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_ROT_SPEED;
+      const rotationSpeedY =
+        previous?.rotationSpeedY ??
+        (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_ROT_SPEED;
 
-    const position = new THREE.Vector3(
-      Math.sin(phi) * Math.cos(theta),
-      Math.cos(phi),
-      Math.sin(phi) * Math.sin(theta)
-    );
+      return {
+        state: {
+          ...state,
+          position: { ...state.position },
+          direction: { ...state.direction },
+        },
+        position: vec3ToThree(state.position).normalize(),
+        direction: vec3ToThree(state.direction).normalize(),
+        rotationSpeedX,
+        rotationSpeedY,
+        rotationX:
+          (previous?.rotationX ?? Math.random() * Math.PI * 2) +
+          rotationSpeedX * tickSeconds,
+        rotationY:
+          (previous?.rotationY ?? Math.random() * Math.PI * 2) +
+          rotationSpeedY * tickSeconds,
+      };
+    });
 
-    const asteroidSize = this.clampAsteroidSize(size);
-
-    // Random velocity direction tangent to sphere
-    const direction = this.randomTangentVector(position);
-
-    // Random rotation speeds (uses RENDERER_CONST.ASTEROID_ROT_SPEED)
-    const rotationSpeedX =
-      (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_ROT_SPEED;
-    const rotationSpeedY =
-      (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_ROT_SPEED;
-
-    // Random movement speed from GAME_CONST (rad/tick → rad/sec)
-    const speedInRadPerTick =
-      GAME_CONST.ASTEROID_SPEED_MIN +
-      Math.random() *
-        (GAME_CONST.ASTEROID_SPEED_MAX - GAME_CONST.ASTEROID_SPEED_MIN);
-    const speedInRadPerSec = speedInRadPerTick * GAME_CONST.TICK_RATE; // Convert to rad/sec
-
-    const asteroid: AsteroidData = {
-      state: {
-        id: this.nextId++,
-        position: { x: position.x, y: position.y, z: position.z },
-        direction: { x: direction.x, y: direction.y, z: direction.z },
-        angularSpeed: speedInRadPerTick,
-        size: asteroidSize,
-        health: 2 * asteroidSize,
-        isHit: false,
-        hitTimer: 0,
-      },
-      position,
-      direction,
-      speed: speedInRadPerSec,
-      rotationSpeedX,
-      rotationSpeedY,
-      rotationX: Math.random() * Math.PI * 2,
-      rotationY: Math.random() * Math.PI * 2,
-    };
-
-    this.asteroids.push(asteroid);
     this.instancedMesh.count = this.asteroids.length;
-
-    // Update this instance's matrix
-    this.updateInstanceMatrix(this.asteroids.length - 1);
-
-    return asteroid;
-  }
-
-  /**
-   * Spawn multiple asteroids with specified sizes
-   */
-  spawnMultiple(sizes: number[]): void {
-    for (const size of sizes) {
-      this.spawnRandom(size);
-    }
-  }
-
-  /**
-   * Generate a random unit vector tangent to the sphere at the given position
-   */
-  private randomTangentVector(position: THREE.Vector3): THREE.Vector3 {
-    // Create a random vector
-    const random = new THREE.Vector3(
-      Math.random() - 0.5,
-      Math.random() - 0.5,
-      Math.random() - 0.5
-    ).normalize();
-
-    // Project out the component parallel to position (make it tangent)
-    const tangent = random.sub(
-      position.clone().multiplyScalar(random.dot(position))
-    );
-
-    if (tangent.lengthSq() < EPS) {
-      const fallbackAxis =
-        Math.abs(position.y) < 0.99
-          ? new THREE.Vector3(0, 1, 0)
-          : new THREE.Vector3(1, 0, 0);
-      tangent.crossVectors(position, fallbackAxis);
-    }
-
-    tangent.normalize();
-
-    return tangent;
-  }
-
-  // ========================================================================
-  // Update
-  // ========================================================================
-
-  /**
-   * Update all asteroids (call each frame)
-   * @param deltaTime - seconds since last update
-   */
-  update(deltaTime: number): void {
-    // Track asteroids to break (can't modify array while iterating)
-    const asteroidsToBreak: number[] = [];
-
     for (let i = 0; i < this.asteroids.length; i++) {
-      const asteroid = this.asteroids[i];
-
-      // Handle hit timer
-      if (asteroid.state.isHit) {
-        asteroid.state.hitTimer -= deltaTime;
-        if (asteroid.state.hitTimer <= 0) {
-          // Time's up! Break the asteroid
-          asteroidsToBreak.push(asteroid.state.id);
-          continue; // Skip updating matrix for this asteroid
-        }
-      }
-
-      // Update self-rotation
-      asteroid.rotationX += asteroid.rotationSpeedX * deltaTime;
-      asteroid.rotationY += asteroid.rotationSpeedY * deltaTime;
-
-      // Move along sphere surface
-      this.moveOnSphere(asteroid, deltaTime);
-
-      // Update instance matrix
       this.updateInstanceMatrix(i);
     }
-
-    // Break asteroids after loop completes
-    for (const id of asteroidsToBreak) {
-      this.breakAsteroid(id);
-    }
-
-    // Update instance count if asteroids were broken
-    this.instancedMesh.count = this.asteroids.length;
-
-    // Tell Three.js that matrices and colors have changed
     this.instancedMesh.instanceMatrix.needsUpdate = true;
     if (this.instancedMesh.instanceColor) {
       this.instancedMesh.instanceColor.needsUpdate = true;
     }
   }
 
-  /**
-   * Move an asteroid along the sphere surface in its velocity direction
-   */
-  private moveOnSphere(asteroid: AsteroidData, deltaTime: number): void {
-    // Angular distance to move this frame
-    const angle = asteroid.speed * deltaTime;
-
-    if (angle === 0) return;
-
-    // Reproject velocity onto the tangent plane to prevent radial drift.
-    const tangentVelocity = asteroid.direction
-      .clone()
-      .sub(
-        asteroid.position
-          .clone()
-          .multiplyScalar(asteroid.direction.dot(asteroid.position))
-      );
-
-    if (tangentVelocity.lengthSq() < EPS) {
-      asteroid.direction.copy(this.randomTangentVector(asteroid.position));
-      return;
-    }
-    tangentVelocity.normalize();
-
-    // Rotate around axis perpendicular to position and tangent velocity (great-circle motion).
-    const axis = new THREE.Vector3().crossVectors(
-      asteroid.position,
-      tangentVelocity
-    );
-    if (axis.lengthSq() < EPS) {
-      asteroid.direction.copy(this.randomTangentVector(asteroid.position));
-      return;
-    }
-    axis.normalize();
-
-    // Create rotation quaternion
-    const quat = new THREE.Quaternion().setFromAxisAngle(axis, angle);
-
-    // Rotate position
-    asteroid.position.applyQuaternion(quat);
-    asteroid.position.normalize(); // Prevent drift
-
-    // Rotate tangent velocity to stay tangent after movement.
-    tangentVelocity.applyQuaternion(quat).normalize();
-    asteroid.direction.copy(tangentVelocity);
-
-    // Keep shared state position in sync with renderer position.
-    asteroid.state.position.x = asteroid.position.x;
-    asteroid.state.position.y = asteroid.position.y;
-    asteroid.state.position.z = asteroid.position.z;
-    asteroid.state.direction.x = asteroid.direction.x;
-    asteroid.state.direction.y = asteroid.direction.y;
-    asteroid.state.direction.z = asteroid.direction.z;
-  }
-
-  /**
-   * Update the instance matrix for a specific asteroid
-   */
   private updateInstanceMatrix(index: number): void {
     const asteroid = this.asteroids[index];
 
-    // Position on sphere surface using GAME_CONST
     this._position
       .copy(asteroid.position)
       .multiplyScalar(GAME_CONST.SPHERE_RADIUS);
 
-    // Rotation: first orient to surface, then apply self-rotation
-    // Create basis: normal (position), tangent, bitangent
-    const normal = asteroid.position.clone();
-    const tangent = asteroid.direction.clone();
-    const bitangent = new THREE.Vector3().crossVectors(normal, tangent);
+    const normal = asteroid.position.clone().normalize();
+    const tangent = asteroid.direction.clone().normalize();
 
-    // Build rotation matrix from basis vectors
+    if (tangent.lengthSq() <= EPS) {
+      const fallbackAxis =
+        Math.abs(normal.y) < 0.99
+          ? new THREE.Vector3(0, 1, 0)
+          : new THREE.Vector3(1, 0, 0);
+      tangent.crossVectors(fallbackAxis, normal).normalize();
+    }
+
+    const bitangent = new THREE.Vector3().crossVectors(normal, tangent);
+    if (bitangent.lengthSq() <= EPS) {
+      const fallbackAxis =
+        Math.abs(normal.y) < 0.99
+          ? new THREE.Vector3(0, 1, 0)
+          : new THREE.Vector3(1, 0, 0);
+      tangent.crossVectors(fallbackAxis, normal).normalize();
+      bitangent.crossVectors(normal, tangent).normalize();
+    } else {
+      bitangent.normalize();
+    }
+
     const rotMatrix = new THREE.Matrix4().makeBasis(tangent, bitangent, normal);
     this._quaternion.setFromRotationMatrix(rotMatrix);
 
-    // Apply self-rotation (around local X and Y axes)
     this._euler.set(asteroid.rotationX, asteroid.rotationY, 0);
     const selfRotation = new THREE.Quaternion().setFromEuler(this._euler);
     this._quaternion.multiply(selfRotation);
 
-    // Scale based on size (uses GAMEPLAY_CONST.ASTEROID_DIAM)
     const visualSize =
-      GAMEPLAY_CONST.ASTEROID_DIAM[asteroid.state.size - 1] || FALLBACK_RADIUS;
+      GAMEPLAY_CONST.ASTEROID_DIAM[asteroid.state.size - 1] ?? FALLBACK_RADIUS;
     this._scale.set(visualSize, visualSize, visualSize);
 
-    // Compose matrix
     this._matrix.compose(this._position, this._quaternion, this._scale);
-
-    // Set instance matrix
     this.instancedMesh.setMatrixAt(index, this._matrix);
 
-    // Set color (red if hit, normal otherwise)
     if (asteroid.state.isHit) {
       this.instancedMesh.setColorAt(
         index,
         new THREE.Color(RENDERER_CONST.ASTEROID_HIT_COLOR)
       );
     } else {
-      this.instancedMesh.setColorAt(index, new THREE.Color(0xffffff)); // White (neutral tint)
+      this.instancedMesh.setColorAt(index, new THREE.Color(0xffffff));
     }
   }
-
-  // ========================================================================
-  // Hit & Remove Asteroids
-  // ========================================================================
-
-  /**
-   * Mark an asteroid as hit - it will turn red and break after delay
-   * @param id - Asteroid ID
-   * @param delay - Time in seconds before breaking (default 0.5s)
-   */
-  markAsHit(id: number, delay = 0.5): boolean {
-    const asteroid = this.asteroids.find((a) => a.state.id === id);
-    if (!asteroid || asteroid.state.isHit) return false;
-
-    asteroid.state.isHit = true;
-    asteroid.state.hitTimer = delay;
-    return true;
-  }
-
-  /**
-   * Remove an asteroid by ID
-   * Returns the removed asteroid data (for spawning smaller ones)
-   */
-  remove(id: number): AsteroidData | null {
-    const index = this.asteroids.findIndex((a) => a.state.id === id);
-    if (index === -1) return null;
-
-    const removed = this.asteroids[index];
-
-    // Remove from array
-    this.asteroids.splice(index, 1);
-
-    // Update instance count
-    this.instancedMesh.count = this.asteroids.length;
-
-    // Rebuild all matrices after removal (indices shifted)
-    for (let i = index; i < this.asteroids.length; i++) {
-      this.updateInstanceMatrix(i);
-    }
-
-    this.instancedMesh.instanceMatrix.needsUpdate = true;
-
-    return removed;
-  }
-
-  /**
-   * Break an asteroid into smaller pieces
-   * Removes the original and spawns 2-3 smaller ones at the same location
-   */
-  breakAsteroid(id: number): AsteroidData[] {
-    const asteroid = this.remove(id);
-    if (!asteroid || asteroid.state.size <= 1) return [];
-
-    const newSize = this.getSmallerSize(asteroid.state.size);
-    if (!newSize) return [];
-    const count = 2 + Math.floor(Math.random() * 2); // 2-3 pieces
-    const newAsteroids: AsteroidData[] = [];
-
-    for (let i = 0; i < count; i++) {
-      // Spawn at same position with slightly different velocity
-      const newVelocity = this.randomTangentVector(asteroid.position);
-
-      const newAsteroid: AsteroidData = {
-        state: {
-          id: this.nextId++,
-          position: {
-            x: asteroid.position.x,
-            y: asteroid.position.y,
-            z: asteroid.position.z,
-          },
-          direction: {
-            x: newVelocity.x,
-            y: newVelocity.y,
-            z: newVelocity.z,
-          },
-          angularSpeed: 0,
-          size: newSize,
-          health: 2 * newSize,
-          isHit: false,
-          hitTimer: 0,
-        },
-        // id: this.nextId++,
-        position: asteroid.position.clone(),
-        direction: newVelocity,
-        rotationSpeedX:
-          (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_FRAG_ROT,
-        rotationSpeedY:
-          (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_FRAG_ROT,
-        rotationX: Math.random() * Math.PI * 2,
-        rotationY: Math.random() * Math.PI * 2,
-        // size: newSize,
-        speed: asteroid.speed * RENDERER_CONST.ASTEROID_FRAG_SPEED_MULT,
-        // isHit: false,
-        // hitTimer: 0,
-      };
-
-      this.asteroids.push(newAsteroid);
-      newAsteroids.push(newAsteroid);
-    }
-
-    this.instancedMesh.count = this.asteroids.length;
-
-    // Update new instance matrices
-    for (
-      let i = this.asteroids.length - count;
-      i < this.asteroids.length;
-      i++
-    ) {
-      this.updateInstanceMatrix(i);
-    }
-
-    this.instancedMesh.instanceMatrix.needsUpdate = true;
-
-    return newAsteroids;
-  }
-
-  // ========================================================================
-  // Getters
-  // ========================================================================
 
   getAsteroids(): readonly AsteroidData[] {
     return this.asteroids;
-  }
-
-  getAsteroidById(id: number): AsteroidData | undefined {
-    return this.asteroids.find((a) => a.state.id === id);
   }
 
   getCount(): number {
     return this.asteroids.length;
   }
 
-  private clampAsteroidSize(size: number): AsteroidSize {
-    if (size <= 1) return 1;
-    if (size >= 4) return 4;
-    return Math.round(size) as AsteroidSize;
-  }
-
-  private getSmallerSize(size: AsteroidSize): AsteroidSize | null {
-    if (size === 1) return null;
-    return (size - 1) as AsteroidSize;
-  }
-
-  // ========================================================================
-  // Cleanup
-  // ========================================================================
-
   dispose(): void {
     this.instancedMesh.geometry.dispose();
     (this.instancedMesh.material as THREE.Material).dispose();
   }
 
-  /**
-   * Remove all asteroids
-   */
   clear(): void {
     this.asteroids = [];
     this.instancedMesh.count = 0;

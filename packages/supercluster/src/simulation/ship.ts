@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { stepShipOnSphere } from "./movement";
+import { stepShipOnSphere, threeToVec3, vec3ToThree } from "./movement";
 import type { InputState, Quat, Vec3 } from "../types";
 
 /**
@@ -14,11 +14,7 @@ export function stepShipState(
   deltaTicks: number,
   speedRadPerTick: number
 ): { moved: boolean; position: Vec3; orientation: Quat } {
-  const position = new THREE.Vector3(
-    shipPosition.x,
-    shipPosition.y,
-    shipPosition.z
-  ).normalize();
+  const position = vec3ToThree(shipPosition).normalize();
   const planetQuaternion = new THREE.Quaternion(
     shipOrientation.x,
     shipOrientation.y,
@@ -38,7 +34,7 @@ export function stepShipState(
 
   return {
     moved,
-    position: { x: position.x, y: position.y, z: position.z },
+    position: threeToVec3(position),
     orientation: {
       x: planetQuaternion.x,
       y: planetQuaternion.y,

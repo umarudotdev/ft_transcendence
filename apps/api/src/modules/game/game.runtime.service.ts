@@ -1,8 +1,14 @@
 import {
   createInitialShipState,
+  createWaveArray,
   GAME_CONST,
   normalizeAimAngle,
+  spawnProjectilesFromAim,
+  stepAsteroids,
+  stepProjectiles,
   stepShipState,
+  createAsteroidWave,
+  DEFAULT_GAMEPLAY,
   type ClientMessage,
   type GameState,
   type InputState,
@@ -77,7 +83,8 @@ function isClientMessage(value: unknown): value is ClientMessage {
       );
     case "aim":
       return Number.isInteger(message.seq) && Number.isFinite(message.angle);
-    case "shoot":
+    case "shoot_start":
+    case "shoot_stop":
       return Number.isInteger(message.seq);
     default:
       return false;
@@ -90,6 +97,9 @@ export class GameRuntimeService {
   private static controllingClient: WebSocket | null = null;
   private static state: GameState = createInitialGameState();
   private static lastProcessedInputSeq = 0;
+  private static nextProjectileId = 0;
+  private static nextAsteroidId = 0;
+  private static shootCooldownTicks = 0;
 
   private static timer: ReturnType<typeof setInterval> | null = null;
   private static readonly tickIntervalMs = 1000 / GAME_CONST.TICK_RATE;
@@ -153,6 +163,12 @@ export class GameRuntimeService {
     switch (message.type) {
       case "ready":
         this.state = createInitialGameState();
+        this.nextProjectileId = 0;
+        this.shootCooldownTicks = 0;
+        const wave = createWaveArray(DEFAULT_GAMEPLAY.asteroidWave);
+        const asteroidSpawn = createAsteroidWave(this.nextAsteroidId, wave);
+        this.state.asteroids = asteroidSpawn.asteroids;
+        this.nextAsteroidId = asteroidSpawn.nextAsteroidId;
         this.state.gameStatus = "playing";
         session.status = "playing";
         this.controllingClient = ws;
@@ -171,8 +187,11 @@ export class GameRuntimeService {
         }
         break;
 
-      case "shoot":
+      case "shoot_start":
         session.firePressed = true;
+        break;
+      case "shoot_stop":
+        session.firePressed = false;
         break;
     }
 
@@ -195,14 +214,29 @@ export class GameRuntimeService {
         );
         this.state.ship.position = stepped.position;
         this.state.ship.orientation = stepped.orientation;
+
+        if (this.shootCooldownTicks > 0) {
+          this.shootCooldownTicks -= 1;
+        }
+
+        if (controllingSession.firePressed && this.shootCooldownTicks <= 0) {
+          const spawned = spawnProjectilesFromAim(
+            this.nextProjectileId,
+            this.state.ship.aimAngle,
+            DEFAULT_GAMEPLAY.projectileRayCount
+          );
+          this.nextProjectileId = spawned.nextProjectileId;
+          this.state.projectiles.push(...spawned.projectiles);
+          this.shootCooldownTicks = DEFAULT_GAMEPLAY.projectileCooldown;
+        }
       }
     }
 
+    this.state.projectiles = stepProjectiles(this.state.projectiles, 1);
+    this.state.asteroids = stepAsteroids(this.state.asteroids, 1);
+
     this.state.tick += 1;
     this.broadcastState();
-    for (const session of this.sessions.values()) {
-      session.firePressed = false;
-    }
   }
 
   private static toMessage(): ServerMessage {

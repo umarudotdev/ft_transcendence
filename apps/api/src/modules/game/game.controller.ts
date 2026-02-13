@@ -5,7 +5,7 @@ import { logger } from "../../common/logger";
 import { GameRuntimeService } from "./game.runtime.service";
 
 const AIM_LOG_INTERVAL_MS = 200;
-let lastAimLogAt = 0;
+const lastAimLogAtBySocket = new WeakMap<WebSocket, number>();
 
 interface ParsedClientMessage {
   type?: string;
@@ -49,13 +49,15 @@ function activeKeys(keys: ParsedClientMessage["keys"]): string[] {
 
 export const gameController = new Elysia({ prefix: "/game" }).ws("/ws", {
   open(ws) {
-    GameRuntimeService.registerClient(ws.raw as unknown as WebSocket);
+    const socket = ws.raw as unknown as WebSocket;
+    GameRuntimeService.registerClient(socket);
     logger.ws("open", {
       module: "supercluster-game",
       action: "connected",
     });
   },
   message(ws, message) {
+    const socket = ws.raw as unknown as WebSocket;
     const parsed = parseClientMessage(message);
     if (!parsed || typeof parsed.type !== "string") {
       logger.ws("message", {
@@ -66,7 +68,7 @@ export const gameController = new Elysia({ prefix: "/game" }).ws("/ws", {
     }
 
     GameRuntimeService.handleClientMessage(
-      ws.raw as unknown as WebSocket,
+      socket,
       parsed as ClientMessage
     );
 
@@ -84,8 +86,11 @@ export const gameController = new Elysia({ prefix: "/game" }).ws("/ws", {
         break;
       case "aim":
         // Throttle high-frequency aim logs to keep debug output readable.
-        if (Date.now() - lastAimLogAt >= AIM_LOG_INTERVAL_MS) {
-          lastAimLogAt = Date.now();
+        if (
+          Date.now() - (lastAimLogAtBySocket.get(socket) ?? 0) >=
+          AIM_LOG_INTERVAL_MS
+        ) {
+          lastAimLogAtBySocket.set(socket, Date.now());
           logger.ws("message", {
             module: "supercluster-game",
             action: "input_received_aim",
@@ -95,10 +100,18 @@ export const gameController = new Elysia({ prefix: "/game" }).ws("/ws", {
           });
         }
         break;
-      case "shoot":
+      case "shoot_start":
         logger.ws("message", {
           module: "supercluster-game",
-          action: "input_received_shoot",
+          action: "input_received_shoot_start",
+          messageType: parsed.type,
+          seq: parsed.seq ?? -1,
+        });
+        break;
+      case "shoot_stop":
+        logger.ws("message", {
+          module: "supercluster-game",
+          action: "input_received_shoot_stop",
           messageType: parsed.type,
           seq: parsed.seq ?? -1,
         });
@@ -118,10 +131,11 @@ export const gameController = new Elysia({ prefix: "/game" }).ws("/ws", {
         });
         break;
     }
-
   },
   close(ws) {
-    GameRuntimeService.unregisterClient(ws.raw as unknown as WebSocket);
+    const socket = ws.raw as unknown as WebSocket;
+    GameRuntimeService.unregisterClient(socket);
+    lastAimLogAtBySocket.delete(socket);
     logger.ws("close", {
       module: "supercluster-game",
       action: "disconnected",

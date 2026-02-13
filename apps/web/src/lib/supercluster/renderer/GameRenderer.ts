@@ -1,9 +1,8 @@
 import {
   GAME_CONST,
-  GAMEPLAY_CONST,
   DEFAULT_GAMEPLAY,
   getTargetHeadingFromInput,
-  stepShipOnSphere,
+  threeToVec3,
   type GameState,
   type InputState,
   type Vec3,
@@ -84,12 +83,6 @@ export class GameRenderer {
   private shipLives = DEFAULT_GAMEPLAY.shipLives;
   private shipInvincible = DEFAULT_GAMEPLAY.shipInvincible;
 
-  // Reusable objects for movement calculations (avoid GC pressure)
-  private readonly _tempQuat = new THREE.Quaternion();
-
-  // Shooting state
-  private shootCooldownTimer = 0; // Time until next shot allowed
-
   // Game state
   private isGameOver = false;
 
@@ -160,7 +153,6 @@ export class GameRenderer {
 
     // Reset input and shooting state
     this.input.reset();
-    this.shootCooldownTimer = 0;
     this.simulationAccumulator = 0;
   }
 
@@ -236,8 +228,8 @@ export class GameRenderer {
       this.input.aimAngle
     );
 
-    // TODO: Update projectiles
-    // TODO: Update enemies
+    this.stage.projectiles.syncFromStates(state.projectiles);
+    this.stage.asteroids.syncFromStates(state.asteroids);
   }
 
   // ========================================================================
@@ -265,92 +257,10 @@ export class GameRenderer {
   }
 
   /**
-   * Try to shoot projectiles. Respects cooldown.
-   * @returns true if projectiles were spawned
+   * Shooting is authoritative on server runtime.
    */
   shoot(): boolean {
-    // Check cooldown
-    if (this.shootCooldownTimer > 0) {
-      return false;
-    }
-
-    // Reset cooldown (convert from ticks to seconds)
-    this.shootCooldownTimer =
-      DEFAULT_GAMEPLAY.projectileCooldown / GAME_CONST.TICK_RATE;
-
-    // Ship is at (0, 0, 1) in world space (normalized unit vector)
-    const shipWorldPosition = new THREE.Vector3(0, 0, 1);
-
-    // Calculate aim direction in world space (on the XY tangent plane)
-    // Canonical aim convention:
-    // 0 = up (+Y), +PI/2 = right (+X), PI = down (-Y), -PI/2 = left (-X)
-    const aimAngle = this.input.aimAngle;
-    const aimX = Math.sin(aimAngle);
-    const aimY = Math.cos(aimAngle);
-    const aimWorldDirection = new THREE.Vector3(aimX, aimY, 0).normalize();
-
-    // Spawn projectiles (spread/count from GameConfig)
-    this.stage.projectiles.spawnSpread(shipWorldPosition, aimWorldDirection);
-
-    return true;
-  }
-
-  // ========================================================================
-  // Collision Detection
-  // ========================================================================
-
-  /**
-   * Check and handle all collisions
-   * Transforms projectiles from world space to planet space for collision detection
-   */
-  private checkCollisions(): void {
-    // Check projectile-asteroid collisions
-    // Pass planetQuaternion to transform projectiles from world to planet space
-    const projectileCollisions =
-      this.stage.collisionSystem.checkProjectileAsteroidCollisions(
-        this.stage.projectiles,
-        this.stage.asteroids,
-        this.planetQuaternion
-      );
-
-    // Handle projectile collisions
-    for (const collision of projectileCollisions) {
-      // Remove the projectile (projectileId always exists for projectile-asteroid collisions)
-      this.stage.projectiles.remove(collision.projectileId!);
-
-      // Mark asteroid as hit - will turn red and break after delay
-      this.stage.asteroids.markAsHit(
-        collision.asteroidId,
-        GAMEPLAY_CONST.HIT_DELAY_SEC
-      );
-    }
-
-    // Check ship-asteroid collisions (only if still alive)
-    if (!this.isGameOver) {
-      // Ship is at initial position in world space (normalized unit vector)
-      const { x, y, z } = GAME_CONST.SHIP_INITIAL_POS;
-      const shipWorldPosition = new THREE.Vector3(x, y, z);
-
-      const shipCollisions =
-        this.stage.collisionSystem.checkShipAsteroidCollisions(
-          shipWorldPosition,
-          this.stage.asteroids,
-          this.planetQuaternion
-        );
-
-      // Handle first ship collision (game over)
-      if (shipCollisions.length > 0) {
-        this.handleShipCollision();
-      }
-    }
-  }
-
-  /**
-   * Handle ship collision - trigger game over
-   */
-  private handleShipCollision(): void {
-    this.isGameOver = true;
-    this.gameOverScreen.show();
+    return false;
   }
 
   // ========================================================================
@@ -400,38 +310,9 @@ export class GameRenderer {
   }
 
   private updateSimulation(deltaTime: number): void {
-    if (this.lastState) {
-      this.mechanicsController = "server";
-      // Phase 0 isolation:
-      // when authoritative snapshots are present, keep renderer visual updates only.
-      this.stage.world.update(this.camera.position);
-      this.stage.projectiles.setCameraPosition(this.camera.position);
-      return;
-    }
-    this.mechanicsController = "client";
-
-    // Update cooldown timer
-    if (this.shootCooldownTimer > 0) {
-      this.shootCooldownTimer -= deltaTime;
-    }
-
-    // Continuous shooting while mouse is held
-    if (this.input.firePressed && this.shootCooldownTimer <= 0) {
-      this.shoot();
-    }
-
-    // Update local movement
-    this.updateLocalMovement(deltaTime);
-
-    // Update game objects
+    this.mechanicsController = this.lastState ? "server" : "client";
     this.stage.update(deltaTime, this.camera.position);
-
-    // Update projectiles (needs camera position for shader)
     this.stage.projectiles.setCameraPosition(this.camera.position);
-    this.stage.updateProjectiles(deltaTime);
-
-    // Check collisions and handle them
-    this.checkCollisions();
   }
 
   stop(): void {
@@ -439,42 +320,6 @@ export class GameRenderer {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
     }
-  }
-
-  private updateLocalMovement(deltaTime: number): void {
-    const deltaTicks = deltaTime * GAME_CONST.TICK_RATE;
-
-    // Read input from InputController
-    const keys = this.input.keys;
-
-    const targetDirection = getTargetHeadingFromInput(keys);
-    if (targetDirection !== null) {
-      this.targetHeadingAngle = targetDirection;
-    }
-
-    if (this.input.hasMovementInput) {
-      const moved = stepShipOnSphere(
-        this.planetQuaternion,
-        this.shipPosition,
-        keys,
-        deltaTicks,
-        GAME_CONST.SHIP_SPEED,
-        this._tempQuat
-      );
-
-      if (moved) {
-        // Apply updated world rotation to visual world group.
-        this.stage.world.group.quaternion.copy(this.planetQuaternion);
-      }
-    }
-
-    // ====================================================================
-    // Lerp ship direction toward target (always, even without input)
-    // ====================================================================
-    this.stage.ship.lerpDirection(this.targetHeadingAngle, deltaTime);
-
-    // Update ship visuals
-    this.updateShipVisuals();
   }
 
   // ========================================================================
@@ -512,11 +357,7 @@ export class GameRenderer {
    * Get current ship position as a unit vector.
    */
   getShipPosition(): Vec3 {
-    return {
-      x: this.shipPosition.x,
-      y: this.shipPosition.y,
-      z: this.shipPosition.z,
-    };
+    return threeToVec3(this.shipPosition);
   }
 
   render(): void {

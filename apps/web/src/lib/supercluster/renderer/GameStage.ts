@@ -1,12 +1,7 @@
-import {
-  DEFAULT_GAMEPLAY,
-  createInitialShipState,
-  createWaveArray,
-} from "@ft/supercluster";
+import { createInitialShipState } from "@ft/supercluster";
 import * as THREE from "three";
 
 import { AsteroidRenderer } from "./Asteroid";
-import { CollisionSystem } from "./CollisionSystem";
 import { ProjectileRenderer } from "./Projectile";
 import { ShipRenderer } from "./Ship";
 import { WorldRenderer } from "./World";
@@ -30,7 +25,6 @@ export class GameStage {
   readonly ship: ShipRenderer;
   readonly asteroids: AsteroidRenderer;
   readonly projectiles: ProjectileRenderer;
-  readonly collisionSystem: CollisionSystem;
 
   constructor(scene: THREE.Scene) {
     // Create world (planet + force field container)
@@ -50,8 +44,6 @@ export class GameStage {
     this.projectiles = new ProjectileRenderer();
     scene.add(this.projectiles.group);
 
-    // Create collision system (uses GAME_CONST directly)
-    this.collisionSystem = new CollisionSystem();
   }
 
   /**
@@ -59,21 +51,12 @@ export class GameStage {
    * Called by constructor and on game restart
    */
   initialize(): void {
-    // Clear any existing asteroids and projectiles
+    // In server-authority flow, renderer only mirrors snapshots.
     this.asteroids.clear();
     this.projectiles.clear();
 
-    // Spawn initial asteroids using wave config
-    this.asteroids.spawnMultiple(
-      createWaveArray(DEFAULT_GAMEPLAY.asteroidWave)
-    );
-
     // Reset ship visual state
-    this.ship.updateFromState(
-      createInitialShipState(),
-      0,
-      0
-    );
+    this.ship.updateFromState(createInitialShipState(), 0, 0);
   }
 
   /**
@@ -81,8 +64,7 @@ export class GameStage {
    * @param deltaTime - Time since last frame in seconds
    * @param cameraPosition - Camera position for shader updates
    */
-  update(deltaTime: number, cameraPosition: THREE.Vector3): void {
-    this.asteroids.update(deltaTime);
+  update(_deltaTime: number, cameraPosition: THREE.Vector3): void {
     this.world.update(cameraPosition);
   }
 
@@ -90,9 +72,7 @@ export class GameStage {
    * Update projectiles separately (needs camera position for shader)
    * Called from GameRenderer after setting camera position on projectiles
    */
-  updateProjectiles(deltaTime: number): void {
-    this.projectiles.update(deltaTime);
-  }
+  updateProjectiles(_deltaTime: number): void {}
 
   /**
    * Clean up all game objects

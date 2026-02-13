@@ -1,6 +1,7 @@
 // ============================================================================
 // Shared Types for SuperCluster
 // Used by both client (renderer) and server (game logic)
+// Contract rule: keep this file engine-agnostic (no Three.js classes/imports)
 // ============================================================================
 
 // ============================================================================
@@ -45,7 +46,7 @@ export interface ProjectileState {
   id: number;
   position: Vec3;
   direction: Vec3; // Movement direction unit vector tangent to sphere
-  age: number; // Ticks since spawn
+  ageTicks: number; // Ticks since spawn
 }
 
 /**
@@ -59,6 +60,7 @@ export interface AsteroidState {
   angularSpeed: number; // Angular speed (rad/tick)
   size: 1 | 2 | 3 | 4; // 1=smallest, 4=largest
   health: number; // Hits remaining (usually 1)
+  canTakeDamage: boolean; // Damage gate while asteroid is in break transition
   isHit: boolean; // Has been hit, waiting to break
   hitTimer: number; // Time remaining until break (in ticks)
 }
@@ -106,8 +108,13 @@ export interface AimInput {
   angle: number; // Radians
 }
 
-export interface ShootInput {
-  type: "shoot";
+export interface ShootStartInput {
+  type: "shoot_start";
+  seq: number; // Sequence number for reconciliation
+}
+
+export interface ShootStopInput {
+  type: "shoot_stop";
   seq: number; // Sequence number for reconciliation
 }
 
@@ -115,7 +122,12 @@ export interface ReadyInput {
   type: "ready";
 }
 
-export type ClientMessage = PlayerInput | AimInput | ShootInput | ReadyInput;
+export type ClientMessage =
+  | PlayerInput
+  | AimInput
+  | ShootStartInput
+  | ShootStopInput
+  | ReadyInput;
 
 // ============================================================================
 // Server Messages (Server → Client)
@@ -163,7 +175,7 @@ export type ServerMessage =
 
 // ============================================================================
 // NOTE: GameConfig, RendererConfig, BulletConfig removed
-// - Projectile physics: GAME_CONST (PROJECTILE_LIFETIME, PROJECTILE_SPREAD_ANGLE)
+// - Projectile physics: GAME_CONST (PROJECTILE_AGE_TICKS, PROJECTILE_SPREAD_ANGLE)
 // - Projectile gameplay: DEFAULT_GAMEPLAY (projectileCooldown, projectileRayCount)
 // - Visual settings: RENDERER_CONST (apps/web/src/lib/supercluster/constants/renderer.ts)
 // ============================================================================

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { InputState } from "../types";
+import type { Vec3 } from "../types";
 
 // ============================================================================
 // Movement Module
@@ -10,6 +11,45 @@ import type { InputState } from "../types";
 const EPS = 1e-8;
 const WORLD_X_AXIS = new THREE.Vector3(1, 0, 0);
 const WORLD_Y_AXIS = new THREE.Vector3(0, 1, 0);
+
+export function vec3ToThree(value: Vec3): THREE.Vector3 {
+  return new THREE.Vector3(value.x, value.y, value.z);
+}
+
+export function threeToVec3(value: THREE.Vector3): Vec3 {
+  return { x: value.x, y: value.y, z: value.z };
+}
+
+export function normalizeVec3(
+  value: Vec3,
+  fallback: Vec3 = { x: 0, y: 0, z: 1 }
+): Vec3 {
+  const normalized = vec3ToThree(value);
+  if (normalized.lengthSq() <= EPS) {
+    return { ...fallback };
+  }
+  normalized.normalize();
+  return threeToVec3(normalized);
+}
+
+export function randomUnitVec3(): Vec3 {
+  return threeToVec3(new THREE.Vector3().randomDirection());
+}
+
+export function randomTangentVec3(position: Vec3): Vec3 {
+  const p = vec3ToThree(normalizeVec3(position));
+  const tangent = new THREE.Vector3().randomDirection().projectOnPlane(p);
+
+  if (tangent.lengthSq() <= EPS) {
+    const fallbackAxis =
+      Math.abs(p.y) < 0.99
+        ? new THREE.Vector3(0, 1, 0)
+        : new THREE.Vector3(1, 0, 0);
+    tangent.copy(p).cross(fallbackAxis);
+  }
+  tangent.normalize();
+  return threeToVec3(tangent);
+}
 
 // ============================================================================
 // Sphere Surface Movement
@@ -28,7 +68,7 @@ export function moveOnSphere(
   velocity: THREE.Vector3,
   angle: number
 ): void {
-  if (angle === 0) return;
+  if (Math.abs(angle) <= EPS) return;
 
   // Reproject velocity onto tangent plane to prevent radial drift
   const tangentVelocity = velocity
@@ -52,76 +92,6 @@ export function moveOnSphere(
   // Rotate velocity to stay tangent after movement
   tangentVelocity.applyQuaternion(quat).normalize();
   velocity.copy(tangentVelocity);
-}
-
-/**
- * Move a position without updating velocity direction
- * Use when velocity direction should remain constant in world space
- *
- * @param position - Current position (unit vector, MUTATED)
- * @param velocity - Movement direction (unit vector tangent to sphere)
- * @param angle - Angular distance to move (radians)
- */
-export function moveOnSphereStraight(
-  position: THREE.Vector3,
-  velocity: THREE.Vector3,
-  angle: number
-): void {
-  if (angle === 0) return;
-
-  // Reproject velocity onto tangent plane
-  const tangentVelocity = velocity
-    .clone()
-    .sub(position.clone().multiplyScalar(velocity.dot(position)));
-
-  if (tangentVelocity.lengthSq() < EPS) return;
-  tangentVelocity.normalize();
-
-  // Rotation axis
-  const axis = new THREE.Vector3().crossVectors(position, tangentVelocity);
-  if (axis.lengthSq() < EPS) return;
-  axis.normalize();
-
-  // Rotate position only
-  const quat = new THREE.Quaternion().setFromAxisAngle(axis, angle);
-  position.applyQuaternion(quat).normalize();
-}
-
-// ============================================================================
-// Direction Calculation
-// ============================================================================
-
-/**
- * Calculate tangent direction from an angle on the sphere surface
- * Used for ship aim direction, projectile direction, etc.
- *
- * @param position - Position on sphere (unit vector)
- * @param angle - Direction angle in tangent plane (radians)
- * @returns Unit vector tangent to sphere at position
- */
-export function getTangentDirection(
-  position: THREE.Vector3,
-  angle: number
-): THREE.Vector3 {
-  // Calculate local basis vectors at position
-  const up = new THREE.Vector3(0, 1, 0);
-
-  // First tangent basis axis from world-up and local normal.
-  let east = new THREE.Vector3().crossVectors(up, position);
-  if (east.lengthSq() < EPS) {
-    // At poles, use X axis as reference
-    east = new THREE.Vector3(1, 0, 0);
-  }
-  east.normalize();
-
-  // Second tangent basis axis orthogonal to both normal and east.
-  const north = new THREE.Vector3().crossVectors(position, east).normalize();
-
-  // Combine based on angle
-  return new THREE.Vector3()
-    .addScaledVector(north, Math.cos(angle))
-    .addScaledVector(east, Math.sin(angle))
-    .normalize();
 }
 
 /**
@@ -156,7 +126,7 @@ export function stepShipOnSphere(
   let moved = false;
 
   // Pitch: rotate around X axis.
-  if (pitchAngle !== 0) {
+  if (Math.abs(pitchAngle) > EPS) {
     scratchQuat.setFromAxisAngle(WORLD_X_AXIS, pitchAngle);
     planetQuaternion.premultiply(scratchQuat);
 
@@ -167,7 +137,7 @@ export function stepShipOnSphere(
   }
 
   // Yaw: rotate around Y axis.
-  if (yawAngle !== 0) {
+  if (Math.abs(yawAngle) > EPS) {
     scratchQuat.setFromAxisAngle(WORLD_Y_AXIS, yawAngle);
     planetQuaternion.premultiply(scratchQuat);
 
@@ -182,4 +152,24 @@ export function stepShipOnSphere(
   }
 
   return moved;
+}
+
+/**
+ * Data-oriented sphere motion step for entities with position+direction.
+ * Uses shared great-circle motion and returns normalized Vec3 outputs.
+ */
+export function stepSurfaceMotionState(
+  position: Vec3,
+  direction: Vec3,
+  angle: number
+): { position: Vec3; direction: Vec3 } {
+  const p = vec3ToThree(position);
+  const d = vec3ToThree(direction);
+
+  moveOnSphere(p, d, angle);
+
+  return {
+    position: normalizeVec3(threeToVec3(p)),
+    direction: normalizeVec3(threeToVec3(d)),
+  };
 }

@@ -108,6 +108,8 @@
 	// ========================================================================
 	function connectWebSocket(): void {
 		if (!browser || !wsUrl) return;
+		if (ws && ws.readyState === WebSocket.OPEN) return;
+		if (ws && ws.readyState === WebSocket.CONNECTING) return;
 
 		ws = new WebSocket(wsUrl);
 
@@ -119,6 +121,7 @@
 
 		ws.onclose = () => {
 			connected = false;
+			ws = null;
 			if (debug) console.log('WebSocket disconnected');
 
 			// Attempt reconnection after delay
@@ -325,11 +328,13 @@
 
 	function handleMouseDown(_event: MouseEvent): void {
 		const { seq } = nextSequence();
-		sendMessage({ type: 'shoot', seq });
+		sendMessage({ type: 'shoot_start', seq });
 		renderer?.setMousePressed(true);
 	}
 
 	function handleMouseUp(_event: MouseEvent): void {
+		const { seq } = nextSequence();
+		sendMessage({ type: 'shoot_stop', seq });
 		renderer?.setMousePressed(false);
 	}
 
@@ -352,14 +357,18 @@
 <div class="supercluster-container">
 	<canvas bind:this={canvas} class="supercluster-canvas"></canvas>
 
-	{#if debug && gameState}
+	{#if debug}
 		<div class="debug-overlay">
-			<p>Score: {gameState.score}</p>
-			<p>Lives: {gameState.ship.lives}</p>
-			<p>Wave: {gameState.wave}</p>
-			<p>Status: {gameState.gameStatus}</p>
 			<p>Connected: {connected}</p>
 			<p>Mechanics: {mechanicsController}</p>
+			{#if gameState}
+				<p>Score: {gameState.score}</p>
+				<p>Lives: {gameState.ship.lives}</p>
+				<p>Wave: {gameState.wave}</p>
+				<p>Status: {gameState.gameStatus}</p>
+			{:else}
+				<p>Status: no-state</p>
+			{/if}
 		</div>
 	{/if}
 </div>

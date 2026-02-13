@@ -240,8 +240,16 @@ export class GameRuntimeService {
       }
     }
 
+    const activeKeys = controller
+      ? (this.sessions.get(controller)?.keys ?? { ...DEFAULT_KEYS })
+      : { ...DEFAULT_KEYS };
     this.state.projectiles = stepProjectiles(this.state.projectiles, 1);
-    this.state.asteroids = stepAsteroids(this.state.asteroids, 1);
+    this.state.asteroids = stepAsteroids(
+      this.state.asteroids,
+      activeKeys,
+      1,
+      GAME_CONST.SHIP_SPEED
+    );
     this.resolveCollisions();
     this.resolveAsteroidHitLifecycle();
     this.resolveShipCollision();

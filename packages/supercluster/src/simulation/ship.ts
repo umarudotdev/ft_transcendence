@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { stepShipOnSphere, threeToVec3, vec3ToThree } from "./movement";
+import { stepShipOnSphere, vec3ToThree } from "./movement";
 import type { InputState, Quat, Vec3 } from "../types";
 
 /**
@@ -34,7 +34,9 @@ export function stepShipState(
 
   return {
     moved,
-    position: threeToVec3(position),
+    // Phase 1 ship-centric de-transport:
+    // keep ship anchor fixed; world entities will move in later phases.
+    position: { ...shipPosition },
     orientation: {
       x: planetQuaternion.x,
       y: planetQuaternion.y,

@@ -1,6 +1,7 @@
 import { GAME_CONST } from "../constants";
-import type { AsteroidState } from "../types";
+import type { AsteroidState, InputState } from "../types";
 import {
+  applyInverseShipInputTransform,
   normalizeVec3,
   randomTangentVec3,
   randomUnitVec3,
@@ -20,7 +21,7 @@ export function createRandomAsteroidState(
   const position = randomUnitVec3();
   const direction = randomTangentVec3(position);
   const asteroidSize = clampAsteroidSize(size);
-  const angularSpeed =
+  const moveSpeed =
     GAME_CONST.ASTEROID_SPEED_MIN +
     Math.random() * (GAME_CONST.ASTEROID_SPEED_MAX - GAME_CONST.ASTEROID_SPEED_MIN);
 
@@ -28,7 +29,7 @@ export function createRandomAsteroidState(
     id,
     position,
     direction,
-    angularSpeed,
+    moveSpeed,
     size: asteroidSize,
     health: 2 * asteroidSize,
     canTakeDamage: true,
@@ -50,22 +51,31 @@ export function createAsteroidWave(
 
 export function stepAsteroids(
   asteroids: readonly AsteroidState[],
-  deltaTicks: number
+  keys: InputState,
+  deltaTicks: number,
+  inverseSpeedRadPerTick: number
 ): AsteroidState[] {
   if (asteroids.length === 0) return [];
 
   const stepped: AsteroidState[] = [];
   for (const asteroid of asteroids) {
-    const steppedMotion = stepSurfaceMotionState(
+    const selfMotion = stepSurfaceMotionState(
       asteroid.position,
       asteroid.direction,
-      asteroid.angularSpeed * deltaTicks
+      asteroid.moveSpeed * deltaTicks
+    );
+    const worldMotion = applyInverseShipInputTransform(
+      selfMotion.position,
+      selfMotion.direction,
+      keys,
+      deltaTicks,
+      inverseSpeedRadPerTick
     );
 
     stepped.push({
       ...asteroid,
-      position: normalizeVec3(steppedMotion.position),
-      direction: normalizeVec3(steppedMotion.direction),
+      position: normalizeVec3(worldMotion.position),
+      direction: normalizeVec3(worldMotion.direction),
     });
   }
 
@@ -84,7 +94,7 @@ export function createAsteroidFragments(
   const fragmentSize = (parent.size - 1) as AsteroidState["size"];
   const fragmentSpeed = Math.min(
     GAME_CONST.ASTEROID_SPEED_MAX,
-    parent.angularSpeed * 1.15
+    parent.moveSpeed * 1.15
   );
 
   const asteroids: AsteroidState[] = [];
@@ -93,7 +103,7 @@ export function createAsteroidFragments(
       id: nextAsteroidId++,
       position: { ...parent.position },
       direction: randomTangentVec3(parent.position),
-      angularSpeed: fragmentSpeed,
+      moveSpeed: fragmentSpeed,
       size: fragmentSize,
       health: 2 * fragmentSize,
       canTakeDamage: true,

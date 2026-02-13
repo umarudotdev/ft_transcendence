@@ -2,6 +2,10 @@
 // Shared Types for SuperCluster
 // Used by both client (renderer) and server (game logic)
 // Contract rule: keep this file engine-agnostic (no Three.js classes/imports)
+//
+// Ship-Centric Frame Contract (migration target):
+// - Ship, asteroids, and projectiles share one simulation frame.
+// - Collision checks compare entities directly in that same frame.
 // ============================================================================
 
 // ============================================================================
@@ -27,11 +31,12 @@ export interface Quat {
 /**
  * Ship state - player's ship
  * Power-up levels increase during gameplay, reset on game restart
+ * Ship-centric mode: position remains fixed; heading/aim are authoritative.
  */
 export interface ShipState {
-  position: Vec3;
-  orientation: Quat; // World rotation quaternion for authoritative apply
-  aimAngle: number; // Direction of aim on tangent plane (radians)
+  position: Vec3; // Fixed ship anchor in ship-centric simulation frame
+  orientation: Quat; // Authoritative orientation used for world visual rotation
+  aimAngle: number; // Canonical aim angle in ship-centric frame (radians)
   lives: number;
   invincible: boolean; // After taking damage
   invincibleTicks: number; // Remaining invincibility ticks (for visual feedback)
@@ -41,23 +46,25 @@ export interface ShipState {
 
 /**
  * Projectile state - bullets fired by player
+ * Ship-centric mode: projectile state lives in same frame as ship/asteroids.
  */
 export interface ProjectileState {
   id: number;
   position: Vec3;
-  direction: Vec3; // Movement direction unit vector tangent to sphere
+  direction: Vec3; // Movement direction unit vector in ship-centric frame
   ageTicks: number; // Ticks since spawn
 }
 
 /**
  * Asteroid state - replaces generic EnemyState
  * Server sends this, client renders based on it
+ * Ship-centric mode: asteroid state lives in same frame as ship/projectiles.
  */
 export interface AsteroidState {
   id: number;
   position: Vec3;
-  direction: Vec3; // Movement direction unit vector tangent to sphere
-  angularSpeed: number; // Angular speed (rad/tick)
+  direction: Vec3; // Movement direction unit vector in ship-centric frame
+  moveSpeed: number; // Movement speed scalar in ship-centric frame (units/tick)
   size: 1 | 2 | 3 | 4; // 1=smallest, 4=largest
   health: number; // Hits remaining (usually 1)
   canTakeDamage: boolean; // Damage gate while asteroid is in break transition
@@ -69,10 +76,10 @@ export interface AsteroidState {
 // Game State (Server → Client)
 // ============================================================================
 export interface GameState {
-  tick: number;
+  tick: number; // Authoritative server simulation tick
   ship: ShipState;
   projectiles: ProjectileState[];
-  asteroids: AsteroidState[]; // Changed from enemies: EnemyState[]
+  asteroids: AsteroidState[];
   score: number;
   wave: number;
   gameStatus: GameStatus;
@@ -134,8 +141,8 @@ export type ClientMessage =
 // ============================================================================
 export interface StateMessage {
   type: "state";
-  state: GameState;
-  lastInputSeq: number; // Last processed input sequence (for reconciliation)
+  state: GameState; // Full authoritative snapshot
+  lastInputSeq: number; // Last client input seq consumed by server
 }
 
 export interface CountdownMessage {

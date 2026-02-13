@@ -7,4 +7,3 @@ export { ForceFieldRenderer } from "./ForceField";
 export { ShipRenderer } from "./Ship";
 export { AsteroidRenderer, type AsteroidData } from "./Asteroid";
 export { ProjectileRenderer, type ProjectileData } from "./Projectile";
-export { CollisionSystem, type CollisionEvent } from "./CollisionSystem";

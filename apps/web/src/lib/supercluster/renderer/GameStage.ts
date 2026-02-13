@@ -10,6 +10,11 @@ import { WorldRenderer } from "./World";
 // Game Stage
 // Container for all game objects (world, ship, asteroids, projectiles)
 //
+// Stage Contract (Phase 5.1):
+// - `world.group`: rotating visual container for planet + force field only.
+// - `ship.group`: fixed screen-space anchor (player ship + aim visuals).
+// - `asteroids.group` / `projectiles.group`: scene-level snapshot entities.
+//
 // Responsibilities:
 // - Creates and manages game object lifecycle
 // - Provides update() for per-frame updates
@@ -31,19 +36,17 @@ export class GameStage {
     this.world = new WorldRenderer();
     scene.add(this.world.group);
 
-    // Create asteroids (as children of world so they rotate with planet)
+    // Asteroids are scene-level snapshot entities.
     this.asteroids = new AsteroidRenderer();
-    this.world.group.add(this.asteroids.group);
+    scene.add(this.asteroids.group);
 
-    // Create ship in world space (uses GAME_CONST and RENDERER_CONST directly)
+    // Ship remains fixed in view; world moves under it.
     this.ship = new ShipRenderer();
     scene.add(this.ship.group);
 
-    // Create projectiles in world space (not planet children)
-    // This ensures projectiles travel at absolute speed regardless of ship movement
+    // Projectiles are scene-level snapshot entities.
     this.projectiles = new ProjectileRenderer();
     scene.add(this.projectiles.group);
-
   }
 
   /**
@@ -67,12 +70,6 @@ export class GameStage {
   update(_deltaTime: number, cameraPosition: THREE.Vector3): void {
     this.world.update(cameraPosition);
   }
-
-  /**
-   * Update projectiles separately (needs camera position for shader)
-   * Called from GameRenderer after setting camera position on projectiles
-   */
-  updateProjectiles(_deltaTime: number): void {}
 
   /**
    * Clean up all game objects

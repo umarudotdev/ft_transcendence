@@ -173,3 +173,54 @@ export function stepSurfaceMotionState(
     direction: normalizeVec3(threeToVec3(d)),
   };
 }
+
+/**
+ * Apply inverse ship input transform to an entity in ship-centric simulation.
+ * This moves world entities relative to fixed ship anchor.
+ *
+ * Note: keeps position radius magnitude (does not normalize position).
+ */
+export function applyInverseShipInputTransform(
+  position: Vec3,
+  direction: Vec3,
+  keys: InputState,
+  deltaTicks: number,
+  speedRadPerTick: number
+): { moved: boolean; position: Vec3; direction: Vec3 } {
+  let pitchAngle = 0;
+  let yawAngle = 0;
+
+  if (keys.forward) pitchAngle += speedRadPerTick * deltaTicks;
+  if (keys.backward) pitchAngle -= speedRadPerTick * deltaTicks;
+  if (keys.left) yawAngle += speedRadPerTick * deltaTicks;
+  if (keys.right) yawAngle -= speedRadPerTick * deltaTicks;
+
+  if (Math.abs(pitchAngle) <= EPS && Math.abs(yawAngle) <= EPS) {
+    return {
+      moved: false,
+      position: { ...position },
+      direction: normalizeVec3(direction),
+    };
+  }
+
+  const pos = vec3ToThree(position);
+  const dir = vec3ToThree(normalizeVec3(direction));
+
+  if (Math.abs(pitchAngle) > EPS) {
+    const quat = new THREE.Quaternion().setFromAxisAngle(WORLD_X_AXIS, pitchAngle);
+    pos.applyQuaternion(quat);
+    dir.applyQuaternion(quat);
+  }
+
+  if (Math.abs(yawAngle) > EPS) {
+    const quat = new THREE.Quaternion().setFromAxisAngle(WORLD_Y_AXIS, yawAngle);
+    pos.applyQuaternion(quat);
+    dir.applyQuaternion(quat);
+  }
+
+  return {
+    moved: true,
+    position: threeToVec3(pos),
+    direction: normalizeVec3(threeToVec3(dir)),
+  };
+}

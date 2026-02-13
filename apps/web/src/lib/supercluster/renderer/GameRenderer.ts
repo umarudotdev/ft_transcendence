@@ -19,10 +19,10 @@ import { InputController } from "./InputController";
 // Orchestrates rendering and game loop
 //
 // ARCHITECTURE:
-// - Ship: Fixed at (0,0,gameSphereRadius) in world space, planet rotates under it
-// - Projectiles: World space (scene children) - absolute velocity independent of ship movement
-// - Asteroids: Planet local space (planet children) - rotate with planet
-// - Collisions: Transform projectiles from world→planet space for detection
+// - Ship: fixed visual anchor at screen front.
+// - World group: rotated by authoritative ship orientation for planet visuals.
+// - Asteroids/Projectiles: snapshot-driven scene-level entities.
+// - Collision: server authoritative (shared simulation frame), no render authority.
 //
 // RESPONSIBILITIES:
 // - Three.js infrastructure (renderer, scene, camera, lights)
@@ -245,7 +245,7 @@ export class GameRenderer {
 
   setAimAngle(angle: number): void {
     this.input.setAimAngle(angle);
-    this.updateShipVisuals();
+    // this.updateShipVisuals();
   }
 
   setMousePressed(pressed: boolean): void {
@@ -312,7 +312,6 @@ export class GameRenderer {
   private updateSimulation(deltaTime: number): void {
     this.mechanicsController = this.lastState ? "server" : "client";
     this.stage.update(deltaTime, this.camera.position);
-    this.stage.projectiles.setCameraPosition(this.camera.position);
   }
 
   stop(): void {

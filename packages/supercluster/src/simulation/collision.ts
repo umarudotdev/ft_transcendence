@@ -6,7 +6,6 @@ import {
   getAsteroidCollisionRadius,
 } from "../constants";
 import type { AsteroidState, ProjectileState, ShipState } from "../types";
-import { vec3ToThree } from "./movement";
 
 // ============================================================================
 // Collision Detection Module
@@ -22,6 +21,13 @@ export interface CollisionResult {
 export interface ProjectileAsteroidHit {
   projectileId: number;
   asteroidId: number;
+}
+
+function dotVec3(
+  a: { x: number; y: number; z: number },
+  b: { x: number; y: number; z: number }
+): number {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 // ============================================================================
@@ -114,18 +120,12 @@ export function findProjectileAsteroidHits(
   const hits: ProjectileAsteroidHit[] = [];
 
   for (const projectile of projectiles) {
-    const projectilePos = vec3ToThree(projectile.position).normalize();
+    const projectilePos = projectile.position;
     for (const asteroid of asteroids) {
-      const asteroidPos = vec3ToThree(asteroid.position).normalize();
+      const asteroidPos = asteroid.position;
       const asteroidRadius = getAsteroidAngularRadiusSafe(asteroid.size);
-      if (
-        checkSphereCollisionFast(
-          projectilePos,
-          asteroidPos,
-          projectileRadius,
-          asteroidRadius
-        )
-      ) {
+      const threshold = Math.cos(projectileRadius + asteroidRadius);
+      if (dotVec3(projectilePos, asteroidPos) > threshold) {
         hits.push({ projectileId: projectile.id, asteroidId: asteroid.id });
         break;
       }
@@ -140,13 +140,14 @@ export function findShipAsteroidHit(
   asteroids: readonly AsteroidState[]
 ): number | null {
   if (asteroids.length === 0) return null;
-  const shipPos = vec3ToThree(ship.position).normalize();
+  const shipPos = ship.position;
   const shipRadius = getShipAngularRadius();
 
   for (const asteroid of asteroids) {
-    const asteroidPos = vec3ToThree(asteroid.position).normalize();
+    const asteroidPos = asteroid.position;
     const asteroidRadius = getAsteroidAngularRadiusSafe(asteroid.size);
-    if (checkSphereCollisionFast(shipPos, asteroidPos, shipRadius, asteroidRadius)) {
+    const threshold = Math.cos(shipRadius + asteroidRadius);
+    if (dotVec3(shipPos, asteroidPos) > threshold) {
       return asteroid.id;
     }
   }

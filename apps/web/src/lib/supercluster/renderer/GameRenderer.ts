@@ -36,8 +36,6 @@ import { InputController } from "./InputController";
 // - GameOverScreen: Game over visuals (explosion, DOM overlay)
 // ============================================================================
 export class GameRenderer {
-  private mechanicsController: "client" | "server" = "client";
-
   // Three.js infrastructure (owned by GameRenderer)
   private webglRenderer: THREE.WebGLRenderer;
   private scene: THREE.Scene;
@@ -144,7 +142,6 @@ export class GameRenderer {
     this.shipPosition.set(x, y, z);
     this.planetQuaternion.identity();
     this.stage.world.group.quaternion.copy(this.planetQuaternion);
-    this.mechanicsController = "client";
 
     // Reset ship state
     this.targetHeadingAngle = 0;
@@ -197,7 +194,6 @@ export class GameRenderer {
   // ========================================================================
   updateState(state: GameState): void {
     this.lastState = state;
-    this.mechanicsController = "server";
 
     // Update internal state from server
     this.shipPosition
@@ -309,7 +305,6 @@ export class GameRenderer {
   }
 
   private updateSimulation(deltaTime: number): void {
-    this.mechanicsController = this.lastState ? "server" : "client";
     this.stage.update(deltaTime, this.camera.position);
   }
 
@@ -355,10 +350,6 @@ export class GameRenderer {
 
   getScene(): THREE.Scene {
     return this.scene;
-  }
-
-  getMechanicsController(): "client" | "server" {
-    return this.mechanicsController;
   }
 
   // ========================================================================

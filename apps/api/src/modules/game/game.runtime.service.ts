@@ -230,6 +230,7 @@ export class GameRuntimeService {
         if (controllingSession.firePressed && this.shootCooldownTicks <= 0) {
           const spawned = spawnProjectilesFromAim(
             this.nextProjectileId,
+            this.state.ship.position,
             this.state.ship.aimAngle,
             DEFAULT_GAMEPLAY.projectileRayCount
           );

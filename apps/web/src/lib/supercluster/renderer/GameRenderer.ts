@@ -1,4 +1,5 @@
 import {
+  aimAngleFromDirectionAtPosition,
   GAME_CONST,
   DEFAULT_GAMEPLAY,
   getTargetHeadingFromInput,
@@ -225,7 +226,7 @@ export class GameRenderer {
     this.stage.ship.updateFromState(
       state.ship,
       shipDirectionAngle,
-      this.input.aimAngle
+      state.ship.aimAngle
     );
 
     this.stage.projectiles.syncFromStates(state.projectiles);
@@ -244,8 +245,26 @@ export class GameRenderer {
   }
 
   setAimAngle(angle: number): void {
-    this.input.setAimAngle(angle);
-    this.updateShipVisuals();
+    // Mouse angle arrives in rendered/screen frame (ship-centric XY).
+    // Convert to canonical local tangent aim angle used by server simulation.
+    const renderedDirection = new THREE.Vector3(
+      Math.sin(angle),
+      Math.cos(angle),
+      0
+    ).normalize();
+    const localDirection = renderedDirection
+      .clone()
+      .applyQuaternion(this.planetQuaternion.clone().invert())
+      .normalize();
+    const canonicalAim = aimAngleFromDirectionAtPosition(
+      {
+        x: this.shipPosition.x,
+        y: this.shipPosition.y,
+        z: this.shipPosition.z,
+      },
+      threeToVec3(localDirection)
+    );
+    this.input.setAimAngle(canonicalAim);
   }
 
   setMousePressed(pressed: boolean): void {
@@ -312,7 +331,6 @@ export class GameRenderer {
   private updateSimulation(deltaTime: number): void {
     this.mechanicsController = this.lastState ? "server" : "client";
     this.stage.update(deltaTime, this.camera.position);
-    this.stage.projectiles.setCameraPosition(this.camera.position);
   }
 
   stop(): void {

@@ -320,10 +320,10 @@
 		// - dx: positive = right on screen
 		// - dy: positive = down on screen
 		aimAngle = Math.atan2(dx, -dy);
+		renderer?.setAimAngle(aimAngle);
 
 		const { seq } = nextSequence();
-		sendMessage({ type: 'aim', seq, angle: aimAngle });
-		renderer?.setAimAngle(aimAngle);
+		sendMessage({ type: 'aim', seq, angle: renderer?.getAimAngle() ?? aimAngle });
 	}
 
 	function handleMouseDown(_event: MouseEvent): void {

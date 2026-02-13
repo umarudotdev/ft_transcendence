@@ -39,10 +39,10 @@ export class GameStage {
     this.ship = new ShipRenderer();
     scene.add(this.ship.group);
 
-    // Create projectiles in world space (not planet children)
-    // This ensures projectiles travel at absolute speed regardless of ship movement
+    // Create projectiles under world group so they share the same authoritative
+    // sphere frame as server projectile state.
     this.projectiles = new ProjectileRenderer();
-    scene.add(this.projectiles.group);
+    this.world.group.add(this.projectiles.group);
 
   }
 

@@ -173,3 +173,61 @@ export function stepSurfaceMotionState(
     direction: normalizeVec3(threeToVec3(d)),
   };
 }
+
+/**
+ * Build an aim direction on the local tangent plane at a sphere position.
+ * Convention:
+ * - aimAngle = 0 points to local "north"
+ * - positive aimAngle rotates toward local "east"
+ */
+export function aimDirectionAtPosition(position: Vec3, aimAngle: number): Vec3 {
+  const normal = vec3ToThree(normalizeVec3(position));
+
+  const east = new THREE.Vector3().crossVectors(WORLD_Y_AXIS, normal);
+  if (east.lengthSq() <= EPS) {
+    east.set(1, 0, 0);
+  } else {
+    east.normalize();
+  }
+
+  const north = new THREE.Vector3().crossVectors(normal, east);
+  if (north.lengthSq() <= EPS) {
+    north.set(0, 0, 1);
+  } else {
+    north.normalize();
+  }
+
+  const direction = north
+    .multiplyScalar(Math.cos(aimAngle))
+    .add(east.multiplyScalar(Math.sin(aimAngle)));
+
+  return normalizeVec3(threeToVec3(direction));
+}
+
+/**
+ * Inverse of aimDirectionAtPosition:
+ * convert a tangent direction vector into canonical aim angle at a position.
+ */
+export function aimAngleFromDirectionAtPosition(
+  position: Vec3,
+  direction: Vec3
+): number {
+  const normal = vec3ToThree(normalizeVec3(position));
+  const dir = vec3ToThree(normalizeVec3(direction));
+
+  const east = new THREE.Vector3().crossVectors(WORLD_Y_AXIS, normal);
+  if (east.lengthSq() <= EPS) {
+    east.set(1, 0, 0);
+  } else {
+    east.normalize();
+  }
+
+  const north = new THREE.Vector3().crossVectors(normal, east);
+  if (north.lengthSq() <= EPS) {
+    north.set(0, 0, 1);
+  } else {
+    north.normalize();
+  }
+
+  return Math.atan2(dir.dot(east), dir.dot(north));
+}

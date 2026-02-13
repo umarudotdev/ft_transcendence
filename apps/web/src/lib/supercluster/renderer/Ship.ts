@@ -1,4 +1,9 @@
-import { GAME_CONST, type ShipState } from "@ft/supercluster";
+import {
+  GAME_CONST,
+  aimDirectionAtPosition,
+  vec3ToThree,
+  type ShipState,
+} from "@ft/supercluster";
 import * as THREE from "three";
 
 import { SHIP_GEOMETRY, createShipGeometry } from "../assets/ship-geometry";
@@ -107,10 +112,18 @@ export class ShipRenderer {
     // Geometry tip points toward -Y in model space, so add PI offset.
     this.mesh.rotation.set(0, 0, Math.PI - directionAngle);
 
-    // Position aim dot on orbit circle around ship
-    // Canonical aim convention: 0 = up, positive = clockwise
-    const dotX = Math.sin(aimAngle) * RENDERER_CONST.AIM_DOT_ORBIT_RADIUS;
-    const dotY = Math.cos(aimAngle) * RENDERER_CONST.AIM_DOT_ORBIT_RADIUS;
+    // Aim dot uses the same canonical aim direction as projectile spawn.
+    // Convert local sphere aim direction into current rendered frame.
+    const aimDirSphere = vec3ToThree(aimDirectionAtPosition(state.position, aimAngle));
+    const orientation = new THREE.Quaternion(
+      state.orientation.x,
+      state.orientation.y,
+      state.orientation.z,
+      state.orientation.w
+    ).normalize();
+    const aimDirRendered = aimDirSphere.applyQuaternion(orientation).normalize();
+    const dotX = aimDirRendered.x * RENDERER_CONST.AIM_DOT_ORBIT_RADIUS;
+    const dotY = aimDirRendered.y * RENDERER_CONST.AIM_DOT_ORBIT_RADIUS;
     this.aimDot.position.set(dotX, dotY, 0);
 
     // Handle invincibility visual (blinking)

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { GAME_CONST } from "../constants";
 import { stepShipOnSphere, threeToVec3, vec3ToThree } from "./movement";
 import type { InputState, Quat, Vec3 } from "../types";
 
@@ -32,9 +33,15 @@ export function stepShipState(
     scratchQuat
   );
 
+  // Single source of truth: derive ship surface position from orientation.
+  // This keeps ship-vs-world frame coherent under combined rotations.
+  const derivedPosition = vec3ToThree(GAME_CONST.SHIP_INITIAL_POS)
+    .applyQuaternion(planetQuaternion.clone().invert())
+    .normalize();
+
   return {
     moved,
-    position: threeToVec3(position),
+    position: threeToVec3(derivedPosition),
     orientation: {
       x: planetQuaternion.x,
       y: planetQuaternion.y,

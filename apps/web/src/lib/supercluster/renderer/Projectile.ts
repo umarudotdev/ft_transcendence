@@ -27,8 +27,6 @@ export class ProjectileRenderer {
     1
   );
 
-  private cameraPosition = new THREE.Vector3(0, 0, 200);
-
   constructor() {
     this.group = new THREE.Group();
 
@@ -57,10 +55,6 @@ export class ProjectileRenderer {
     this.group.add(this.instancedMesh);
   }
 
-  setCameraPosition(position: THREE.Vector3): void {
-    this.cameraPosition.copy(position);
-  }
-
   syncFromStates(states: readonly ProjectileState[]): void {
     const capped = states.slice(-RENDERER_CONST.PROJECTILE_MAX_COUNT);
     this.projectiles = capped.map((state) => ({
@@ -83,22 +77,30 @@ export class ProjectileRenderer {
       .copy(projectile.position)
       .multiplyScalar(GAME_CONST.SPHERE_RADIUS);
 
-    const forward = projectile.direction.clone().normalize();
-    const toCamera = new THREE.Vector3()
-      .subVectors(this.cameraPosition, this._position)
-      .normalize();
-
-    const right = new THREE.Vector3().crossVectors(forward, toCamera);
-    if (right.lengthSq() < EPS) {
+    const normal = projectile.position.clone().normalize();
+    const forward = projectile.direction
+      .clone()
+      .sub(normal.clone().multiplyScalar(projectile.direction.dot(normal)));
+    if (forward.lengthSq() < EPS) {
       const fallbackAxis =
-        Math.abs(forward.y) < 0.99
+        Math.abs(normal.y) < 0.99
           ? new THREE.Vector3(0, 1, 0)
           : new THREE.Vector3(1, 0, 0);
-      right.crossVectors(forward, fallbackAxis);
+      forward.crossVectors(fallbackAxis, normal);
+    }
+    forward.normalize();
+
+    const right = new THREE.Vector3().crossVectors(forward, normal);
+    if (right.lengthSq() < EPS) {
+      const fallbackAxis =
+        Math.abs(normal.y) < 0.99
+          ? new THREE.Vector3(0, 1, 0)
+          : new THREE.Vector3(1, 0, 0);
+      right.crossVectors(fallbackAxis, normal);
     }
     right.normalize();
 
-    const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+    const up = normal;
 
     const rotMatrix = new THREE.Matrix4().makeBasis(right, forward, up);
     this._quaternion.setFromRotationMatrix(rotMatrix);

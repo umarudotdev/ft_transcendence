@@ -1,13 +1,17 @@
 import {
   createInitialShipState,
   createWaveArray,
+  findProjectileAsteroidHits,
+  findShipAsteroidHit,
   GAME_CONST,
+  GAMEPLAY_CONST,
   normalizeAimAngle,
   spawnProjectilesFromAim,
   stepAsteroids,
   stepProjectiles,
   stepShipState,
   createAsteroidWave,
+  createAsteroidFragments,
   DEFAULT_GAMEPLAY,
   type ClientMessage,
   type GameState,
@@ -100,6 +104,10 @@ export class GameRuntimeService {
   private static nextProjectileId = 0;
   private static nextAsteroidId = 0;
   private static shootCooldownTicks = 0;
+  private static readonly asteroidHitDelayTicks = Math.max(
+    1,
+    Math.round(GAMEPLAY_CONST.HIT_DELAY_SEC * GAME_CONST.TICK_RATE)
+  );
 
   private static timer: ReturnType<typeof setInterval> | null = null;
   private static readonly tickIntervalMs = 1000 / GAME_CONST.TICK_RATE;
@@ -234,9 +242,146 @@ export class GameRuntimeService {
 
     this.state.projectiles = stepProjectiles(this.state.projectiles, 1);
     this.state.asteroids = stepAsteroids(this.state.asteroids, 1);
+    this.resolveCollisions();
+    this.resolveAsteroidHitLifecycle();
+    this.resolveShipCollision();
+    this.stepShipInvincibility();
 
     this.state.tick += 1;
     this.broadcastState();
+  }
+
+  private static resolveCollisions(): void {
+    const hits = findProjectileAsteroidHits(
+      this.state.projectiles,
+      this.state.asteroids
+    );
+    if (hits.length === 0) return;
+
+    const consumedProjectileIds = new Set<number>();
+    const asteroidHitIds = new Set<number>();
+    const damagedAsteroidIds = new Set<number>();
+    for (const hit of hits) {
+      consumedProjectileIds.add(hit.projectileId);
+      asteroidHitIds.add(hit.asteroidId);
+    }
+
+    this.state.projectiles = this.state.projectiles.filter(
+      (projectile) => !consumedProjectileIds.has(projectile.id)
+    );
+
+    const nextAsteroids = this.state.asteroids.map((asteroid) => {
+      if (!asteroidHitIds.has(asteroid.id)) return asteroid;
+      if (!asteroid.canTakeDamage) return asteroid;
+      damagedAsteroidIds.add(asteroid.id);
+
+      const nextHealth = Math.max(asteroid.health - 1, 0);
+      return {
+        ...asteroid,
+        health: nextHealth,
+        canTakeDamage: false,
+        isHit: true,
+        hitTimer: this.asteroidHitDelayTicks,
+      };
+    });
+    this.state.asteroids = nextAsteroids;
+
+    for (const asteroidId of damagedAsteroidIds) {
+      this.broadcastMessage({
+        type: "hit",
+        targetId: asteroidId,
+        points: 10,
+      });
+      this.state.score += 10;
+    }
+  }
+
+  private static resolveAsteroidHitLifecycle(): void {
+    if (this.state.asteroids.length === 0) return;
+    const survivors: GameState["asteroids"] = [];
+
+    for (const asteroid of this.state.asteroids) {
+      if (!asteroid.isHit) {
+        survivors.push(asteroid);
+        continue;
+      }
+
+      const nextTimer = asteroid.hitTimer - 1;
+      if (nextTimer > 0) {
+        survivors.push({
+          ...asteroid,
+          hitTimer: nextTimer,
+        });
+        continue;
+      }
+
+      if (asteroid.health <= 0) {
+        if (asteroid.size > 1) {
+          const fragmentCount = 2 + Math.floor(Math.random() * 2);
+          const fragments = createAsteroidFragments(
+            asteroid,
+            this.nextAsteroidId,
+            fragmentCount
+          );
+          this.nextAsteroidId = fragments.nextAsteroidId;
+          survivors.push(...fragments.asteroids);
+        }
+        continue;
+      }
+
+      survivors.push({
+        ...asteroid,
+        canTakeDamage: true,
+        isHit: false,
+        hitTimer: 0,
+      });
+    }
+
+    this.state.asteroids = survivors;
+  }
+
+  private static resolveShipCollision(): void {
+    if (this.state.ship.invincible) return;
+    if (this.state.ship.lives <= 0) return;
+
+    const hitAsteroidId = findShipAsteroidHit(this.state.ship, this.state.asteroids);
+    if (hitAsteroidId === null) return;
+
+    const nextLives = Math.max(this.state.ship.lives - 1, 0);
+    this.state.ship.lives = nextLives;
+    this.state.ship.invincible = true;
+    this.state.ship.invincibleTicks = Math.max(
+      1,
+      Math.round(DEFAULT_GAMEPLAY.invincibleTimer * GAME_CONST.TICK_RATE)
+    );
+
+    this.broadcastMessage({
+      type: "damage",
+      lives: nextLives,
+    });
+
+    if (nextLives <= 0) {
+      this.state.gameStatus = "gameOver";
+      this.broadcastMessage({
+        type: "gameOver",
+        finalScore: this.state.score,
+        wave: this.state.wave,
+      });
+    }
+  }
+
+  private static stepShipInvincibility(): void {
+    if (!this.state.ship.invincible) return;
+    if (this.state.ship.invincibleTicks <= 0) {
+      this.state.ship.invincible = false;
+      this.state.ship.invincibleTicks = 0;
+      return;
+    }
+    this.state.ship.invincibleTicks -= 1;
+    if (this.state.ship.invincibleTicks <= 0) {
+      this.state.ship.invincible = false;
+      this.state.ship.invincibleTicks = 0;
+    }
   }
 
   private static toMessage(): ServerMessage {
@@ -262,6 +407,20 @@ export class GameRuntimeService {
   private static broadcastState(): void {
     if (this.clients.size === 0) return;
     const payload = JSON.stringify(this.toMessage());
+    for (const ws of this.clients) {
+      if (ws.readyState !== WebSocket.OPEN) {
+        this.unregisterClient(ws);
+        continue;
+      }
+      ws.send(payload);
+    }
+  }
+
+  private static broadcastMessage(
+    message: Exclude<ServerMessage, { type: "state" }>
+  ): void {
+    if (this.clients.size === 0) return;
+    const payload = JSON.stringify(message);
     for (const ws of this.clients) {
       if (ws.readyState !== WebSocket.OPEN) {
         this.unregisterClient(ws);

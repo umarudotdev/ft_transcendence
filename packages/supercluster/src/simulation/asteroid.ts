@@ -71,3 +71,36 @@ export function stepAsteroids(
 
   return stepped;
 }
+
+export function createAsteroidFragments(
+  parent: AsteroidState,
+  nextAsteroidId: number,
+  count: number
+): { asteroids: AsteroidState[]; nextAsteroidId: number } {
+  if (parent.size <= 1 || count <= 0) {
+    return { asteroids: [], nextAsteroidId };
+  }
+
+  const fragmentSize = (parent.size - 1) as AsteroidState["size"];
+  const fragmentSpeed = Math.min(
+    GAME_CONST.ASTEROID_SPEED_MAX,
+    parent.angularSpeed * 1.15
+  );
+
+  const asteroids: AsteroidState[] = [];
+  for (let i = 0; i < count; i++) {
+    asteroids.push({
+      id: nextAsteroidId++,
+      position: { ...parent.position },
+      direction: randomTangentVec3(parent.position),
+      angularSpeed: fragmentSpeed,
+      size: fragmentSize,
+      health: 2 * fragmentSize,
+      canTakeDamage: true,
+      isHit: false,
+      hitTimer: 0,
+    });
+  }
+
+  return { asteroids, nextAsteroidId };
+}

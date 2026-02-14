@@ -1,5 +1,6 @@
-import { GAME_CONST } from "../constants";
 import type { AsteroidState, InputState } from "../types";
+
+import { GAME_CONST } from "../constants";
 import {
   applyInverseShipInputTransform,
   normalizeVec3,
@@ -23,7 +24,8 @@ export function createRandomAsteroidState(
   const asteroidSize = clampAsteroidSize(size);
   const moveSpeed =
     GAME_CONST.ASTEROID_SPEED_MIN +
-    Math.random() * (GAME_CONST.ASTEROID_SPEED_MAX - GAME_CONST.ASTEROID_SPEED_MIN);
+    Math.random() *
+      (GAME_CONST.ASTEROID_SPEED_MAX - GAME_CONST.ASTEROID_SPEED_MIN);
 
   return {
     id,

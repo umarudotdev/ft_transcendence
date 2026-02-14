@@ -28,4 +28,3 @@ export function normalizeAimAngle(angle: number): number {
   const normalized = angle % twoPi;
   return normalized < 0 ? normalized + twoPi : normalized;
 }
-

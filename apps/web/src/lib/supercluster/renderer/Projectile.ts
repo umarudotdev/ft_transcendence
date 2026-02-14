@@ -1,4 +1,8 @@
-import { GAME_CONST, vec3ToThree, type ProjectileState } from "@ft/supercluster";
+import {
+  GAME_CONST,
+  vec3ToThree,
+  type ProjectileState,
+} from "@ft/supercluster";
 import * as THREE from "three";
 
 import { RENDERER_CONST } from "../constants/renderer";

@@ -22,7 +22,7 @@
 	// ========================================================================
 	// State
 	// ========================================================================
-	let canvas: HTMLCanvasElement;
+	let canvas: HTMLCanvasElement = null!;
 	let renderer: GameRenderer | null = null;
 	let ws: WebSocket | null = null;
 	let connected = $state(false);

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+
 import type { InputState, Quat, Vec3 } from "../types";
 
 // ============================================================================
@@ -218,13 +219,19 @@ export function applyInverseShipInputTransform(
   const dir = vec3ToThree(normalizeVec3(direction));
 
   if (Math.abs(pitchAngle) > EPS) {
-    const quat = new THREE.Quaternion().setFromAxisAngle(WORLD_X_AXIS, pitchAngle);
+    const quat = new THREE.Quaternion().setFromAxisAngle(
+      WORLD_X_AXIS,
+      pitchAngle
+    );
     pos.applyQuaternion(quat);
     dir.applyQuaternion(quat);
   }
 
   if (Math.abs(yawAngle) > EPS) {
-    const quat = new THREE.Quaternion().setFromAxisAngle(WORLD_Y_AXIS, yawAngle);
+    const quat = new THREE.Quaternion().setFromAxisAngle(
+      WORLD_Y_AXIS,
+      yawAngle
+    );
     pos.applyQuaternion(quat);
     dir.applyQuaternion(quat);
   }

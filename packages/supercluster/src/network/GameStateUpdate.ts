@@ -12,6 +12,7 @@ import type {
   GameStatus,
   Vec3,
 } from "../types";
+
 import { createInitialShipState } from "../defaults";
 
 /**

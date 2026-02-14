@@ -10,9 +10,9 @@ import { shutdownManager } from "./common/shutdown";
 import { env } from "./env";
 import { authController } from "./modules/auth/auth.controller";
 import { chatController } from "./modules/chat/chat.controller";
-import { gamificationController } from "./modules/gamification/gamification.controller";
 import { gameController } from "./modules/game/game.controller";
 import { GameRuntimeService } from "./modules/game/game.runtime.service";
+import { gamificationController } from "./modules/gamification/gamification.controller";
 import { moderationController } from "./modules/moderation/moderation.controller";
 import { notificationsController } from "./modules/notifications/notifications.controller";
 import { rankingsController } from "./modules/rankings/rankings.controller";
@@ -115,7 +115,9 @@ GameRuntimeService.start();
 if (app.server) {
   shutdownManager.registerServer(app.server);
 }
-shutdownManager.register("supercluster-runtime", () => GameRuntimeService.stop());
+shutdownManager.register("supercluster-runtime", () =>
+  GameRuntimeService.stop()
+);
 shutdownManager.initialize();
 
 logger.info({

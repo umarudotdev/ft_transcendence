@@ -1,7 +1,8 @@
 import * as THREE from "three";
 
+import type { InputState, Quat, ShipState } from "../types";
+
 import { GAME_CONST } from "../constants";
-import type { InputState, Quat, ShipState, Vec3 } from "../types";
 import { quatToThree, threeToQuat } from "./movement";
 
 const EPS = 1e-8;

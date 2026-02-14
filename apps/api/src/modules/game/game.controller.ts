@@ -1,5 +1,6 @@
-import { Elysia } from "elysia";
 import type { ClientMessage } from "@ft/supercluster";
+
+import { Elysia } from "elysia";
 
 import { logger } from "../../common/logger";
 import { GameRuntimeService } from "./game.runtime.service";
@@ -67,10 +68,7 @@ export const gameController = new Elysia({ prefix: "/game" }).ws("/ws", {
       return;
     }
 
-    GameRuntimeService.handleClientMessage(
-      socket,
-      parsed as ClientMessage
-    );
+    GameRuntimeService.handleClientMessage(socket, parsed as ClientMessage);
 
     switch (parsed.type) {
       case "input":

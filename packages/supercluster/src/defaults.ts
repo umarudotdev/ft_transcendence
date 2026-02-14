@@ -1,5 +1,6 @@
-import { GAME_CONST } from "./constants";
 import type { ShipState } from "./types";
+
+import { GAME_CONST } from "./constants";
 
 // ============================================================================
 // Gameplay Defaults (DEFAULT_GAMEPLAY)

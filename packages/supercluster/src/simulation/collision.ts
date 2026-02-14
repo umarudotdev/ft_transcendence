@@ -1,9 +1,10 @@
+import type { AsteroidState, ProjectileState, ShipState } from "../types";
+
 import {
   GAME_CONST,
   GAMEPLAY_CONST,
   getAsteroidCollisionRadius,
 } from "../constants";
-import type { AsteroidState, ProjectileState, ShipState } from "../types";
 import { dotVec3 } from "./movement";
 
 // ============================================================================
@@ -36,7 +37,8 @@ export interface ProjectileAsteroidCollisionResolution {
 
 const PROJECTILE_ANGULAR_RADIUS =
   GAMEPLAY_CONST.PROJECTILE_RADIUS / GAME_CONST.SPHERE_RADIUS;
-const SHIP_ANGULAR_RADIUS = GAMEPLAY_CONST.SHIP_RADIUS / GAME_CONST.SPHERE_RADIUS;
+const SHIP_ANGULAR_RADIUS =
+  GAMEPLAY_CONST.SHIP_RADIUS / GAME_CONST.SPHERE_RADIUS;
 
 // /**
 //  * Get angular radius for a projectile
@@ -67,7 +69,7 @@ export function findProjectileAsteroidHits(
 ): ProjectileAsteroidHit[] {
   if (projectiles.length === 0 || asteroids.length === 0) return [];
 
-//   const projectileRadius = getProjectileAngularRadius();
+  //   const projectileRadius = getProjectileAngularRadius();
   const hits: ProjectileAsteroidHit[] = [];
 
   for (const projectile of projectiles) {
@@ -98,7 +100,10 @@ export function resolveProjectileAsteroidCollisions(
   hitDelayTicks: number,
   pointsPerDamage: number = 10
 ): ProjectileAsteroidCollisionResolution {
-  const hits: ProjectileAsteroidHit[] = findProjectileAsteroidHits(projectiles, asteroids);
+  const hits: ProjectileAsteroidHit[] = findProjectileAsteroidHits(
+    projectiles,
+    asteroids
+  );
   if (hits.length === 0) {
     return {
       projectiles: [...projectiles],
@@ -159,7 +164,7 @@ export function findShipAsteroidHit(
 ): number | null {
   if (asteroids.length === 0) return null;
   const shipPos = ship.position;
-//   const shipRadius = getShipAngularRadius();
+  //   const shipRadius = getShipAngularRadius();
 
   for (const asteroid of asteroids) {
     const asteroidPos = asteroid.position;

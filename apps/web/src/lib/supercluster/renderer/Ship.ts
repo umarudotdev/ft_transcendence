@@ -68,11 +68,7 @@ export class ShipRenderer {
     for (let i = 0; i <= segments; i++) {
       const angle = (i / segments) * Math.PI * 2;
       points.push(
-        new THREE.Vector3(
-          Math.sin(angle) * radius,
-          Math.cos(angle) * radius,
-          0
-        )
+        new THREE.Vector3(Math.sin(angle) * radius, Math.cos(angle) * radius, 0)
       );
     }
 

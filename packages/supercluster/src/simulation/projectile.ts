@@ -1,5 +1,6 @@
-import { GAME_CONST } from "../constants";
 import type { ProjectileState, Vec3 } from "../types";
+
+import { GAME_CONST } from "../constants";
 import { normalizeVec3, stepSurfaceMotionState } from "./movement";
 
 function createProjectileDirection(aimAngle: number): Vec3 {

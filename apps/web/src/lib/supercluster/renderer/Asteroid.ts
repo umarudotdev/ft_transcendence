@@ -44,7 +44,11 @@ export class AsteroidRenderer {
       flatShading: true,
     });
 
-    this.instancedMesh = new THREE.InstancedMesh(geometry, material, maxAsteroids);
+    this.instancedMesh = new THREE.InstancedMesh(
+      geometry,
+      material,
+      maxAsteroids
+    );
     this.instancedMesh.count = 0;
     this.instancedMesh.frustumCulled = false;
 

@@ -19,11 +19,6 @@ export * from "./defaults";
 export * from "./types";
 
 // ========================================================================
-// Network (server/client communication)
-// ========================================================================
-export * from "./network";
-
-// ========================================================================
 // Simulation (physics, collision, movement - shared between server and client)
 // ========================================================================
 export * from "./simulation";

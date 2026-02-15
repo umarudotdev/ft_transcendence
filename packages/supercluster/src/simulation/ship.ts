@@ -1,13 +1,15 @@
-import * as THREE from "three";
+import { Quat as GlQuat, type QuatLike, type Vec3Like } from "gl-matrix";
 
-import type { InputState, Quat, ShipState } from "../types";
+import type { InputState, ShipState } from "../types";
 
 import { GAME_CONST } from "../constants";
-import { quatToThree, threeToQuat } from "./movement";
 
 const EPS = 1e-8;
-const WORLD_X_AXIS = new THREE.Vector3(1, 0, 0);
-const WORLD_Y_AXIS = new THREE.Vector3(0, 1, 0);
+const WORLD_X_AXIS: Vec3Like = [1, 0, 0];
+const WORLD_Y_AXIS: Vec3Like = [0, 1, 0];
+
+// Scratch quaternion to avoid per-call allocations
+const _q1 = GlQuat.create();
 
 export type ShipCollisionEvent = "none" | "ship_damaged" | "ship_destroyed";
 
@@ -21,12 +23,13 @@ export interface ShipCollisionDamageResult {
  * Updates orientation from input keys and keeps ship anchor fixed.
  */
 export function stepShipOrientationState(
-  shipOrientation: Quat,
+  shipOrientation: QuatLike,
   keys: InputState,
   deltaTicks: number = 1,
   speedRadPerTick: number = GAME_CONST.SHIP_SPEED
-): { moved: boolean; orientation: Quat } {
-  const orientation = quatToThree(shipOrientation).normalize();
+): { moved: boolean; orientation: QuatLike } {
+  const orientation = [...shipOrientation] as QuatLike;
+  GlQuat.normalize(orientation, orientation);
 
   let pitchAngle = 0;
   let yawAngle = 0;
@@ -36,25 +39,25 @@ export function stepShipOrientationState(
   if (keys.right) yawAngle -= speedRadPerTick * deltaTicks;
 
   let moved = false;
-  const scratchQuat = new THREE.Quaternion();
 
   if (Math.abs(pitchAngle) > EPS) {
-    scratchQuat.setFromAxisAngle(WORLD_X_AXIS, pitchAngle);
-    orientation.premultiply(scratchQuat);
+    GlQuat.setAxisAngle(_q1, WORLD_X_AXIS, pitchAngle);
+    // premultiply: orientation = _q1 * orientation
+    GlQuat.multiply(orientation, _q1, orientation);
     moved = true;
   }
 
   if (Math.abs(yawAngle) > EPS) {
-    scratchQuat.setFromAxisAngle(WORLD_Y_AXIS, yawAngle);
-    orientation.premultiply(scratchQuat);
+    GlQuat.setAxisAngle(_q1, WORLD_Y_AXIS, yawAngle);
+    GlQuat.multiply(orientation, _q1, orientation);
     moved = true;
   }
 
-  if (moved) orientation.normalize();
+  if (moved) GlQuat.normalize(orientation, orientation);
 
   return {
     moved,
-    orientation: threeToQuat(orientation),
+    orientation,
   };
 }
 
@@ -107,31 +110,3 @@ export function stepShipInvincibilityState(ship: ShipState): ShipState {
     invincibleTicks: ship.invincibleTicks - 1,
   };
 }
-
-/**
- * Data-oriented ship step for authoritative runtime.
- * Keeps movement math shared while exposing plain serializable vectors.
- *
- * @deprecated Use `stepShipOrientationState(...)` in ship-centric mode.
- */
-// export function stepShipState(
-//   shipPosition: Vec3,
-//   shipOrientation: Quat,
-//   keys: InputState,
-//   deltaTicks: number,
-//   speedRadPerTick: number
-// ): { moved: boolean; position: Vec3; orientation: Quat } {
-//   const stepped = stepShipOrientationState(
-//     shipOrientation,
-//     keys,
-//     deltaTicks,
-//     speedRadPerTick
-//   );
-
-//   return {
-//     moved: stepped.moved,
-//     // Ship-centric compatibility wrapper: keep ship anchor fixed.
-//     position: { ...shipPosition },
-//     orientation: stepped.orientation,
-//   };
-// }

@@ -103,7 +103,7 @@ export function createAsteroidFragments(
   for (let i = 0; i < count; i++) {
     asteroids.push({
       id: nextAsteroidId++,
-      position: { ...parent.position },
+      position: [parent.position[0], parent.position[1], parent.position[2]],
       direction: randomTangentVec3(parent.position),
       moveSpeed: fragmentSpeed,
       size: fragmentSize,

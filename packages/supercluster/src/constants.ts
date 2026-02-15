@@ -15,7 +15,7 @@ export const GAME_CONST = Object.freeze({
 
   // Ship Physics
   SHIP_SPEED: 0.01, // Angular velocity (rad/tick) = 0.6 rad/sec
-  SHIP_INITIAL_POS: Object.freeze({ x: 0, y: 0, z: 1 }), // Unit vector, front of sphere
+  SHIP_INITIAL_POS: Object.freeze([0, 0, 1] as const), // Unit vector, front of sphere
 
   // Projectile Physics
   PROJECTILE_SPEED: 0.015, // Angular velocity (rad/tick) = 0.9 rad/sec

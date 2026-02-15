@@ -43,6 +43,9 @@ docs/.vitepress/cache
 # AWS setup output
 .aws-setup-output
 
+# Rust
+target
+
 # Personal scratch/backup folder
 onze-e-meia/
 trash/

@@ -1,14 +1,12 @@
-import type { ProjectileState, Vec3 } from "../types";
+import type { Vec3Like } from "gl-matrix";
+
+import type { ProjectileState } from "../types";
 
 import { GAME_CONST } from "../constants";
 import { normalizeVec3, stepSurfaceMotionState } from "./movement";
 
-function createProjectileDirection(aimAngle: number): Vec3 {
-  return {
-    x: Math.sin(aimAngle),
-    y: Math.cos(aimAngle),
-    z: 0,
-  };
+function createProjectileDirection(aimAngle: number): Vec3Like {
+  return [Math.sin(aimAngle), Math.cos(aimAngle), 0];
 }
 
 export function spawnProjectilesFromAim(
@@ -18,11 +16,11 @@ export function spawnProjectilesFromAim(
 ): { projectiles: ProjectileState[]; nextProjectileId: number } {
   const count = Math.max(1, rayCount);
   const spread = GAME_CONST.PROJECTILE_SPREAD_ANGLE;
-  const spawnPosition = {
-    x: GAME_CONST.SHIP_INITIAL_POS.x,
-    y: GAME_CONST.SHIP_INITIAL_POS.y,
-    z: GAME_CONST.SHIP_INITIAL_POS.z,
-  };
+  const spawnPosition: Vec3Like = [
+    GAME_CONST.SHIP_INITIAL_POS[0],
+    GAME_CONST.SHIP_INITIAL_POS[1],
+    GAME_CONST.SHIP_INITIAL_POS[2],
+  ];
 
   const projectiles: ProjectileState[] = [];
 

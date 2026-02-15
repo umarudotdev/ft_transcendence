@@ -194,12 +194,12 @@ dashboard, chat rooms, game replays, i18n
 
 ## Open Questions
 
-| ID | Question                         |
-| :- | :------------------------------- |
-| Q1 | Ship customization (cosmetic)?   |
-| Q2 | Player disconnect grace period?  |
-| Q3 | Replay system for later release? |
-| Q4 | Sound effects toggle?            |
+| ID  | Question                         |
+| :-- | :------------------------------- |
+| Q1  | Ship customization (cosmetic)?   |
+| Q2  | Player disconnect grace period?  |
+| Q3  | Replay system for later release? |
+| Q4  | Sound effects toggle?            |
 
 ---
 

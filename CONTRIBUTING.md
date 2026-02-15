@@ -4,7 +4,8 @@ Development workflow and coding standards for ft_transcendence.
 
 ## Setup
 
-See [README.md](README.md) for installation. **Dev Container recommended** to avoid environment issues.
+See [README.md](README.md) for installation. **Dev Container recommended** to
+avoid environment issues.
 
 ---
 
@@ -24,9 +25,11 @@ git checkout -b type/description
 - Use lowercase letters, numbers, and hyphens only
 - Keep descriptions concise but clear
 
-**Types:** `feat`, `fix`, `hotfix`, `chore`, `refactor`, `docs`, `test`, `release`
+**Types:** `feat`, `fix`, `hotfix`, `chore`, `refactor`, `docs`, `test`,
+`release`
 
-**Examples:** `feat/paddle-physics`, `fix/session-expiry`, `hotfix/security-patch`
+**Examples:** `feat/paddle-physics`, `fix/session-expiry`,
+`hotfix/security-patch`
 
 ### 2. Implement
 
@@ -35,10 +38,10 @@ Follow vertical slice pattern:
 ```
 # API
 apps/api/src/modules/myfeature/
-├── index.ts      # Controller: routes + validation (NO DB calls)
-├── service.ts    # Business logic
-├── repository.ts # Drizzle queries
-└── model.ts      # Types
+├── myfeature.controller.ts   # Routes + validation (NO DB calls)
+├── myfeature.service.ts      # Business logic
+├── myfeature.repository.ts   # Drizzle queries
+└── myfeature.model.ts        # TypeBox schemas
 
 # Web
 apps/web/src/routes/myfeature/+page.svelte
@@ -47,7 +50,8 @@ apps/web/src/lib/components/myfeature/
 
 ### 3. Commit
 
-We follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
+We follow
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
 ```
 <type>(<scope>): <description>
@@ -57,9 +61,11 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 [optional footer(s)]
 ```
 
-**Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `chore`, `ci`
+**Types:** `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`,
+`chore`, `ci`
 
-**Breaking changes:** Add `!` before the colon (e.g., `feat(api)!: remove deprecated endpoint`)
+**Breaking changes:** Add `!` before the colon (e.g.,
+`feat(api)!: remove deprecated endpoint`)
 
 **Examples:**
 
@@ -68,7 +74,8 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
 - `docs: update API documentation`
 - `refactor(auth)!: change session token format`
 
-Commit messages are validated automatically. Non-compliant commits will be rejected.
+Commit messages are validated automatically. Non-compliant commits will be
+rejected.
 
 ### 4. Push & PR
 
@@ -96,7 +103,8 @@ Follow [ElysiaJS Best Practices](https://elysiajs.com/essential/best-practice).
 | Repository | **Only** place for `db.select/insert/update/delete`. |
 | Domain     | Pure TS (game module). No framework imports.         |
 
-**Controllers** — Destructure context properties; never pass the entire `Context` object to services:
+**Controllers** — Destructure context properties; never pass the entire
+`Context` object to services:
 
 ```typescript
 // Good: destructure specific properties
@@ -112,7 +120,8 @@ export const userController = new Elysia({ prefix: "/users" })
 .get("/me", (ctx) => userService.getProfile(ctx))
 ```
 
-**Services** — Use abstract classes with static methods for stateless business logic:
+**Services** — Use abstract classes with static methods for stateless business
+logic:
 
 ```typescript
 abstract class UserService {
@@ -122,7 +131,8 @@ abstract class UserService {
 }
 ```
 
-**Models** (`model.ts`) — TypeBox schemas are the single source of truth for types:
+**Models** (`model.ts`) — TypeBox schemas are the single source of truth for
+types:
 
 ```typescript
 // model.ts — define schemas and derive types together
@@ -165,7 +175,8 @@ export type SignInBody = typeof signInBody.static;
 
 We follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-Update `CHANGELOG.md` with every user-facing change. Add entries under **Unreleased** using these categories:
+Update `CHANGELOG.md` with every user-facing change. Add entries under
+**Unreleased** using these categories:
 
 | Category       | Use for                      |
 | -------------- | ---------------------------- |

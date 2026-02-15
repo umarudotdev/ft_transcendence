@@ -56,6 +56,10 @@ up: ## Start all services with Docker Compose
 up.d: ## Start all services in detached mode
 	docker compose up --build -d
 
+.PHONY: up.watch
+up.watch: ## Start all services with Docker Compose watch mode
+	docker compose up --build --watch
+
 .PHONY: down
 down: ## Stop all services
 	docker compose down

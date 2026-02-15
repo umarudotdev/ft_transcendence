@@ -1,3 +1,5 @@
+import { Vec3 as GlVec3 } from "gl-matrix";
+
 import type { AsteroidState, ProjectileState, ShipState } from "../types";
 
 import {
@@ -5,7 +7,6 @@ import {
   GAMEPLAY_CONST,
   getAsteroidCollisionRadius,
 } from "../constants";
-import { dotVec3 } from "./movement";
 
 // ============================================================================
 // Collision Detection Module
@@ -40,20 +41,6 @@ const PROJECTILE_ANGULAR_RADIUS =
 const SHIP_ANGULAR_RADIUS =
   GAMEPLAY_CONST.SHIP_RADIUS / GAME_CONST.SPHERE_RADIUS;
 
-// /**
-//  * Get angular radius for a projectile
-//  */
-// export function getProjectileAngularRadius(): number {
-//   return PROJECTILE_ANGULAR_RADIUS;
-// }
-
-// /**
-//  * Get angular radius for ship
-//  */
-// export function getShipAngularRadius(): number {
-//   return SHIP_ANGULAR_RADIUS;
-// }
-
 /**
  * Get angular radius for asteroid (with bounds checking and collision padding)
  * @param size - Asteroid size
@@ -69,7 +56,6 @@ export function findProjectileAsteroidHits(
 ): ProjectileAsteroidHit[] {
   if (projectiles.length === 0 || asteroids.length === 0) return [];
 
-  //   const projectileRadius = getProjectileAngularRadius();
   const hits: ProjectileAsteroidHit[] = [];
 
   for (const projectile of projectiles) {
@@ -78,7 +64,7 @@ export function findProjectileAsteroidHits(
       const asteroidPos = asteroid.position;
       const asteroidRadius = getAsteroidAngularRadius(asteroid.size);
       const threshold = Math.cos(PROJECTILE_ANGULAR_RADIUS + asteroidRadius);
-      if (dotVec3(projectilePos, asteroidPos) > threshold) {
+      if (GlVec3.dot(projectilePos, asteroidPos) > threshold) {
         hits.push({ projectileId: projectile.id, asteroidId: asteroid.id });
         break;
       }
@@ -164,13 +150,12 @@ export function findShipAsteroidHit(
 ): number | null {
   if (asteroids.length === 0) return null;
   const shipPos = ship.position;
-  //   const shipRadius = getShipAngularRadius();
 
   for (const asteroid of asteroids) {
     const asteroidPos = asteroid.position;
     const asteroidRadius = getAsteroidAngularRadius(asteroid.size);
     const threshold = Math.cos(SHIP_ANGULAR_RADIUS + asteroidRadius);
-    if (dotVec3(shipPos, asteroidPos) > threshold) {
+    if (GlVec3.dot(shipPos, asteroidPos) > threshold) {
       return asteroid.id;
     }
   }

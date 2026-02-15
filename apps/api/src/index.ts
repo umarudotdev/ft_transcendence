@@ -10,8 +10,6 @@ import { shutdownManager } from "./common/shutdown";
 import { env } from "./env";
 import { authController } from "./modules/auth/auth.controller";
 import { chatController } from "./modules/chat/chat.controller";
-import { gameController } from "./modules/game/game.controller";
-import { GameRuntimeService } from "./modules/game/game.runtime.service";
 import { gamificationController } from "./modules/gamification/gamification.controller";
 import { moderationController } from "./modules/moderation/moderation.controller";
 import { notificationsController } from "./modules/notifications/notifications.controller";
@@ -102,22 +100,16 @@ const app = new Elysia()
       .use(usersController)
       .use(rankingsController)
       .use(gamificationController)
-      .use(gameController)
       .use(notificationsController)
       .use(moderationController)
       .use(chatController)
   )
   .listen(env.PORT);
 
-GameRuntimeService.start();
-
 // Register server with shutdown manager and initialize signal handlers
 if (app.server) {
   shutdownManager.registerServer(app.server);
 }
-shutdownManager.register("supercluster-runtime", () =>
-  GameRuntimeService.stop()
-);
 shutdownManager.initialize();
 
 logger.info({

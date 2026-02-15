@@ -1,9 +1,6 @@
 // ============================================================================
-// SuperCluster - Web App Renderer Module
+// Game - Web App Renderer Module
 // ============================================================================
-
-// Re-export types from shared package
-export * from "@ft/supercluster";
 
 // Renderer classes
 export {

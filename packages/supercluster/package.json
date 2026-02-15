@@ -14,10 +14,9 @@
     "test": "echo 'No tests yet'"
   },
   "dependencies": {
-    "three": "^0.182.0"
+    "gl-matrix": "4.0.0-beta.2"
   },
   "devDependencies": {
-    "@types/three": "^0.182.0",
     "typescript": "^5.9.3"
   }
 }

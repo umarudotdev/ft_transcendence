@@ -1,9 +1,11 @@
 import type { AsteroidState } from "@ft/supercluster";
+import type { Vec3Like } from "gl-matrix";
 
-import { GAME_CONST, GAMEPLAY_CONST, vec3ToThree } from "@ft/supercluster";
+import { GAME_CONST, GAMEPLAY_CONST } from "@ft/supercluster";
 import * as THREE from "three";
 
 import { RENDERER_CONST } from "../constants/renderer";
+import { vec3ToThree } from "../utils/three-conversions";
 
 const EPS = 1e-8;
 const FALLBACK_RADIUS = 1;
@@ -74,8 +76,8 @@ export class AsteroidRenderer {
       return {
         state: {
           ...state,
-          position: { ...state.position },
-          direction: { ...state.direction },
+          position: [...state.position] as Vec3Like,
+          direction: [...state.direction] as Vec3Like,
         },
         position: vec3ToThree(state.position).normalize(),
         direction: vec3ToThree(state.direction).normalize(),

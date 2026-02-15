@@ -1,11 +1,8 @@
-import {
-  GAME_CONST,
-  vec3ToThree,
-  type ProjectileState,
-} from "@ft/supercluster";
+import { GAME_CONST, type ProjectileState } from "@ft/supercluster";
 import * as THREE from "three";
 
 import { RENDERER_CONST } from "../constants/renderer";
+import { vec3ToThree } from "../utils/three-conversions";
 
 const EPS = 1e-8;
 

@@ -1,15 +1,16 @@
+import type { Vec3Like } from "gl-matrix";
+
 import {
   GAME_CONST,
   DEFAULT_GAMEPLAY,
   getTargetHeadingFromInput,
-  threeToVec3,
   type GameState,
   type InputState,
-  type Vec3,
 } from "@ft/supercluster";
 import * as THREE from "three";
 
 import { RENDERER_CONST } from "../constants/renderer";
+import { threeToVec3 } from "../utils/three-conversions";
 import { GameOverScreen } from "./GameOverScreen";
 import { GameStage } from "./GameStage";
 import { InputController } from "./InputController";
@@ -69,9 +70,9 @@ export class GameRenderer {
   // Ship position as unit vector on sphere surface (x² + y² + z² = 1)
   // This tracks where the ship "actually" is on the planet
   private shipPosition = new THREE.Vector3(
-    GAME_CONST.SHIP_INITIAL_POS.x,
-    GAME_CONST.SHIP_INITIAL_POS.y,
-    GAME_CONST.SHIP_INITIAL_POS.z
+    GAME_CONST.SHIP_INITIAL_POS[0],
+    GAME_CONST.SHIP_INITIAL_POS[1],
+    GAME_CONST.SHIP_INITIAL_POS[2]
   );
 
   // Ship heading angle (visual only - not part of authoritative state)
@@ -138,8 +139,11 @@ export class GameRenderer {
     this.stage.initialize();
 
     // Reset ship position to initial position
-    const { x, y, z } = GAME_CONST.SHIP_INITIAL_POS;
-    this.shipPosition.set(x, y, z);
+    this.shipPosition.set(
+      GAME_CONST.SHIP_INITIAL_POS[0],
+      GAME_CONST.SHIP_INITIAL_POS[1],
+      GAME_CONST.SHIP_INITIAL_POS[2]
+    );
     this.planetQuaternion.identity();
     this.stage.world.group.quaternion.copy(this.planetQuaternion);
 
@@ -197,7 +201,11 @@ export class GameRenderer {
 
     // Update internal state from server
     this.shipPosition
-      .set(state.ship.position.x, state.ship.position.y, state.ship.position.z)
+      .set(
+        state.ship.position[0],
+        state.ship.position[1],
+        state.ship.position[2]
+      )
       .normalize();
     this.input.setAimAngle(state.ship.aimAngle);
     this.shipLives = state.ship.lives;
@@ -205,10 +213,10 @@ export class GameRenderer {
     // Authoritative orientation from server state (no reconstruction from position-only).
     this.planetQuaternion
       .set(
-        state.ship.orientation.x,
-        state.ship.orientation.y,
-        state.ship.orientation.z,
-        state.ship.orientation.w
+        state.ship.orientation[0],
+        state.ship.orientation[1],
+        state.ship.orientation[2],
+        state.ship.orientation[3]
       )
       .normalize();
 
@@ -318,7 +326,7 @@ export class GameRenderer {
   /**
    * Get current ship position as a unit vector.
    */
-  getShipPosition(): Vec3 {
+  getShipPosition(): Vec3Like {
     return threeToVec3(this.shipPosition);
   }
 

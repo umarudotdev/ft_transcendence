@@ -1,7 +1,7 @@
 // ============================================================================
 // Simulation Module
 // Physics and collision logic shared between server and client
-// Uses THREE.Vector3 math (works everywhere - no WebGL required)
+// Uses gl-matrix v4 math (works everywhere - no WebGL required)
 // ============================================================================
 
 export * from "./asteroid";

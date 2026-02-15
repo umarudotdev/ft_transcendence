@@ -2,12 +2,8 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import { GameRenderer } from './renderer';
-	import {
-		type GameState,
-		type ClientMessage,
-		type ServerMessage,
-		type InputState
-	} from '@ft/supercluster';
+	import { type GameState, type InputState } from '@ft/supercluster';
+	import type { ClientMessage, ServerMessage } from './protocol';
 
 	// ========================================================================
 	// Props
@@ -165,6 +161,9 @@
 		switch (message.type) {
 			case 'state':
 				gameState = message.state;
+				if (debug && message.state.tick % 60 === 0) {
+					console.log('[SC] state tick:', message.state.tick, 'asteroids:', message.state.asteroids.length, 'renderer:', !!renderer);
+				}
 				if (renderer) {
 					renderer.updateState(message.state);
 				}
@@ -214,6 +213,7 @@
 	}
 
 	function handleKeyDown(event: KeyboardEvent): void {
+		if (debug) console.log('[SC] keydown:', event.key);
 		const key = event.key.toLowerCase();
 		let changed = false;
 

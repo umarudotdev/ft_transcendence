@@ -61,6 +61,7 @@
     "eslint-plugin-storybook": "^10.1.11",
     "eslint-plugin-svelte": "^3.13.1",
     "formsnap": "^2.0.1",
+    "gl-matrix": "4.0.0-beta.2",
     "globals": "^16.5.0",
     "layerchart": "2.0.0-next.43",
     "mdsvex": "^0.12.6",

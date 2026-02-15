@@ -22,7 +22,7 @@ dev: ## Start development servers (requires Docker for db)
 	docker compose up db -d
 	@echo "Waiting for database..."
 	@sleep 2
-	$(MAKE) -j2 dev.api dev.web
+	$(MAKE) -j3 dev.api dev.web dev.game
 
 .PHONY: dev.api
 dev.api: ## Start API development server
@@ -31,6 +31,10 @@ dev.api: ## Start API development server
 .PHONY: dev.web
 dev.web: ## Start web development server
 	bun run dev:web
+
+.PHONY: dev.game
+dev.game: ## Start game server
+	bun run dev:game
 
 ### Build
 

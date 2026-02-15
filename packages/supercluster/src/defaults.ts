@@ -71,12 +71,12 @@ export const POWER_UP_PROGRESSION = Object.freeze({
 // ========================================================================
 export function createInitialShipState(): ShipState {
   return {
-    position: {
-      x: GAME_CONST.SHIP_INITIAL_POS.x,
-      y: GAME_CONST.SHIP_INITIAL_POS.y,
-      z: GAME_CONST.SHIP_INITIAL_POS.z,
-    },
-    orientation: { x: 0, y: 0, z: 0, w: 1 },
+    position: [
+      GAME_CONST.SHIP_INITIAL_POS[0],
+      GAME_CONST.SHIP_INITIAL_POS[1],
+      GAME_CONST.SHIP_INITIAL_POS[2],
+    ],
+    orientation: [0, 0, 0, 1],
     aimAngle: 0,
     lives: DEFAULT_GAMEPLAY.shipLives,
     invincible: DEFAULT_GAMEPLAY.shipInvincible,

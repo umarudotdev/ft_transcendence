@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted (supersedes Effect evaluation)
 
 ## Context and Problem Statement
 

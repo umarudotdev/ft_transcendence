@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+Accepted (supersedes Effect evaluation in
+[ADR 0009: Effect for Service Errors](./0009-use-effect-for-service-errors.md))
 
 ## Context and Problem Statement
 

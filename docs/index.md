@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: "ft_transcendence"
-  text: "Real-time Pong Platform"
-  tagline: Multiplayer gameplay, chat, and 2FA for the 42 curriculum
+  text: "Real-time Bullet Hell Platform"
+  tagline: Multiplayer shoot 'em up with ranked matchmaking, chat, and 2FA for the 42 curriculum
   actions:
     - theme: brand
       text: Get Started

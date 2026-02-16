@@ -27,10 +27,10 @@ type safety.
 
 ## Milestone 3: Real-Time
 
-**Goal:** Two players can play Pong on different computers.
+**Goal:** Two players can play a bullet hell match on different computers.
 
-- [ ] Game loop at 60 ticks/s (server-authoritative)
-- [ ] WebSocket game state synchronization
+- [ ] Colyseus game room with 60 ticks/s game loop
+- [ ] Automatic state synchronization via Colyseus Schema
 - [ ] Canvas rendering with client-side prediction
 - [ ] Basic chat with direct messages
 

@@ -2,14 +2,15 @@
 
 | Project          | Version | Status |
 | :--------------- | :------ | :----- |
-| ft_transcendence | 1.1     | Draft  |
+| ft_transcendence | 2.0     | Draft  |
 
 ---
 
 ## Executive Summary
 
-Real-time Pong platform for 42 students with multiplayer gameplay, chat, and
-2FA. Target: **14 points** using modern TypeScript stack.
+Real-time bullet hell shoot 'em up platform for 42 students with multiplayer
+gameplay, ranked matchmaking, chat, and 2FA. Target: **14 points** using
+TypeScript stack (ElysiaJS + Colyseus + SvelteKit).
 
 ## Success Metrics
 
@@ -17,6 +18,7 @@ Real-time Pong platform for 42 students with multiplayer gameplay, chat, and
 | :--------------- | :------------------- |
 | Evaluation Score | >= 14 points         |
 | Game Latency     | < 50ms local network |
+| Tick Rate        | 60Hz stable          |
 | Concurrent Games | 10 simultaneous      |
 | Page Load (SSR)  | < 2 seconds          |
 
@@ -48,36 +50,57 @@ Real-time Pong platform for 42 students with multiplayer gameplay, chat, and
 
 ### Gameplay (Sprint 2-4)
 
-| ID    | Story                                          | Priority   |
-| :---- | :--------------------------------------------- | :--------- |
-| US-07 | Matchmaking queue (30s timeout)                | Must Have  |
-| US-08 | Play vs AI (100ms delay, ±20px error)          | Must Have  |
-| US-09 | Responsive paddle controls (client prediction) | Must Have  |
-| US-10 | Final score modal, first to 11 wins            | Must Have  |
-| US-11 | Spectator mode                                 | Could Have |
+| ID    | Story                                     | Priority   |
+| :---- | :---------------------------------------- | :--------- |
+| US-07 | Matchmaking queue (rating-based)          | Must Have  |
+| US-08 | Play vs AI (configurable difficulty)      | Must Have  |
+| US-09 | 8-directional movement with focus mode    | Must Have  |
+| US-10 | Use abilities (Q, E, R)                   | Must Have  |
+| US-11 | Win by depleting opponent lives (3 lives) | Must Have  |
+| US-12 | View Elo rating and tier                  | Must Have  |
+| US-13 | Spectator mode                            | Could Have |
 
 ### Social & Chat (Sprint 3-4)
 
 | ID    | Story                          | Priority    |
 | :---- | :----------------------------- | :---------- |
-| US-12 | Direct messages (WebSocket)    | Should Have |
-| US-13 | Block users                    | Should Have |
-| US-14 | Invite friends to private game | Should Have |
+| US-14 | Direct messages (WebSocket)    | Should Have |
+| US-15 | Block users                    | Should Have |
+| US-16 | Invite friends to private game | Should Have |
 
 ---
 
 ## Game Specs
 
-| Property      | Value                  |
-| :------------ | :--------------------- |
-| Canvas        | 800×600px (responsive) |
-| Paddle        | 10×100px               |
-| Ball          | 10×10px, 5-15 px/tick  |
-| Win Condition | First to 11            |
-| Tick Rate     | 60/second              |
+| Property    | Value                        |
+| :---------- | :--------------------------- |
+| Genre       | Bullet hell / shoot 'em up   |
+| Perspective | Top-down                     |
+| Canvas      | 800×600px (responsive)       |
+| Player Ship | 32×32px visual, 6×6px hitbox |
+| Tick Rate   | 60/second                    |
+| Network     | WebSocket at 60Hz            |
 
-**Network:** WebSocket at 60Hz. Client sends input, server broadcasts
-authoritative state.
+### Movement
+
+| Mode   | Speed    | Hitbox  |
+| :----- | :------- | :------ |
+| Normal | 300 px/s | Hidden  |
+| Focus  | 150 px/s | Visible |
+
+### Combat
+
+| Action       | Input | Cooldown | Description                  |
+| :----------- | :---- | :------- | :--------------------------- |
+| Primary Fire | Space | None     | Continuous projectile stream |
+| Ability 1    | Q     | 8s       | Dash / Shield / Special shot |
+| Ability 2    | E     | 12s      | AoE / Bomb / Utility         |
+| Ultimate     | R     | Charged  | Powerful attack (60s charge) |
+
+### Win Condition
+
+- **Last Standing:** 3 lives per player, last alive wins
+- Elo rating adjustment based on match outcome
 
 ---
 
@@ -101,13 +124,27 @@ authoritative state.
 | GET       | `/api/users/:id`       | User by ID           |
 | GET       | `/api/users/:id/stats` | Game statistics      |
 
-### Game
+### Matchmaking
 
-| Method      | Path              | Description            |
-| :---------- | :---------------- | :--------------------- |
-| POST/DELETE | `/api/game/queue` | Join/leave matchmaking |
-| POST        | `/api/game/ai`    | Start AI game          |
-| WS          | `/api/game/ws`    | Game state WebSocket   |
+| Method      | Path                     | Description          |
+| :---------- | :----------------------- | :------------------- |
+| POST/DELETE | `/api/matchmaking/queue` | Join/leave queue     |
+| POST        | `/api/matchmaking/ai`    | Start AI game        |
+| WS          | `/api/matchmaking/ws`    | Queue status updates |
+
+### Game (Colyseus Server)
+
+| Method | Path                         | Description                    |
+| :----- | :--------------------------- | :----------------------------- |
+| WS     | `ws://game:3001`             | Colyseus room WebSocket        |
+| POST   | `/internal/matches/complete` | Record result (internal)       |
+
+### Rankings
+
+| Method | Path                    | Description       |
+| :----- | :---------------------- | :---------------- |
+| GET    | `/api/rankings`         | Leaderboard       |
+| GET    | `/api/rankings/:userId` | User rank & stats |
 
 ### Social
 
@@ -119,9 +156,22 @@ authoritative state.
 
 ---
 
+## Ranked System
+
+| Tier     | Rating Range |
+| :------- | :----------- |
+| Bronze   | 0 - 999      |
+| Silver   | 1000 - 1499  |
+| Gold     | 1500 - 1999  |
+| Platinum | 2000+        |
+
+**Placement:** 10 matches before tier assignment
+
+---
+
 ## Non-Functional Requirements
 
-**Performance:** 60 ticks/s game loop, <50ms WebSocket RTT, <100ms DB queries
+**Performance:** 60Hz game loop, <50ms WebSocket RTT, <100ms DB queries
 
 **Security:** HTTPS only, HttpOnly cookies, TypeBox validation, CSRF protection,
 rate limiting (100 req/min on auth)
@@ -134,22 +184,21 @@ rate limiting (100 req/min on auth)
 
 ---
 
-## Out of Scope
+## Out of Scope (v2.0)
 
-Mobile app, tournaments, power-ups, voice chat, leaderboards, email auth, admin
+Mobile app, tournaments, power-ups/items, voice chat, email auth, admin
 dashboard, chat rooms, game replays, i18n
 
 ---
 
 ## Open Questions
 
-| ID  | Question                     |
-| :-- | :--------------------------- |
-| Q1  | Keyboard AND mouse controls? |
-| Q2  | Player disconnect handling?  |
-| Q3  | Match history pagination?    |
-| Q4  | Should blocked users know?   |
-| Q5  | Game invite rate limiting?   |
+| ID | Question                         |
+| :- | :------------------------------- |
+| Q1 | Ship customization (cosmetic)?   |
+| Q2 | Player disconnect grace period?  |
+| Q3 | Replay system for later release? |
+| Q4 | Sound effects toggle?            |
 
 ---
 

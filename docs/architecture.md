@@ -1,66 +1,137 @@
 # Architecture
 
-Technical patterns and protocols for ft_transcendence.
+Technical patterns and protocols for ft_transcendence bullet hell game.
 
 > **Rationale:** See [ADRs](./decisions/0001-use-bun-elysia-sveltekit-stack) for
-> decision records.
+> decision records, especially
+> [ADR 0011](./decisions/0011-use-colyseus-for-game-server) for the Colyseus
+> game server decision.
 
 ---
 
 ## 1. Tech Stack
 
-| Component    | Choice                   | Why                                           |
-| ------------ | ------------------------ | --------------------------------------------- |
-| **Runtime**  | Bun                      | Built-in TypeScript, unified toolchain        |
-| **Monorepo** | Bun Workspaces           | Dependency linking without TurboRepo overhead |
-| **Frontend** | SvelteKit                | SSR (1pt), smaller bundles, simple stores     |
-| **Backend**  | ElysiaJS                 | Bun-optimized, Eden Treaty type safety        |
-| **Database** | PostgreSQL + Drizzle     | Relational integrity, TypeScript-native ORM   |
-| **Auth**     | Arctic + Oslo            | 42 OAuth + TOTP, database sessions            |
-| **Styling**  | Tailwind + Shadcn-Svelte | Utility CSS, accessible primitives            |
-| **Tooling**  | Biome + Lefthook         | Fast formatting, parallel pre-commit          |
-| **Infra**    | Docker + Nginx           | HTTPS termination, single-command deploy      |
+| Component       | Choice                       | Why                                           |
+| --------------- | ---------------------------- | --------------------------------------------- |
+| **Runtime**     | Bun                          | Single runtime for API, game server, frontend |
+| **Monorepo**    | Bun Workspaces               | Dependency linking without TurboRepo overhead |
+| **Frontend**    | SvelteKit                    | SSR (1pt), smaller bundles, simple stores     |
+| **API Server**  | ElysiaJS                     | Bun-optimized, Eden Treaty type safety        |
+| **Game Server** | Colyseus                     | Room-based multiplayer, automatic state sync  |
+| **Database**    | PostgreSQL + Drizzle         | Relational integrity, TypeScript-native ORM   |
+| **Auth**        | Arctic + Oslo                | 42 OAuth + TOTP, database sessions            |
+| **Styling**     | Tailwind + Shadcn-Svelte     | Utility CSS, accessible primitives            |
+| **Tooling**     | Biome + Lefthook             | Fast formatting, parallel pre-commit          |
+| **Infra**       | Docker + Nginx               | HTTPS termination, single-command deploy      |
 
 ---
 
-## 2. Directory Structure
+## 2. Hybrid Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                           Frontend (SvelteKit)                       │
+│                                                                      │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
+│  │  Auth Pages │  │   Lobby     │  │ Game Canvas │  │    Chat     │ │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘ │
+└─────────┼────────────────┼────────────────┼────────────────┼────────┘
+          │                │                │                │
+          │ HTTP           │ HTTP           │ Colyseus SDK   │ WebSocket
+          │                │                │ (WebSocket)    │
+          ▼                ▼                │                ▼
+┌─────────────────────────────────────┐    │    ┌─────────────────────┐
+│        ElysiaJS API Server          │    │    │ Colyseus Game Server│
+│                                     │    │    │                     │
+│  • Auth (OAuth, 2FA, sessions)      │    │    │  • Game rooms       │
+│  • User management                  │◄───┼───►│  • 60Hz game loop   │
+│  • Matchmaking queue                │    │    │  • Physics/collision│
+│  • Rankings & Elo                   │    │    │  • Combat & abilities│
+│  • Chat system                      │    │    │  • AI patterns      │
+│  • Match history                    │    │    │  • State sync       │
+└──────────────┬──────────────────────┘    │    └──────────┬──────────┘
+               │                           │               │
+               │           Internal API    │               │
+               │    (match complete)       │               │
+               │    ◄──────────────────────┼───────────────┤
+               │                           │               │
+               ▼                           │               ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                        PostgreSQL Database                           │
+│                                                                      │
+│   users │ sessions │ matches │ game_sessions │ matchmaking_queue    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Communication Flow
+
+1. **Player clicks "Find Match"**
+   - Frontend → ElysiaJS `POST /api/matchmaking/queue`
+
+2. **ElysiaJS pairs players, returns room ID**
+   - ElysiaJS → Frontend (WebSocket: `match_found`, `roomId`)
+
+3. **Players join Colyseus room**
+   - Frontend → Colyseus (`client.joinById(roomId)`)
+
+4. **Game runs at 60Hz**
+   - Colyseus Room handles all game logic
+   - Colyseus → Frontend (state patches @ 60Hz)
+   - Frontend → Colyseus (`room.send("input", keys)`)
+
+5. **Game ends**
+   - Colyseus Room → ElysiaJS `POST /internal/matches/complete`
+   - ElysiaJS updates ratings, achievements, stats
+
+---
+
+## 3. Directory Structure
 
 ```text
 ft_transcendence/
-├── .devcontainer/           # Dev Container config
-├── .github/                 # CI workflows
 ├── apps/
-│   ├── api/
+│   ├── api/                      # ElysiaJS backend
 │   │   └── src/
-│   │       ├── common/      # Shared guards, decorators, types
-│   │       ├── db/          # Drizzle config, schema, migrations
-│   │       ├── modules/     # <-- VERTICAL SLICES
-│   │       │   ├── auth/    # OAuth, 2FA, sessions
-│   │       │   ├── chat/    # WebSocket chat
-│   │       │   ├── game/    # Game engine (see Hybrid Architecture)
-│   │       │   └── users/   # Profile, friends, stats
-│   │       └── index.ts     # App entry point
+│   │       ├── common/           # Shared guards, decorators, types
+│   │       ├── db/               # Drizzle config, schema, migrations
+│   │       └── modules/          # Vertical slices
+│   │           ├── auth/         # OAuth, 2FA, sessions
+│   │           ├── chat/         # WebSocket chat
+│   │           ├── matchmaking/  # Queue management
+│   │           ├── rankings/     # Elo, leaderboards
+│   │           └── users/        # Profile, friends, stats
 │   │
-│   └── web/
+│   ├── game/                     # Colyseus game server
+│   │   └── src/
+│   │       ├── index.ts          # Server entry point
+│   │       ├── config.ts         # Configuration
+│   │       ├── rooms/
+│   │       │   └── GameRoom.ts   # Game room handler
+│   │       ├── schemas/
+│   │       │   └── GameState.ts  # Colyseus Schema definitions
+│   │       ├── systems/          # Movement, collision, combat
+│   │       └── ai/              # AI patterns
+│   │
+│   └── web/                      # SvelteKit frontend
 │       └── src/
 │           ├── lib/
-│           │   ├── api.ts       # Eden Treaty client
-│           │   ├── stores/      # Svelte stores (game state, user, etc.)
-│           │   └── components/  # Shadcn-Svelte UI components
-│           └── routes/          # SvelteKit pages
+│           │   ├── api.ts        # Eden Treaty client
+│           │   ├── stores/       # Svelte stores
+│           │   ├── components/   # UI components
+│           │   └── game/         # Game renderer, input
+│           └── routes/           # SvelteKit pages
 │
-├── packages/                # Shared types/configs (if needed)
+├── packages/                     # Shared types/configs
 ├── biome.json
-├── lefthook.yml
 ├── compose.yaml
-└── package.json             # Workspaces definition
+└── package.json
 ```
 
 ---
 
-## 3. Backend Architecture
+## 4. Backend Patterns
 
-### Vertical Slice Pattern
+### ElysiaJS - Vertical Slice Pattern
 
 Each feature module contains all its layers:
 
@@ -69,27 +140,30 @@ modules/auth/
 ├── auth.controller.ts    # HTTP + validation (TypeBox). NO DB calls.
 ├── auth.service.ts       # Business logic (framework-agnostic)
 ├── auth.repository.ts    # Drizzle queries (ONLY DB access point)
-└── auth.dto.ts           # Types
+└── auth.model.ts         # TypeBox schemas
 ```
 
-### Game Module (Hexagonal)
+### Colyseus - Room-Based Game Server
 
 ```
-modules/game/
-├── domain/              # Pure TS - no framework imports, unit testable
-│   ├── PongEngine.ts    # Physics, game loop, scoring
-│   ├── Ball.ts
-│   ├── Paddle.ts
-│   └── AIPlayer.ts      # Bot with reaction delay
-├── game.controller.ts   # HTTP: queue, matchmaking
-├── game.service.ts      # Orchestration
-├── game.gateway.ts      # WebSocket handler
-└── game.repository.ts   # Match history persistence
+apps/game/src/
+├── rooms/
+│   └── GameRoom.ts       # Room lifecycle (onCreate, onJoin, onMessage, onLeave)
+├── schemas/
+│   └── GameState.ts      # Schema with auto-sync (players, bullets, effects)
+├── systems/
+│   ├── movement.ts       # Player movement, focus mode
+│   ├── collision.ts      # Spatial hash, hitbox detection
+│   ├── combat.ts         # Damage, HP, lives
+│   └── abilities.ts      # Cooldowns, effects
+└── ai/
+    ├── opponent.ts        # AI controller
+    └── patterns.ts        # Bullet patterns
 ```
 
 ---
 
-## 4. Authentication
+## 5. Authentication
 
 Database sessions (not JWT) for immediate revocation.
 
@@ -108,19 +182,30 @@ Database sessions (not JWT) for immediate revocation.
 
 ---
 
-## 5. WebSocket Protocols
+## 6. WebSocket Protocols
 
-### Game (`wss://localhost/api/game/ws?gameId={id}`)
+### Game (Colyseus Room)
 
 ```typescript
-// Client → Server
-{ type: "input", direction: "up" | "down" | "none" }
+// Client → Server (room.send)
+{ type: "input", keys: { up: bool, down: bool, left: bool, right: bool, focus: bool, fire: bool } }
+{ type: "ability", slot: 1 | 2 | 3 }  // Q, E, R
 { type: "ready" }
 
-// Server → Client (60 ticks/s)
-{ type: "state", ball: {x, y}, paddles: [{y}, {y}], score: [p1, p2] }
+// Server → Client (automatic state sync via Colyseus Schema patches @ 60Hz)
+// GameState schema:
+{
+  players: MapSchema<PlayerSchema>,   // id, x, y, hp, lives, cooldowns
+  bullets: ArraySchema<BulletSchema>, // id, x, y, owner
+  effects: ArraySchema<EffectSchema>, // type, x, y
+  tick: number,
+}
+
+// Server → Client (room broadcast)
 { type: "countdown", seconds: 3 }
-{ type: "gameOver", winner: "player1" | "player2" }
+{ type: "hit", playerId, damage }
+{ type: "death", playerId, livesRemaining }
+{ type: "gameOver", winner: playerId, stats }
 ```
 
 ### Chat (`wss://localhost/api/chat/ws`)
@@ -136,7 +221,7 @@ Database sessions (not JWT) for immediate revocation.
 
 ---
 
-## 6. Frontend Integration
+## 7. Frontend Integration
 
 ### Eden Treaty Client
 
@@ -148,7 +233,31 @@ import type { App } from "../../../api/src/index";
 export const api = treaty<App>("https://localhost/api");
 
 // Full autocomplete from backend types
-const { data, error } = await api.users.me.get();
+const { data, error } = await api.matchmaking.queue.post();
+```
+
+### Game Store Pattern
+
+```typescript
+// apps/web/src/lib/stores/game.svelte.ts
+import { Client } from "colyseus.js";
+
+class GameStore {
+  #room: Room<GameState> | null = null;
+  state = $state<GameState | null>(null);
+
+  async connect(roomId: string) {
+    const client = new Client("ws://localhost:3001");
+    this.#room = await client.joinById<GameState>(roomId);
+    this.#room.onStateChange((state) => {
+      this.state = state;
+    });
+  }
+
+  sendInput(keys: InputState) {
+    this.#room?.send("input", keys);
+  }
+}
 ```
 
 ### State Management
@@ -157,19 +266,22 @@ const { data, error } = await api.users.me.get();
 | ------------ | ------------------------------------- |
 | Server data  | SvelteKit `load` functions            |
 | Client state | Svelte stores (`writable`, `derived`) |
-| Real-time    | WebSocket → write to stores           |
+| Game state   | Colyseus state sync → game store      |
 | Forms        | Superforms + Zod                      |
 
 ---
 
-## 7. Database Schema
+## 8. Database Schema
 
 ```mermaid
 erDiagram
     users ||--o{ sessions : has
+    users ||--o{ game_session_players : joins
     users ||--o{ matches : plays
     users ||--o{ messages : sends
-    users ||--o{ friendships : has
+
+    game_sessions ||--o{ game_session_players : has
+    game_sessions ||--o{ matches : records
 
     users {
         serial id PK
@@ -178,6 +290,7 @@ erDiagram
         text avatar_url
         text totp_secret
         boolean totp_enabled
+        integer rating
         timestamp created_at
     }
 
@@ -187,70 +300,53 @@ erDiagram
         timestamp expires_at
     }
 
+    game_sessions {
+        uuid id PK
+        text mode
+        jsonb config
+        text state
+        text room_id
+        timestamp created_at
+        timestamp started_at
+        timestamp ended_at
+    }
+
+    game_session_players {
+        serial id PK
+        uuid session_id FK
+        integer user_id FK
+        integer team
+        boolean ready
+    }
+
+    matchmaking_queue {
+        serial id PK
+        integer user_id FK UK
+        text mode
+        integer rating
+        timestamp queued_at
+    }
+
     matches {
         serial id PK
-        integer player1_id FK
-        integer player2_id FK
-        integer player1_score
-        integer player2_score
+        uuid session_id FK
+        integer winner_id FK
+        jsonb game_data
         timestamp played_at
     }
-
-    messages {
-        serial id PK
-        integer sender_id FK
-        integer recipient_id FK
-        text content
-        timestamp created_at
-    }
-
-    friendships {
-        serial id PK
-        integer user_id FK
-        integer friend_id FK
-        text status
-    }
 ```
-
----
-
-## 8. Error Handling
-
-### Backend (Elysia)
-
-```typescript
-import { error } from "elysia";
-
-// In controllers - throws HTTP errors
-if (!user) throw error(404, "User not found");
-if (!authorized) throw error(403, "Forbidden");
-// TypeBox validation → 400 automatically
-```
-
-### Frontend (Eden Treaty)
-
-```typescript
-const { data, error } = await api.users.me.get();
-if (error) {
-  toast.error(error.value.message); // error.status available
-}
-```
-
-### WebSocket
-
-- Connection drop → exponential backoff reconnect
-- Game desync → request full state from server
 
 ---
 
 ## 9. Commands
 
-| Task          | Command                                 |
-| ------------- | --------------------------------------- |
-| Start stack   | `docker compose up --build`             |
-| Install deps  | `bun install`                           |
-| Migrations    | `cd apps/api && bun run migrate`        |
-| Format        | `bun run biome check --apply .`         |
-| Type check    | `bun run tsc --noEmit` (api)            |
-| Type check    | `cd apps/web && bun run check`          |
-| Add component | `cd apps/web && bunx shadcn-svelte add` |
+| Task              | Command                               |
+| ----------------- | ------------------------------------- |
+| Start stack       | `docker compose up --build`           |
+| Install deps      | `bun install`                         |
+| API migrations    | `cd apps/api && bun run migrate`      |
+| Build game server | `cd apps/game && bun run build`       |
+| Run game server   | `cd apps/game && bun run dev`         |
+| Format            | `bun x ultracite fix`                 |
+| Type check API    | `cd apps/api && bun run tsc --noEmit` |
+| Type check Web    | `cd apps/web && bun run check`        |

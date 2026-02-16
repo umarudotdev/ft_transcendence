@@ -1,4 +1,4 @@
-import { Vec3 as GlVec3 } from "gl-matrix";
+import { Vec3 } from "gl-matrix";
 
 import type { AsteroidState, ProjectileState, ShipState } from "../types";
 
@@ -7,11 +7,6 @@ import {
   GAMEPLAY_CONST,
   getAsteroidCollisionRadius,
 } from "../constants";
-
-// ============================================================================
-// Collision Detection Module
-// Pure collision detection using angular distance on sphere surface
-// ============================================================================
 
 export interface ProjectileAsteroidHit {
   projectileId: number;
@@ -31,20 +26,12 @@ export interface ProjectileAsteroidCollisionResolution {
   events: ProjectileAsteroidCollisionEvent[];
 }
 
-// ============================================================================
-// Angular Radius Helpers
-// Convert visual/physics radii to angular radii on sphere surface
-// ============================================================================
-
 const PROJECTILE_ANGULAR_RADIUS =
   GAMEPLAY_CONST.PROJECTILE_RADIUS / GAME_CONST.SPHERE_RADIUS;
 const SHIP_ANGULAR_RADIUS =
   GAMEPLAY_CONST.SHIP_RADIUS / GAME_CONST.SPHERE_RADIUS;
 
-/**
- * Get angular radius for asteroid (with bounds checking and collision padding)
- * @param size - Asteroid size
- */
+/** Get angular radius for asteroid (with bounds checking and collision padding) */
 export function getAsteroidAngularRadius(size: number): number {
   const clampedSize = Math.max(1, Math.min(4, size)) as 1 | 2 | 3 | 4;
   return getAsteroidCollisionRadius(clampedSize) / GAME_CONST.SPHERE_RADIUS;
@@ -64,7 +51,7 @@ export function findProjectileAsteroidHits(
       const asteroidPos = asteroid.position;
       const asteroidRadius = getAsteroidAngularRadius(asteroid.size);
       const threshold = Math.cos(PROJECTILE_ANGULAR_RADIUS + asteroidRadius);
-      if (GlVec3.dot(projectilePos, asteroidPos) > threshold) {
+      if (Vec3.dot(projectilePos, asteroidPos) > threshold) {
         hits.push({ projectileId: projectile.id, asteroidId: asteroid.id });
         break;
       }
@@ -76,9 +63,8 @@ export function findProjectileAsteroidHits(
 
 /**
  * Resolve projectile-vs-asteroid collisions as a pure state transition.
- * - consumes projectile hits
- * - applies asteroid damage gates/timers
- * - returns typed gameplay events for runtime side effects
+ * Consumes projectile hits, applies asteroid damage gates/timers,
+ * and returns typed gameplay events for runtime side effects.
  */
 export function resolveProjectileAsteroidCollisions(
   projectiles: readonly ProjectileState[],
@@ -155,7 +141,7 @@ export function findShipAsteroidHit(
     const asteroidPos = asteroid.position;
     const asteroidRadius = getAsteroidAngularRadius(asteroid.size);
     const threshold = Math.cos(SHIP_ANGULAR_RADIUS + asteroidRadius);
-    if (GlVec3.dot(shipPos, asteroidPos) > threshold) {
+    if (Vec3.dot(shipPos, asteroidPos) > threshold) {
       return asteroid.id;
     }
   }

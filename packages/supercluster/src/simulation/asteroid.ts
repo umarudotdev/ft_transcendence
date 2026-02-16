@@ -1,9 +1,10 @@
+import type { Vec3Like } from "gl-matrix";
+
 import type { AsteroidState, InputState } from "../types";
 
 import { GAME_CONST } from "../constants";
 import {
   applyInverseShipInputTransform,
-  normalizeVec3,
   randomTangentVec3,
   randomUnitVec3,
   stepSurfaceMotionState,
@@ -76,8 +77,8 @@ export function stepAsteroids(
 
     stepped.push({
       ...asteroid,
-      position: normalizeVec3(worldMotion.position),
-      direction: normalizeVec3(worldMotion.direction),
+      position: worldMotion.position,
+      direction: worldMotion.direction,
     });
   }
 
@@ -103,7 +104,7 @@ export function createAsteroidFragments(
   for (let i = 0; i < count; i++) {
     asteroids.push({
       id: nextAsteroidId++,
-      position: [parent.position[0], parent.position[1], parent.position[2]],
+      position: [...parent.position] as Vec3Like,
       direction: randomTangentVec3(parent.position),
       moveSpeed: fragmentSpeed,
       size: fragmentSize,
@@ -126,10 +127,7 @@ export function stepAsteroidHitLifecycle(
   nextAsteroidId: number
 ): { asteroids: AsteroidState[]; nextAsteroidId: number } {
   if (asteroids.length === 0) {
-    return {
-      asteroids: [],
-      nextAsteroidId,
-    };
+    return { asteroids: [], nextAsteroidId };
   }
 
   const survivors: AsteroidState[] = [];

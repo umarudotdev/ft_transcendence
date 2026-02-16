@@ -1,15 +1,9 @@
-import { Quat as GlQuat, type QuatLike, type Vec3Like } from "gl-matrix";
+import { Quat, type QuatLike } from "gl-matrix";
 
 import type { InputState, ShipState } from "../types";
 
 import { GAME_CONST } from "../constants";
-
-const EPS = 1e-8;
-const WORLD_X_AXIS: Vec3Like = [1, 0, 0];
-const WORLD_Y_AXIS: Vec3Like = [0, 1, 0];
-
-// Scratch quaternion to avoid per-call allocations
-const _q1 = GlQuat.create();
+import { EPS, WORLD_X_AXIS, WORLD_Y_AXIS, _q1 } from "./shared";
 
 export type ShipCollisionEvent = "none" | "ship_damaged" | "ship_destroyed";
 
@@ -29,7 +23,7 @@ export function stepShipOrientationState(
   speedRadPerTick: number = GAME_CONST.SHIP_SPEED
 ): { moved: boolean; orientation: QuatLike } {
   const orientation = [...shipOrientation] as QuatLike;
-  GlQuat.normalize(orientation, orientation);
+  Quat.normalize(orientation, orientation);
 
   let pitchAngle = 0;
   let yawAngle = 0;
@@ -41,24 +35,20 @@ export function stepShipOrientationState(
   let moved = false;
 
   if (Math.abs(pitchAngle) > EPS) {
-    GlQuat.setAxisAngle(_q1, WORLD_X_AXIS, pitchAngle);
-    // premultiply: orientation = _q1 * orientation
-    GlQuat.multiply(orientation, _q1, orientation);
+    Quat.setAxisAngle(_q1, WORLD_X_AXIS, pitchAngle);
+    Quat.multiply(orientation, _q1, orientation);
     moved = true;
   }
 
   if (Math.abs(yawAngle) > EPS) {
-    GlQuat.setAxisAngle(_q1, WORLD_Y_AXIS, yawAngle);
-    GlQuat.multiply(orientation, _q1, orientation);
+    Quat.setAxisAngle(_q1, WORLD_Y_AXIS, yawAngle);
+    Quat.multiply(orientation, _q1, orientation);
     moved = true;
   }
 
-  if (moved) GlQuat.normalize(orientation, orientation);
+  if (moved) Quat.normalize(orientation, orientation);
 
-  return {
-    moved,
-    orientation,
-  };
+  return { moved, orientation };
 }
 
 /**

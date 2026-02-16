@@ -3,7 +3,7 @@ import type { Vec3Like } from "gl-matrix";
 import type { ProjectileState } from "../types";
 
 import { GAME_CONST } from "../constants";
-import { normalizeVec3, stepSurfaceMotionState } from "./movement";
+import { stepSurfaceMotionState } from "./movement";
 
 function createProjectileDirection(aimAngle: number): Vec3Like {
   return [Math.sin(aimAngle), Math.cos(aimAngle), 0];
@@ -16,19 +16,16 @@ export function spawnProjectilesFromAim(
 ): { projectiles: ProjectileState[]; nextProjectileId: number } {
   const count = Math.max(1, rayCount);
   const spread = GAME_CONST.PROJECTILE_SPREAD_ANGLE;
-  const spawnPosition: Vec3Like = [
-    GAME_CONST.SHIP_INITIAL_POS[0],
-    GAME_CONST.SHIP_INITIAL_POS[1],
-    GAME_CONST.SHIP_INITIAL_POS[2],
-  ];
+  // SHIP_INITIAL_POS is [0,0,1] — already unit length, just copy it
+  const spawnPosition: Vec3Like = [...GAME_CONST.SHIP_INITIAL_POS] as Vec3Like;
 
   const projectiles: ProjectileState[] = [];
 
   if (count === 1) {
     projectiles.push({
       id: nextProjectileId++,
-      position: normalizeVec3(spawnPosition),
-      direction: normalizeVec3(createProjectileDirection(aimAngle)),
+      position: spawnPosition,
+      direction: createProjectileDirection(aimAngle),
       ageTicks: 0,
     });
   } else {
@@ -37,8 +34,8 @@ export function spawnProjectilesFromAim(
       const offset = -halfSpread + i * spread;
       projectiles.push({
         id: nextProjectileId++,
-        position: normalizeVec3(spawnPosition),
-        direction: normalizeVec3(createProjectileDirection(aimAngle + offset)),
+        position: [...spawnPosition] as Vec3Like,
+        direction: createProjectileDirection(aimAngle + offset),
         ageTicks: 0,
       });
     }
@@ -67,8 +64,8 @@ export function stepProjectiles(
 
     stepped.push({
       ...projectile,
-      position: normalizeVec3(steppedMotion.position),
-      direction: normalizeVec3(steppedMotion.direction),
+      position: steppedMotion.position,
+      direction: steppedMotion.direction,
       ageTicks,
     });
   }

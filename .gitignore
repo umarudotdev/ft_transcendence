@@ -42,3 +42,6 @@ docs/.vitepress/cache
 
 # AWS setup output
 .aws-setup-output
+
+# Serena (AI coding assistant)
+.serena/

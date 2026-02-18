@@ -1,46 +1,46 @@
 <script lang="ts">
-	import { page } from "$app/stores";
-	import * as Sidebar from "$lib/components/ui/sidebar";
-	import { Button } from "$lib/components/ui/button";
-	import ThemeToggle from "$lib/components/theme-toggle.svelte";
-	import { createMeQuery } from "$lib/queries/auth";
-	import PlayIcon from "@lucide/svelte/icons/play";
-	import TrophyIcon from "@lucide/svelte/icons/trophy";
-	import MedalIcon from "@lucide/svelte/icons/medal";
-	import MessageSquareIcon from "@lucide/svelte/icons/message-square";
-	import UserIcon from "@lucide/svelte/icons/user";
-	import SettingsIcon from "@lucide/svelte/icons/settings";
-	import ShieldIcon from "@lucide/svelte/icons/shield";
+import MedalIcon from "@lucide/svelte/icons/medal";
+import MessageSquareIcon from "@lucide/svelte/icons/message-square";
+import PlayIcon from "@lucide/svelte/icons/play";
+import SettingsIcon from "@lucide/svelte/icons/settings";
+import ShieldIcon from "@lucide/svelte/icons/shield";
+import TrophyIcon from "@lucide/svelte/icons/trophy";
+import UserIcon from "@lucide/svelte/icons/user";
+import { page } from "$app/stores";
+import ThemeToggle from "$lib/components/theme-toggle.svelte";
+import { Button } from "$lib/components/ui/button";
+import * as Sidebar from "$lib/components/ui/sidebar";
+import { createMeQuery } from "$lib/queries/auth";
 
-	const meQuery = createMeQuery();
+const meQuery = createMeQuery();
 
-	const currentPath = $derived($page.url.pathname);
+const currentPath = $derived($page.url.pathname);
 
-	const navItems = [
-		{ href: "/leaderboard", label: "Leaderboard", icon: TrophyIcon },
-		{ href: "/achievements", label: "Achievements", icon: MedalIcon },
-		{ href: "/chat", label: "Chat", icon: MessageSquareIcon },
-		{ href: "/profile", label: "Profile", icon: UserIcon },
-		{ href: "/settings", label: "Settings", icon: SettingsIcon },
-	];
+const navItems = [
+	{ href: "/leaderboard", label: "Leaderboard", icon: TrophyIcon },
+	{ href: "/achievements", label: "Achievements", icon: MedalIcon },
+	{ href: "/chat", label: "Chat", icon: MessageSquareIcon },
+	{ href: "/profile", label: "Profile", icon: UserIcon },
+	{ href: "/settings", label: "Settings", icon: SettingsIcon },
+];
 
-	const isAdmin = $derived(
-		meQuery.data?.role === "admin" || meQuery.data?.role === "moderator"
-	);
+const isAdmin = $derived(
+	meQuery.data?.role === "admin" || meQuery.data?.role === "moderator",
+);
 
-	function isActive(href: string): boolean {
-		if (href === "/") {
-			return currentPath === "/";
-		}
-		return currentPath === href || currentPath.startsWith(`${href}/`);
+function isActive(href: string): boolean {
+	if (href === "/") {
+		return currentPath === "/";
 	}
+	return currentPath === href || currentPath.startsWith(`${href}/`);
+}
 </script>
 
 <Sidebar.Root collapsible="icon">
 	<!-- FAB Section -->
 	<Sidebar.Header class="flex items-center justify-center p-4">
 		<Button
-			href="/"
+			href="/play"
 			size="icon-lg"
 			class="size-14 rounded-2xl bg-md3-primary text-md3-on-primary shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl active:scale-95"
 		>

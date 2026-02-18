@@ -1,24 +1,24 @@
 <script lang="ts">
-	import * as Card from '$lib/components/ui/card';
-	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
-	import { Skeleton } from '$lib/components/ui/skeleton';
-	import { createMeQuery } from '$lib/queries/auth';
-	import { createMyStatsQuery, createMyMatchesQuery } from '$lib/queries/users';
-	import GamepadIcon from '@lucide/svelte/icons/gamepad-2';
-	import TrophyIcon from '@lucide/svelte/icons/trophy';
-	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
-	import SwordsIcon from '@lucide/svelte/icons/swords';
-	import UserIcon from '@lucide/svelte/icons/user';
+import GamepadIcon from "@lucide/svelte/icons/gamepad-2";
+import SwordsIcon from "@lucide/svelte/icons/swords";
+import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
+import TrophyIcon from "@lucide/svelte/icons/trophy";
+import UserIcon from "@lucide/svelte/icons/user";
+import { Badge } from "$lib/components/ui/badge";
+import { Button } from "$lib/components/ui/button";
+import * as Card from "$lib/components/ui/card";
+import { Skeleton } from "$lib/components/ui/skeleton";
+import { createMeQuery } from "$lib/queries/auth";
+import { createMyMatchesQuery, createMyStatsQuery } from "$lib/queries/users";
 
-	const meQuery = createMeQuery();
-	const statsQuery = createMyStatsQuery();
-	const matchesQuery = createMyMatchesQuery({ limit: 5 });
+const meQuery = createMeQuery();
+const statsQuery = createMyStatsQuery();
+const matchesQuery = createMyMatchesQuery({ limit: 5 });
 
-	function formatWinRate(wins: number, total: number): string {
-		if (total === 0) return '0%';
-		return `${Math.round((wins / total) * 100)}%`;
-	}
+function formatWinRate(wins: number, total: number): string {
+	if (total === 0) return "0%";
+	return `${Math.round((wins / total) * 100)}%`;
+}
 </script>
 
 <svelte:head>
@@ -47,11 +47,11 @@
 					</p>
 				</div>
 				<div class="flex flex-col gap-2 sm:flex-row">
-					<Button size="lg" class="gap-2">
+					<Button size="lg" class="gap-2" href="/play">
 						<SwordsIcon class="size-5" />
 						Quick Match
 					</Button>
-					<Button size="lg" variant="outline" class="gap-2">
+					<Button size="lg" variant="outline" class="gap-2" href="/play">
 						<UserIcon class="size-5" />
 						Play vs AI
 					</Button>

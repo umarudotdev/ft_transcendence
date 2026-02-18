@@ -10,9 +10,9 @@ import { WorldRenderer } from "./World";
 // Game Stage
 // Container for all game objects (world, ship, asteroids, projectiles)
 //
-// Stage Contract (Phase 5.1):
-// - `world.group`: rotating visual container for planet + force field only.
-// - `ship.group`: fixed screen-space anchor (player ship + aim visuals).
+// Stage Contract:
+// - `world.group`: planet + force field container (identity in world mode).
+// - `ship.group`: world-positioned ship from server snapshot.
 // - `asteroids.group` / `projectiles.group`: scene-level snapshot entities.
 //
 // Responsibilities:
@@ -40,7 +40,7 @@ export class GameStage {
     this.asteroids = new AsteroidRenderer();
     scene.add(this.asteroids.group);
 
-    // Ship remains fixed in view; world moves under it.
+    // Ship is world-positioned from snapshots.
     this.ship = new ShipRenderer();
     scene.add(this.ship.group);
 

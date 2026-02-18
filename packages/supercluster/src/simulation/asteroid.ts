@@ -1,8 +1,7 @@
-import type { AsteroidState, InputState } from "../types";
+import type { AsteroidState } from "../types";
 
 import { GAME_CONST } from "../constants";
 import {
-  applyInverseShipInputTransform,
   normalizeVec3,
   randomTangentVec3,
   randomUnitVec3,
@@ -53,31 +52,22 @@ export function createAsteroidWave(
 
 export function stepAsteroids(
   asteroids: readonly AsteroidState[],
-  keys: InputState,
-  deltaTicks: number,
-  inverseSpeedRadPerTick: number
+  deltaTicks: number
 ): AsteroidState[] {
   if (asteroids.length === 0) return [];
 
   const stepped: AsteroidState[] = [];
   for (const asteroid of asteroids) {
-    const selfMotion = stepSurfaceMotionState(
+    const motion = stepSurfaceMotionState(
       asteroid.position,
       asteroid.direction,
       asteroid.moveSpeed * deltaTicks
     );
-    const worldMotion = applyInverseShipInputTransform(
-      selfMotion.position,
-      selfMotion.direction,
-      keys,
-      deltaTicks,
-      inverseSpeedRadPerTick
-    );
 
     stepped.push({
       ...asteroid,
-      position: normalizeVec3(worldMotion.position),
-      direction: normalizeVec3(worldMotion.direction),
+      position: normalizeVec3(motion.position),
+      direction: normalizeVec3(motion.direction),
     });
   }
 

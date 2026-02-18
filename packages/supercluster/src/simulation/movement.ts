@@ -2,7 +2,6 @@ import {
   Vec3 as GlVec3,
   Quat as GlQuat,
   type Vec3Like,
-  type QuatLike,
 } from "gl-matrix";
 
 import type { InputState } from "../types";
@@ -16,10 +15,12 @@ import type { InputState } from "../types";
 const EPS = 1e-8;
 const WORLD_X_AXIS: Vec3Like = [1, 0, 0];
 const WORLD_Y_AXIS: Vec3Like = [0, 1, 0];
+const WORLD_Z_AXIS: Vec3Like = [0, 0, 1];
 
 // Scratch buffers to avoid per-call allocations
 const _v1 = GlVec3.create();
 const _v2 = GlVec3.create();
+const _v3 = GlVec3.create();
 const _q1 = GlQuat.create();
 
 export function normalizeVec3(
@@ -110,63 +111,46 @@ export function moveOnSphere(
   velocity[2] = _v1[2];
 }
 
-/**
- * Shared ship movement step on sphere using quaternion integration.
- *
- * Mutates `planetQuaternion` and `shipPosition` in place.
- *
- * @param planetQuaternion - World rotation accumulator (MUTATED)
- * @param shipPosition - Unit vector ship position on sphere (MUTATED)
- * @param keys - Movement input snapshot
- * @param deltaTicks - Simulation delta in ticks
- * @param speedRadPerTick - Ship movement speed in rad/tick
- * @returns true when movement was applied
- */
-export function stepShipOnSphere(
-  planetQuaternion: QuatLike,
-  shipPosition: Vec3Like,
-  keys: InputState,
-  deltaTicks: number,
-  speedRadPerTick: number
-): boolean {
-  let pitchAngle = 0;
-  let yawAngle = 0;
+export interface ReferenceBasis {
+  normal: Vec3Like;
+  forward: Vec3Like;
+  right: Vec3Like;
+}
 
-  if (keys.forward) pitchAngle += speedRadPerTick * deltaTicks;
-  if (keys.backward) pitchAngle -= speedRadPerTick * deltaTicks;
-  if (keys.left) yawAngle += speedRadPerTick * deltaTicks;
-  if (keys.right) yawAngle -= speedRadPerTick * deltaTicks;
+export function resolveReferenceBasis(
+  referencePosition: Vec3Like,
+  referenceDirection: Vec3Like
+): ReferenceBasis {
+  const normal = normalizeVec3(referencePosition);
 
-  let moved = false;
+  const forwardRaw = normalizeVec3(referenceDirection, WORLD_Y_AXIS);
+  const forwardDotNormal = GlVec3.dot(forwardRaw, normal);
+  GlVec3.scale(_v1, normal, forwardDotNormal);
+  GlVec3.sub(_v1, forwardRaw, _v1);
 
-  // Pitch: rotate around X axis.
-  if (Math.abs(pitchAngle) > EPS) {
-    GlQuat.setAxisAngle(_q1, WORLD_X_AXIS, pitchAngle);
-    // premultiply: planetQuaternion = _q1 * planetQuaternion
-    GlQuat.multiply(planetQuaternion, _q1, planetQuaternion);
-
-    // Ship moves opposite to planet rotation.
-    GlQuat.invert(_q1, _q1);
-    GlVec3.transformQuat(shipPosition, shipPosition, _q1);
-    moved = true;
+  if (GlVec3.squaredLength(_v1) <= EPS) {
+    const fallbackAxis = Math.abs(normal[1]) < 0.99 ? WORLD_Y_AXIS : WORLD_X_AXIS;
+    GlVec3.cross(_v1, fallbackAxis, normal);
+    if (GlVec3.squaredLength(_v1) <= EPS) {
+      GlVec3.cross(_v1, WORLD_Z_AXIS, normal);
+    }
   }
+  GlVec3.normalize(_v1, _v1);
+  const forward: Vec3Like = [_v1[0], _v1[1], _v1[2]];
 
-  // Yaw: rotate around Y axis.
-  if (Math.abs(yawAngle) > EPS) {
-    GlQuat.setAxisAngle(_q1, WORLD_Y_AXIS, yawAngle);
-    GlQuat.multiply(planetQuaternion, _q1, planetQuaternion);
-
-    GlQuat.invert(_q1, _q1);
-    GlVec3.transformQuat(shipPosition, shipPosition, _q1);
-    moved = true;
+  GlVec3.cross(_v2, forward, normal);
+  if (GlVec3.squaredLength(_v2) <= EPS) {
+    const fallbackAxis = Math.abs(normal[1]) < 0.99 ? WORLD_Y_AXIS : WORLD_X_AXIS;
+    GlVec3.cross(_v2, fallbackAxis, normal);
   }
+  GlVec3.normalize(_v2, _v2);
+  const right: Vec3Like = [_v2[0], _v2[1], _v2[2]];
 
-  if (moved) {
-    GlQuat.normalize(planetQuaternion, planetQuaternion);
-    GlVec3.normalize(shipPosition, shipPosition);
-  }
-
-  return moved;
+  return {
+    normal,
+    forward,
+    right,
+  };
 }
 
 /**
@@ -189,53 +173,89 @@ export function stepSurfaceMotionState(
   };
 }
 
-/**
- * Apply inverse ship input transform to an entity in ship-centric simulation.
- * This moves world entities relative to fixed ship anchor.
- *
- * Note: keeps position radius magnitude (does not normalize position).
- */
-export function applyInverseShipInputTransform(
+export function applyShipInputTransformRelativeToReference(
+  position: Vec3Like,
+  direction: Vec3Like,
+  keys: InputState,
+  deltaTicks: number,
+  speedRadPerTick: number,
+  referencePosition: Vec3Like,
+  referenceDirection: Vec3Like
+): { moved: boolean; position: Vec3Like; direction: Vec3Like } {
+  const inputForward = (keys.forward ? 1 : 0) - (keys.backward ? 1 : 0);
+  const inputRight = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  const stepAngle = speedRadPerTick * deltaTicks;
+
+  if ((inputForward === 0 && inputRight === 0) || Math.abs(stepAngle) <= EPS) {
+    return {
+      moved: false,
+      position: normalizeVec3(position),
+      direction: normalizeVec3(direction),
+    };
+  }
+
+  const basis = resolveReferenceBasis(referencePosition, referenceDirection);
+
+  GlVec3.scale(_v1, basis.forward, inputForward);
+  GlVec3.scaleAndAdd(_v1, _v1, basis.right, inputRight);
+  if (GlVec3.squaredLength(_v1) <= EPS) {
+    return {
+      moved: false,
+      position: normalizeVec3(position),
+      direction: normalizeVec3(direction),
+    };
+  }
+  GlVec3.normalize(_v1, _v1); // move direction on tangent plane
+
+  GlVec3.cross(_v2, basis.normal, _v1);
+  if (GlVec3.squaredLength(_v2) <= EPS) {
+    return {
+      moved: false,
+      position: normalizeVec3(position),
+      direction: normalizeVec3(direction),
+    };
+  }
+  GlVec3.normalize(_v2, _v2);
+
+  GlQuat.setAxisAngle(_q1, _v2, stepAngle);
+
+  const pos: Vec3Like = [position[0], position[1], position[2]];
+  const dir: Vec3Like = [direction[0], direction[1], direction[2]];
+  GlVec3.transformQuat(pos, pos, _q1);
+  GlVec3.transformQuat(dir, dir, _q1);
+  GlVec3.normalize(pos, pos);
+
+  const posNorm = normalizeVec3(pos);
+  const dirNorm = normalizeVec3(dir, basis.forward);
+  const dirDotPos = GlVec3.dot(dirNorm, posNorm);
+  GlVec3.scale(_v3, posNorm, dirDotPos);
+  GlVec3.sub(_v3, dirNorm, _v3);
+  if (GlVec3.squaredLength(_v3) <= EPS) {
+    GlVec3.copy(_v3, basis.forward);
+  }
+  GlVec3.normalize(_v3, _v3);
+
+  return {
+    moved: true,
+    position: [pos[0], pos[1], pos[2]],
+    direction: [_v3[0], _v3[1], _v3[2]],
+  };
+}
+
+export function applyShipInputTransform(
   position: Vec3Like,
   direction: Vec3Like,
   keys: InputState,
   deltaTicks: number,
   speedRadPerTick: number
 ): { moved: boolean; position: Vec3Like; direction: Vec3Like } {
-  let pitchAngle = 0;
-  let yawAngle = 0;
-
-  if (keys.forward) pitchAngle += speedRadPerTick * deltaTicks;
-  if (keys.backward) pitchAngle -= speedRadPerTick * deltaTicks;
-  if (keys.left) yawAngle += speedRadPerTick * deltaTicks;
-  if (keys.right) yawAngle -= speedRadPerTick * deltaTicks;
-
-  if (Math.abs(pitchAngle) <= EPS && Math.abs(yawAngle) <= EPS) {
-    return {
-      moved: false,
-      position: [position[0], position[1], position[2]],
-      direction: normalizeVec3(direction),
-    };
-  }
-
-  const pos: Vec3Like = [position[0], position[1], position[2]];
-  const dir = normalizeVec3(direction);
-
-  if (Math.abs(pitchAngle) > EPS) {
-    GlQuat.setAxisAngle(_q1, WORLD_X_AXIS, pitchAngle);
-    GlVec3.transformQuat(pos, pos, _q1);
-    GlVec3.transformQuat(dir, dir, _q1);
-  }
-
-  if (Math.abs(yawAngle) > EPS) {
-    GlQuat.setAxisAngle(_q1, WORLD_Y_AXIS, yawAngle);
-    GlVec3.transformQuat(pos, pos, _q1);
-    GlVec3.transformQuat(dir, dir, _q1);
-  }
-
-  return {
-    moved: true,
-    position: [pos[0], pos[1], pos[2]],
-    direction: normalizeVec3(dir),
-  };
+  return applyShipInputTransformRelativeToReference(
+    position,
+    direction,
+    keys,
+    deltaTicks,
+    speedRadPerTick,
+    position,
+    direction
+  );
 }

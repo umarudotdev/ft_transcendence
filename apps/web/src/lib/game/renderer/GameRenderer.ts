@@ -20,9 +20,9 @@ import { InputController } from "./InputController";
 // Orchestrates rendering and game loop
 //
 // ARCHITECTURE:
-// - Ship: fixed visual anchor at screen front.
-// - World group: rotated by authoritative ship orientation for planet visuals.
-// - Asteroids/Projectiles: snapshot-driven scene-level entities.
+// - Ship/Asteroids/Projectiles: snapshot-driven entities in world frame.
+// - World group: identity (no ship-centric world rotation).
+// - Camera: follows ship around origin while looking at center.
 // - Collision: server authoritative (shared simulation frame), no render authority.
 //
 // RESPONSIBILITIES:
@@ -61,19 +61,13 @@ export class GameRenderer {
   private readonly maxFrameDelta = 0.1; // clamp each frame delta to 100 ms to avoid huge catch-up bursts
   private readonly maxSimulationSteps = 8; // max fixed sim steps processed in one rendered frame
 
-  // ========================================================================
-  // Quaternion-based rotation system (no gimbal lock, smooth pole crossing)
-  // ========================================================================
-  // Planet orientation as quaternion - avoids gimbal lock at poles
-  private planetQuaternion = new THREE.Quaternion();
-
   // Ship position as unit vector on sphere surface (x² + y² + z² = 1)
-  // This tracks where the ship "actually" is on the planet
   private shipPosition = new THREE.Vector3(
     GAME_CONST.SHIP_INITIAL_POS[0],
     GAME_CONST.SHIP_INITIAL_POS[1],
     GAME_CONST.SHIP_INITIAL_POS[2]
   );
+  private shipDirection = new THREE.Vector3(0, 1, 0);
 
   // Ship heading angle (visual only - not part of authoritative state)
   private targetHeadingAngle = 0; // Where ship tip should point (from WASD)
@@ -84,6 +78,16 @@ export class GameRenderer {
 
   // Game state
   private isGameOver = false;
+  private readonly cameraDistance =
+    GAME_CONST.SPHERE_RADIUS * RENDERER_CONST.CAMERA_DIST_MULT;
+  private readonly worldUp = new THREE.Vector3(0, 1, 0);
+  private readonly worldRight = new THREE.Vector3(1, 0, 0);
+  private readonly center = new THREE.Vector3(0, 0, 0);
+  private readonly _v1 = new THREE.Vector3();
+  private readonly _v2 = new THREE.Vector3();
+  private readonly _v3 = new THREE.Vector3();
+  private readonly _v4 = new THREE.Vector3();
+  private readonly _v5 = new THREE.Vector3(0, 0, 1);
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -144,8 +148,9 @@ export class GameRenderer {
       GAME_CONST.SHIP_INITIAL_POS[1],
       GAME_CONST.SHIP_INITIAL_POS[2]
     );
-    this.planetQuaternion.identity();
-    this.stage.world.group.quaternion.copy(this.planetQuaternion);
+    this.shipDirection.set(0, 1, 0);
+    this.stage.world.group.quaternion.identity();
+    this.updateCameraFollow(this.shipPosition, this.shipDirection);
 
     // Reset ship state
     this.targetHeadingAngle = 0;
@@ -183,14 +188,7 @@ export class GameRenderer {
   }
 
   private setupCamera(): void {
-    // Camera positioned directly behind the ship, looking at sphere center
-    // Ship is always visually at (0, 0, SPHERE_RADIUS) - front of sphere
-    // Camera on the Z axis for a straight view with planet centered
-    const cameraDistance =
-      GAME_CONST.SPHERE_RADIUS * RENDERER_CONST.CAMERA_DIST_MULT;
-
-    this.camera.position.set(0, 0, cameraDistance);
-    this.camera.lookAt(0, 0, 0);
+    this.updateCameraFollow(this.shipPosition, this.shipDirection);
   }
 
   // ========================================================================
@@ -207,21 +205,20 @@ export class GameRenderer {
         state.ship.position[2]
       )
       .normalize();
+    this.shipDirection
+      .set(
+        state.ship.direction[0],
+        state.ship.direction[1],
+        state.ship.direction[2]
+      )
+      .normalize();
     this.input.setAimAngle(state.ship.aimAngle);
     this.shipLives = state.ship.lives;
     this.shipInvincible = state.ship.invincible;
-    // Authoritative orientation from server state (no reconstruction from position-only).
-    this.planetQuaternion
-      .set(
-        state.ship.orientation[0],
-        state.ship.orientation[1],
-        state.ship.orientation[2],
-        state.ship.orientation[3]
-      )
-      .normalize();
 
     // Apply to visuals
-    this.stage.world.group.quaternion.copy(this.planetQuaternion);
+    this.stage.world.group.quaternion.identity();
+    this.updateCameraFollow(this.shipPosition, this.shipDirection);
     const shipDirectionAngle = this.stage.ship.lerpDirection(
       this.targetHeadingAngle,
       this.fixedSimulationStep
@@ -315,6 +312,36 @@ export class GameRenderer {
   private updateSimulation(deltaTime: number): void {
     this.stage.update(deltaTime, this.camera.position);
   }
+  // THIS NEED TO BE CLEAR ***************************************************
+  private updateCameraFollow(
+    shipPosition: THREE.Vector3,
+    shipDirection: THREE.Vector3
+  ): void {
+    const normal = this._v1.copy(shipPosition).normalize();
+    this.camera.position.copy(normal).multiplyScalar(this.cameraDistance);
+
+    const view = this._v2.copy(this.center).sub(this.camera.position).normalize();
+    const upCandidate = this._v3
+      .copy(shipDirection)
+      .sub(this._v4.copy(view).multiplyScalar(shipDirection.dot(view)));
+
+    if (upCandidate.lengthSq() <= 1e-8) {
+      const fallback = Math.abs(view.y) < 0.99 ? this.worldUp : this.worldRight;
+      upCandidate
+        .copy(fallback)
+        .sub(this._v4.copy(view).multiplyScalar(fallback.dot(view)));
+      if (upCandidate.lengthSq() <= 1e-8) {
+        const fallback2 = Math.abs(view.z) < 0.99 ? this._v5 : this.worldRight;
+        upCandidate
+          .copy(fallback2)
+          .sub(this._v4.copy(view).multiplyScalar(fallback2.dot(view)));
+      }
+    }
+
+    this.camera.up.copy(upCandidate.normalize());
+    this.camera.lookAt(this.center);
+  }
+  // END HERE ****************************************************************
 
   stop(): void {
     if (this.animationId !== null) {

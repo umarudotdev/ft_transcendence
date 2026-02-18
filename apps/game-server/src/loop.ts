@@ -16,8 +16,8 @@ import {
   stepAsteroidHitLifecycle,
   stepAsteroids,
   stepProjectiles,
+  stepShipPositionWorld,
   stepShipInvincibilityState,
-  stepShipOrientationState,
   type GameState,
   type InputState,
 } from "@ft/supercluster";
@@ -160,16 +160,35 @@ function tick(): void {
   if (state.gameStatus !== "playing") return;
 
   const controller = controllingClient;
+  // JUST NEW DATA ?? ********************************************************
+  const activeKeys = controller
+    ? (sessions.get(controller)?.keys ?? { ...DEFAULT_KEYS })
+    : { ...DEFAULT_KEYS };
+
+  const referenceShipPosition: Vec3Like = [
+    state.ship.position[0],
+    state.ship.position[1],
+    state.ship.position[2],
+  ];
+  const referenceShipDirection: Vec3Like = [
+    state.ship.direction[0],
+    state.ship.direction[1],
+    state.ship.direction[2],
+  ];
+  // END HERE ****************************************************************
+
   if (controller) {
     const controllingSession = sessions.get(controller);
     if (controllingSession) {
-      const stepped = stepShipOrientationState(
-        state.ship.orientation,
+      const stepped = stepShipPositionWorld(
+        state.ship.position,
+        state.ship.direction,
         controllingSession.keys,
         1,
         GAME_CONST.SHIP_SPEED
       );
-      state.ship.orientation = stepped.orientation;
+      state.ship.position = stepped.position;
+      state.ship.direction = stepped.direction;
 
       if (shootCooldownTicks > 0) {
         shootCooldownTicks -= 1;
@@ -178,6 +197,8 @@ function tick(): void {
       if (controllingSession.firePressed && shootCooldownTicks <= 0) {
         const spawned = spawnProjectilesFromAim(
           nextProjectileId,
+          state.ship.position,
+          state.ship.direction,
           state.ship.aimAngle,
           DEFAULT_GAMEPLAY.projectileRayCount
         );
@@ -188,16 +209,15 @@ function tick(): void {
     }
   }
 
-  const activeKeys = controller
-    ? (sessions.get(controller)?.keys ?? { ...DEFAULT_KEYS })
-    : { ...DEFAULT_KEYS };
-  state.projectiles = stepProjectiles(state.projectiles, 1);
-  state.asteroids = stepAsteroids(
-    state.asteroids,
+  state.projectiles = stepProjectiles(
+    state.projectiles,
     activeKeys,
     1,
-    GAME_CONST.SHIP_SPEED
+    GAME_CONST.SHIP_SPEED,
+    referenceShipPosition,
+    referenceShipDirection
   );
+  state.asteroids = stepAsteroids(state.asteroids, 1);
   resolveCollisions();
   resolveAsteroidHitLifecycle();
   resolveShipCollision();
@@ -272,6 +292,7 @@ function toMessage(): ServerMessage {
       ship: {
         ...state.ship,
         position: [...state.ship.position] as Vec3Like,
+        direction: [...state.ship.direction] as Vec3Like,
         orientation: [...state.ship.orientation] as QuatLike,
       },
     },

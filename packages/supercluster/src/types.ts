@@ -2,8 +2,8 @@
 // Shared Types for SuperCluster
 // Used by both client (renderer) and server (game logic)
 //
-// Ship-Centric Frame Contract (migration target):
-// - Ship, asteroids, and projectiles share one simulation frame.
+// World-Centric Frame Contract:
+// - Ship, asteroids, and projectiles share one world simulation frame.
 // - Collision checks compare entities directly in that same frame.
 // ============================================================================
 
@@ -16,12 +16,13 @@ import type { QuatLike, Vec3Like } from "gl-matrix";
 /**
  * Ship state - player's ship
  * Power-up levels increase during gameplay, reset on game restart
- * Ship-centric mode: position remains fixed; heading/aim are authoritative.
+ * World-centric mode: position and direction are authoritative for movement.
  */
 export interface ShipState {
-  position: Vec3Like; // Fixed ship anchor in ship-centric simulation frame
-  orientation: QuatLike; // Authoritative orientation used for world visual rotation
-  aimAngle: number; // Canonical aim angle in ship-centric frame (radians)
+  position: Vec3Like; // Unit vector position in world frame
+  direction: Vec3Like; // Tangent unit vector in world frame
+  orientation: QuatLike; // Compatibility/debug/network-only
+  aimAngle: number; // Canonical aim angle in ship-local tangent frame (radians)
   lives: number;
   invincible: boolean; // After taking damage
   invincibleTicks: number; // Remaining invincibility ticks (for visual feedback)
@@ -31,25 +32,25 @@ export interface ShipState {
 
 /**
  * Projectile state - bullets fired by player
- * Ship-centric mode: projectile state lives in same frame as ship/asteroids.
+ * World-centric mode: projectile state lives in same frame as ship/asteroids.
  */
 export interface ProjectileState {
   id: number;
   position: Vec3Like;
-  direction: Vec3Like; // Movement direction unit vector in ship-centric frame
+  direction: Vec3Like; // Movement direction unit vector in world frame
   ageTicks: number; // Ticks since spawn
 }
 
 /**
  * Asteroid state - replaces generic EnemyState
  * Server sends this, client renders based on it
- * Ship-centric mode: asteroid state lives in same frame as ship/projectiles.
+ * World-centric mode: asteroid state lives in same frame as ship/projectiles.
  */
 export interface AsteroidState {
   id: number;
   position: Vec3Like;
-  direction: Vec3Like; // Movement direction unit vector in ship-centric frame
-  moveSpeed: number; // Movement speed scalar in ship-centric frame (units/tick)
+  direction: Vec3Like; // Movement direction unit vector in world frame
+  moveSpeed: number; // Movement speed scalar in world frame (rad/tick)
   size: 1 | 2 | 3 | 4; // 1=smallest, 4=largest
   health: number; // Hits remaining (usually 1)
   canTakeDamage: boolean; // Damage gate while asteroid is in break transition

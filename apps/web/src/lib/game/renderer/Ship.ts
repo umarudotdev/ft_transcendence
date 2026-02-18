@@ -18,6 +18,14 @@ export class ShipRenderer {
 
   // Current ship direction (where tip points) - used for lerp
   private currentDirectionAngle = 0;
+  private readonly _normal = new THREE.Vector3();
+  private readonly _forward = new THREE.Vector3();
+  private readonly _right = new THREE.Vector3();
+  private readonly _reference = new THREE.Vector3();
+  private readonly _basis = new THREE.Matrix4();
+  private readonly _basisQuat = new THREE.Quaternion();
+  private readonly _worldUp = new THREE.Vector3(0, 1, 0);
+  private readonly _worldRight = new THREE.Vector3(1, 0, 0);
 
   constructor() {
     // Create group to hold ship, aim dot, and orbit circle
@@ -92,11 +100,32 @@ export class ShipRenderer {
     directionAngle: number,
     aimAngle: number
   ): void {
-    // Ship is visually FIXED at (0, 0, SPHERE_RADIUS) - front of sphere
-    // The planet rotates under the ship to create movement illusion
+	// THIS NEED TO BE CLEAR ************************************************
+    this._normal
+      .set(state.position[0], state.position[1], state.position[2])
+      .normalize();
+    this._forward
+      .set(state.direction[0], state.direction[1], state.direction[2])
+      .normalize();
+    this.group.position.copy(this._normal).multiplyScalar(GAME_CONST.SPHERE_RADIUS);
 
-    // Fixed position: always at the front of the sphere (facing camera)
-    this.group.position.set(0, 0, GAME_CONST.SPHERE_RADIUS);
+    // Keep forward tangent to normal (stable near poles).
+    this._forward.sub(this._normal.clone().multiplyScalar(this._forward.dot(this._normal)));
+    if (this._forward.lengthSq() <= 1e-8) {
+      this._reference.copy(this._worldUp);
+      if (Math.abs(this._normal.dot(this._reference)) > 0.99) {
+        this._reference.copy(this._worldRight);
+      }
+      this._forward.crossVectors(this._normal, this._reference).normalize();
+    } else {
+      this._forward.normalize();
+    }
+
+    this._right.crossVectors(this._forward, this._normal).normalize();
+    this._basis.makeBasis(this._right, this._forward, this._normal);
+    this._basisQuat.setFromRotationMatrix(this._basis);
+    this.group.quaternion.copy(this._basisQuat);
+	// END HEAR *************************************************************
 
     // Apply direction rotation (where ship tip points)
     // Canonical heading convention: 0 = up (+Y), PI/2 = right (+X)

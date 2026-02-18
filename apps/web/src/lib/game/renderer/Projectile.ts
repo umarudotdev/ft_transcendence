@@ -79,8 +79,8 @@ export class ProjectileRenderer {
       .multiplyScalar(GAME_CONST.SPHERE_RADIUS);
 
     // Snapshot frame rule:
-    // - position: unit vector on ship-centric sphere
-    // - direction: tangent unit vector in same frame
+    // - position: unit vector on world sphere
+    // - direction: tangent unit vector in same world frame
     const normal = projectile.position.clone().normalize();
     const forward = projectile.direction
       .clone()

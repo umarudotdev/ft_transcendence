@@ -1,26 +1,43 @@
-import type { Vec3Like } from "gl-matrix";
+import { Vec3 as GlVec3, type Vec3Like } from "gl-matrix";
 
-import type { ProjectileState } from "../types";
+import type { InputState, ProjectileState } from "../types";
 
 import { GAME_CONST } from "../constants";
-import { normalizeVec3, stepSurfaceMotionState } from "./movement";
+import {
+  applyShipInputTransformRelativeToReference,
+  normalizeVec3,
+  resolveReferenceBasis,
+  stepSurfaceMotionState,
+} from "./movement";
 
-function createProjectileDirection(aimAngle: number): Vec3Like {
-  return [Math.sin(aimAngle), Math.cos(aimAngle), 0];
+const EPS = 1e-8;
+
+function aimAngleToWorldDirection(
+  shipPosition: Vec3Like,
+  shipDirection: Vec3Like,
+  aimAngle: number
+): Vec3Like {
+  const basis = resolveReferenceBasis(shipPosition, shipDirection);
+  const aimDir = GlVec3.create();
+  GlVec3.scale(aimDir, basis.forward, Math.cos(aimAngle));
+  GlVec3.scaleAndAdd(aimDir, aimDir, basis.right, Math.sin(aimAngle));
+  if (GlVec3.squaredLength(aimDir) <= EPS) {
+    return normalizeVec3(basis.forward);
+  }
+  GlVec3.normalize(aimDir, aimDir);
+  return [aimDir[0], aimDir[1], aimDir[2]];
 }
 
 export function spawnProjectilesFromAim(
   nextProjectileId: number,
+  shipPosition: Vec3Like,
+  shipDirection: Vec3Like,
   aimAngle: number,
   rayCount = 1
 ): { projectiles: ProjectileState[]; nextProjectileId: number } {
   const count = Math.max(1, rayCount);
   const spread = GAME_CONST.PROJECTILE_SPREAD_ANGLE;
-  const spawnPosition: Vec3Like = [
-    GAME_CONST.SHIP_INITIAL_POS[0],
-    GAME_CONST.SHIP_INITIAL_POS[1],
-    GAME_CONST.SHIP_INITIAL_POS[2],
-  ];
+  const spawnPosition = normalizeVec3(shipPosition);
 
   const projectiles: ProjectileState[] = [];
 
@@ -28,7 +45,9 @@ export function spawnProjectilesFromAim(
     projectiles.push({
       id: nextProjectileId++,
       position: normalizeVec3(spawnPosition),
-      direction: normalizeVec3(createProjectileDirection(aimAngle)),
+      direction: normalizeVec3(
+        aimAngleToWorldDirection(spawnPosition, shipDirection, aimAngle)
+      ),
       ageTicks: 0,
     });
   } else {
@@ -38,7 +57,13 @@ export function spawnProjectilesFromAim(
       projectiles.push({
         id: nextProjectileId++,
         position: normalizeVec3(spawnPosition),
-        direction: normalizeVec3(createProjectileDirection(aimAngle + offset)),
+        direction: normalizeVec3(
+          aimAngleToWorldDirection(
+            spawnPosition,
+            shipDirection,
+            aimAngle + offset
+          )
+        ),
         ageTicks: 0,
       });
     }
@@ -49,7 +74,11 @@ export function spawnProjectilesFromAim(
 
 export function stepProjectiles(
   projectiles: readonly ProjectileState[],
-  deltaTicks: number
+  keys: InputState,
+  deltaTicks: number,
+  shipSpeedRadPerTick: number,
+  referencePosition: Vec3Like,
+  referenceDirection: Vec3Like
 ): ProjectileState[] {
   if (projectiles.length === 0) return [];
   const stepAngle = GAME_CONST.PROJECTILE_SPEED * deltaTicks;
@@ -64,11 +93,20 @@ export function stepProjectiles(
       projectile.direction,
       stepAngle
     );
+    const worldMotion = applyShipInputTransformRelativeToReference(
+      steppedMotion.position,
+      steppedMotion.direction,
+      keys,
+      deltaTicks,
+      shipSpeedRadPerTick,
+      referencePosition,
+      referenceDirection
+    );
 
     stepped.push({
       ...projectile,
-      position: normalizeVec3(steppedMotion.position),
-      direction: normalizeVec3(steppedMotion.direction),
+      position: normalizeVec3(worldMotion.position),
+      direction: normalizeVec3(worldMotion.direction),
       ageTicks,
     });
   }

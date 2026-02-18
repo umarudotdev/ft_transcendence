@@ -134,10 +134,10 @@ TypeScript stack (ElysiaJS + Colyseus + SvelteKit).
 
 ### Game (Colyseus Server)
 
-| Method | Path                         | Description                    |
-| :----- | :--------------------------- | :----------------------------- |
-| WS     | `ws://game:3001`             | Colyseus room WebSocket        |
-| POST   | `/internal/matches/complete` | Record result (internal)       |
+| Method | Path                         | Description              |
+| :----- | :--------------------------- | :----------------------- |
+| WS     | `ws://game:3001`             | Colyseus room WebSocket  |
+| POST   | `/internal/matches/complete` | Record result (internal) |
 
 ### Rankings
 
@@ -193,12 +193,12 @@ dashboard, chat rooms, game replays, i18n
 
 ## Open Questions
 
-| ID | Question                         |
-| :- | :------------------------------- |
-| Q1 | Ship customization (cosmetic)?   |
-| Q2 | Player disconnect grace period?  |
-| Q3 | Replay system for later release? |
-| Q4 | Sound effects toggle?            |
+| ID  | Question                         |
+| :-- | :------------------------------- |
+| Q1  | Ship customization (cosmetic)?   |
+| Q2  | Player disconnect grace period?  |
+| Q3  | Replay system for later release? |
+| Q4  | Sound effects toggle?            |
 
 ---
 

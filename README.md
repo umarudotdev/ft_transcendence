@@ -260,13 +260,13 @@ erDiagram
 
 ### Gameplay
 
-| Feature            | Description                                       | Owner     |
-| ------------------ | ------------------------------------------------- | --------- |
-| Bullet Hell Combat | Top-down ship combat on HTML5 Canvas              | [LOGIN_5] |
-| Ranked Matchmaking | Elo-based queue with rating tiers                 | [LOGIN_5] |
-| AI Opponent        | Server-side bot with configurable difficulty      | [LOGIN_5] |
+| Feature            | Description                                           | Owner     |
+| ------------------ | ----------------------------------------------------- | --------- |
+| Bullet Hell Combat | Top-down ship combat on HTML5 Canvas                  | [LOGIN_5] |
+| Ranked Matchmaking | Elo-based queue with rating tiers                     | [LOGIN_5] |
+| AI Opponent        | Server-side bot with configurable difficulty          | [LOGIN_5] |
 | Remote Multiplayer | Real-time play via Colyseus game server at 60 ticks/s | [LOGIN_5] |
-| Ability System     | Dash, shield, bomb, and ultimate abilities        | [LOGIN_5] |
+| Ability System     | Dash, shield, bomb, and ultimate abilities            | [LOGIN_5] |
 
 ### Chat
 

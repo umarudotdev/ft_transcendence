@@ -10,7 +10,8 @@ curriculum capstone) featuring server-authoritative gameplay at 60 ticks/s, AI
 opponents, live chat, and 42 OAuth with optional TOTP 2FA.
 
 **Tech Stack:** Bun monorepo with ElysiaJS API, Colyseus game server, SvelteKit
-+ Tailwind + Bits UI frontend, PostgreSQL + Drizzle ORM.
+
+- Tailwind + Bits UI frontend, PostgreSQL + Drizzle ORM.
 
 ## Commands
 
@@ -142,18 +143,18 @@ notifications/preferences, roles/reports/sanctions/audit logs.
 
 ### Code Identifiers
 
-| Category             | Convention       | Examples                                          |
-| -------------------- | ---------------- | ------------------------------------------------- |
-| Functions/methods    | camelCase + verb | `getConversations()`, `createMessage()`           |
-| Variables            | camelCase        | `userId`, `isConnected`, `channelId`              |
-| Constants            | UPPER_SNAKE_CASE | `TYPING_TIMEOUT_MS`, `K_FACTOR`, `INITIAL_RATING` |
-| Types                | PascalCase       | `UserProfile`, `ChatError`, `ConversationItem`    |
-| Error discriminants  | UPPER_SNAKE_CASE | `"EMAIL_EXISTS"`, `"INVALID_CREDENTIALS"`         |
-| Error mappers        | `map*Error()`    | `mapLoginError()`, `mapFriendshipError()`         |
-| DB tables            | snake_case plural | `users`, `channel_members`, `points_transactions` |
-| DB columns           | snake_case       | `user_id`, `created_at`, `email_verified`         |
-| API routes           | kebab-case plural | `/chat/conversations`, `/users/:id/friends`       |
-| Svelte event handlers| `handle` prefix  | `handleSubmit()`, `handleKeydown()`               |
+| Category              | Convention        | Examples                                          |
+| --------------------- | ----------------- | ------------------------------------------------- |
+| Functions/methods     | camelCase + verb  | `getConversations()`, `createMessage()`           |
+| Variables             | camelCase         | `userId`, `isConnected`, `channelId`              |
+| Constants             | UPPER_SNAKE_CASE  | `TYPING_TIMEOUT_MS`, `K_FACTOR`, `INITIAL_RATING` |
+| Types                 | PascalCase        | `UserProfile`, `ChatError`, `ConversationItem`    |
+| Error discriminants   | UPPER_SNAKE_CASE  | `"EMAIL_EXISTS"`, `"INVALID_CREDENTIALS"`         |
+| Error mappers         | `map*Error()`     | `mapLoginError()`, `mapFriendshipError()`         |
+| DB tables             | snake_case plural | `users`, `channel_members`, `points_transactions` |
+| DB columns            | snake_case        | `user_id`, `created_at`, `email_verified`         |
+| API routes            | kebab-case plural | `/chat/conversations`, `/users/:id/friends`       |
+| Svelte event handlers | `handle` prefix   | `handleSubmit()`, `handleKeydown()`               |
 
 ### Frontend Query Patterns
 

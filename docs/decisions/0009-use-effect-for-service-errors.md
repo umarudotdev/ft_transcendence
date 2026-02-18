@@ -333,4 +333,3 @@ The project uses a focused subset:
 - [Effect GitHub](https://github.com/Effect/effect)
 - [Railway Oriented Programming](https://fsharpforfunandprofit.com/rop/)
 - [ADR 0005: RFC 9457 Problem Details](./0005-use-rfc9457-problem-details-for-errors.md)
-

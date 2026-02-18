@@ -29,14 +29,14 @@ game framework running on Bun.
 
 ### What Colyseus Provides
 
-| Feature                | Description                                        |
-| ---------------------- | -------------------------------------------------- |
+| Feature                 | Description                                         |
+| ----------------------- | --------------------------------------------------- |
 | **Room-based sessions** | Each game is a Room with server-authoritative state |
-| **Schema state sync**  | Automatic binary delta patches at configurable rate |
-| **Matchmaking**        | Built-in `filterBy` room matching                  |
-| **Reconnection**       | `allowReconnection()` with seat reservation        |
-| **Transport**          | WebSocket with automatic serialization             |
-| **Monitoring**         | `@colyseus/monitor` dashboard for debugging        |
+| **Schema state sync**   | Automatic binary delta patches at configurable rate |
+| **Matchmaking**         | Built-in `filterBy` room matching                   |
+| **Reconnection**        | `allowReconnection()` with seat reservation         |
+| **Transport**           | WebSocket with automatic serialization              |
+| **Monitoring**          | `@colyseus/monitor` dashboard for debugging         |
 
 ### Architecture
 
@@ -70,13 +70,13 @@ TypeScript:
 
 ### Technology Choices
 
-| Component     | Choice          | Rationale                             |
-| ------------- | --------------- | ------------------------------------- |
-| Runtime       | Bun             | Same runtime as API server            |
-| Framework     | Colyseus 0.15   | Room-based multiplayer, state sync    |
-| Transport     | WebSocket       | Built into Colyseus                   |
-| Serialization | Colyseus Schema | Binary delta encoding, auto-generated |
-| Monitoring    | @colyseus/monitor | Built-in room/client dashboard      |
+| Component     | Choice            | Rationale                             |
+| ------------- | ----------------- | ------------------------------------- |
+| Runtime       | Bun               | Same runtime as API server            |
+| Framework     | Colyseus 0.15     | Room-based multiplayer, state sync    |
+| Transport     | WebSocket         | Built into Colyseus                   |
+| Serialization | Colyseus Schema   | Binary delta encoding, auto-generated |
+| Monitoring    | @colyseus/monitor | Built-in room/client dashboard        |
 
 ## Consequences
 

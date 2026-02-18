@@ -32,6 +32,8 @@ services:
       SHUTDOWN_TIMEOUT_MS: "10000"
       CHAT_ENCRYPTION_KEY: dev-chat-encryption-key-32bytes!
       FRONTEND_URL: http://localhost:5173
+      GAME_URL: http://game:2567
+      GAME_INTERNAL_SECRET: dev-game-secret
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@transcendence.umaru.dev}
     volumes:
@@ -52,6 +54,32 @@ services:
           path: ./apps/api/src
           target: /usr/src/app/apps/api/src
 
+  game:
+    build:
+      context: .
+      dockerfile: apps/game/Dockerfile
+      target: development
+    restart: unless-stopped
+    ports:
+      - "2567:2567"
+    environment:
+      API_URL: http://api:3000
+      NODE_ENV: development
+      GAME_INTERNAL_SECRET: dev-game-secret
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2567/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/game/src
+          target: /usr/src/app/apps/game/src
+
   web:
     build:
       context: .
@@ -62,9 +90,11 @@ services:
       - "5173:5173"
     environment:
       API_URL: http://api:3000
+      VITE_GAME_URL: ws://game:2567
       NODE_ENV: development
     depends_on:
       - api
+      - game
     develop:
       watch:
         - action: sync

@@ -11,18 +11,18 @@ Technical patterns and protocols for ft_transcendence bullet hell game.
 
 ## 1. Tech Stack
 
-| Component       | Choice                       | Why                                           |
-| --------------- | ---------------------------- | --------------------------------------------- |
-| **Runtime**     | Bun                          | Single runtime for API, game server, frontend |
-| **Monorepo**    | Bun Workspaces               | Dependency linking without TurboRepo overhead |
-| **Frontend**    | SvelteKit                    | SSR (1pt), smaller bundles, simple stores     |
-| **API Server**  | ElysiaJS                     | Bun-optimized, Eden Treaty type safety        |
-| **Game Server** | Colyseus                     | Room-based multiplayer, automatic state sync  |
-| **Database**    | PostgreSQL + Drizzle         | Relational integrity, TypeScript-native ORM   |
-| **Auth**        | Arctic + Oslo                | 42 OAuth + TOTP, database sessions            |
-| **Styling**     | Tailwind + Shadcn-Svelte     | Utility CSS, accessible primitives            |
-| **Tooling**     | Biome + Lefthook             | Fast formatting, parallel pre-commit          |
-| **Infra**       | Docker + Nginx               | HTTPS termination, single-command deploy      |
+| Component       | Choice                   | Why                                           |
+| --------------- | ------------------------ | --------------------------------------------- |
+| **Runtime**     | Bun                      | Single runtime for API, game server, frontend |
+| **Monorepo**    | Bun Workspaces           | Dependency linking without TurboRepo overhead |
+| **Frontend**    | SvelteKit                | SSR (1pt), smaller bundles, simple stores     |
+| **API Server**  | ElysiaJS                 | Bun-optimized, Eden Treaty type safety        |
+| **Game Server** | Colyseus                 | Room-based multiplayer, automatic state sync  |
+| **Database**    | PostgreSQL + Drizzle     | Relational integrity, TypeScript-native ORM   |
+| **Auth**        | Arctic + Oslo            | 42 OAuth + TOTP, database sessions            |
+| **Styling**     | Tailwind + Shadcn-Svelte | Utility CSS, accessible primitives            |
+| **Tooling**     | Biome + Lefthook         | Fast formatting, parallel pre-commit          |
+| **Infra**       | Docker + Nginx           | HTTPS termination, single-command deploy      |
 
 ---
 

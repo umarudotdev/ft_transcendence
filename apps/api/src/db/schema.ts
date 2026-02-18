@@ -3,10 +3,12 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgTable,
   serial,
   text,
   timestamp,
+  uuid,
 } from "drizzle-orm/pg-core";
 export const users = pgTable(
   "users",
@@ -256,7 +258,10 @@ export const matches = pgTable(
       onDelete: "set null",
     }),
 
-    gameType: text("game_type").notNull().default("pong"),
+    gameType: text("game_type").notNull().default("bullet_hell"),
+    sessionId: uuid("session_id").references(() => gameSessions.id, {
+      onDelete: "set null",
+    }),
     isAiGame: boolean("is_ai_game").default(false).notNull(),
     metadata: text("metadata"),
 
@@ -274,6 +279,59 @@ export const matches = pgTable(
     index("matches_created_at_idx").on(table.createdAt),
   ]
 );
+export const gameSessionStateEnum = [
+  "waiting",
+  "countdown",
+  "playing",
+  "finished",
+  "abandoned",
+] as const;
+export type GameSessionState = (typeof gameSessionStateEnum)[number];
+
+export const gameSessions = pgTable(
+  "game_sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    mode: text("mode").notNull().default("ranked"),
+    state: text("state").notNull().default("waiting"),
+    roomId: text("room_id"),
+    config: jsonb("config"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("game_sessions_state_idx").on(table.state),
+    index("game_sessions_room_id_idx").on(table.roomId),
+    index("game_sessions_created_at_idx").on(table.createdAt),
+  ]
+);
+
+export type GameSession = typeof gameSessions.$inferSelect;
+export type NewGameSession = typeof gameSessions.$inferInsert;
+
+export const matchmakingQueue = pgTable(
+  "matchmaking_queue",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: "cascade" }),
+    mode: text("mode").notNull().default("ranked"),
+    rating: integer("rating").notNull(),
+    queuedAt: timestamp("queued_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index("matchmaking_queue_user_id_idx").on(table.userId)]
+);
+
+export type MatchmakingQueueEntry = typeof matchmakingQueue.$inferSelect;
+export type NewMatchmakingQueueEntry = typeof matchmakingQueue.$inferInsert;
+
 export const friendshipStatusEnum = ["pending", "accepted", "blocked"] as const;
 export type FriendshipStatus = (typeof friendshipStatusEnum)[number];
 
@@ -318,7 +376,25 @@ export const matchesRelations = relations(matches, ({ one }) => ({
     references: [users.id],
     relationName: "wonMatches",
   }),
+  gameSession: one(gameSessions, {
+    fields: [matches.sessionId],
+    references: [gameSessions.id],
+  }),
 }));
+
+export const gameSessionsRelations = relations(gameSessions, ({ many }) => ({
+  matches: many(matches),
+}));
+
+export const matchmakingQueueRelations = relations(
+  matchmakingQueue,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [matchmakingQueue.userId],
+      references: [users.id],
+    }),
+  })
+);
 export const friendsRelations = relations(friends, ({ one }) => ({
   user: one(users, {
     fields: [friends.userId],

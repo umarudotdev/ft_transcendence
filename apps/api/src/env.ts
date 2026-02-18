@@ -46,6 +46,10 @@ const EnvSchema = Type.Object({
   RESEND_API_KEY: Type.Optional(Type.String()),
   EMAIL_FROM: Type.String({ default: "noreply@transcendence.umaru.dev" }),
 
+  // Game server
+  GAME_URL: Type.String({ default: "http://localhost:2567" }),
+  GAME_INTERNAL_SECRET: Type.String({ default: "dev-game-secret" }),
+
   // Logging configuration
   LOG_LEVEL: LogLevelSchema,
   LOG_FORMAT: LogFormatSchema,
@@ -76,6 +80,8 @@ function parseEnv(): Env {
     INTRA_CLIENT_SECRET: process.env.INTRA_CLIENT_SECRET,
     INTRA_REDIRECT_URI: process.env.INTRA_REDIRECT_URI,
     TOTP_ENCRYPTION_KEY: process.env.TOTP_ENCRYPTION_KEY,
+    GAME_URL: process.env.GAME_URL,
+    GAME_INTERNAL_SECRET: process.env.GAME_INTERNAL_SECRET,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     EMAIL_FROM: process.env.EMAIL_FROM,
     LOG_LEVEL: process.env.LOG_LEVEL,

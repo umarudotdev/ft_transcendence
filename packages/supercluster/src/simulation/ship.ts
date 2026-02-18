@@ -1,7 +1,8 @@
-import type { InputState, ShipState } from "../types";
-
-import { GAME_CONST } from "../constants";
-import { applyShipInputTransform } from "./movement";
+import type { ShipState } from "../types";
+import {
+  applyShipInputDelta,
+  type ShipInputDelta,
+} from "./movement";
 
 export type ShipCollisionEvent = "none" | "ship_damaged" | "ship_destroyed";
 
@@ -11,22 +12,18 @@ export interface ShipCollisionDamageResult {
 }
 
 /**
- * World-centric ship movement step.
- * Applies input on sphere surface and keeps direction tangent to surface.
+ * Apply a precomputed ship input delta to ship state.
+ * Useful when the same delta is reused by other entities in the same tick.
  */
-export function stepShipPositionWorld(
+export function stepShipPositionFromDelta(
   shipPosition: ShipState["position"],
   shipDirection: ShipState["direction"],
-  keys: InputState,
-  deltaTicks: number = 1,
-  speedRadPerTick: number = GAME_CONST.SHIP_SPEED
+  delta: ShipInputDelta
 ): { moved: boolean; position: ShipState["position"]; direction: ShipState["direction"] } {
-  return applyShipInputTransform(
+  return applyShipInputDelta(
     shipPosition,
     shipDirection,
-    keys,
-    deltaTicks,
-    speedRadPerTick
+    delta
   );
 }
 

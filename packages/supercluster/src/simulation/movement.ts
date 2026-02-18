@@ -117,6 +117,13 @@ export interface ReferenceBasis {
   right: Vec3Like;
 }
 
+export interface ShipInputDelta {
+  moved: boolean;
+  axis: Vec3Like;
+  angle: number;
+  fallbackForward: Vec3Like;
+}
+
 export function resolveReferenceBasis(
   referencePosition: Vec3Like,
   referenceDirection: Vec3Like
@@ -153,6 +160,89 @@ export function resolveReferenceBasis(
   };
 }
 
+export function computeShipInputDelta(
+  keys: InputState,
+  deltaTicks: number,
+  speedRadPerTick: number,
+  referencePosition: Vec3Like,
+  referenceDirection: Vec3Like
+): ShipInputDelta {
+  const inputForward = (keys.forward ? 1 : 0) - (keys.backward ? 1 : 0);
+  const inputRight = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  const stepAngle = speedRadPerTick * deltaTicks;
+
+  const basis = resolveReferenceBasis(referencePosition, referenceDirection);
+  if ((inputForward === 0 && inputRight === 0) || Math.abs(stepAngle) <= EPS) {
+    return {
+      moved: false,
+      axis: [1, 0, 0],
+      angle: 0,
+      fallbackForward: basis.forward,
+    };
+  }
+
+  GlVec3.scale(_v1, basis.forward, inputForward);
+  GlVec3.scaleAndAdd(_v1, _v1, basis.right, inputRight);
+  if (GlVec3.squaredLength(_v1) <= EPS) {
+    return {
+      moved: false,
+      axis: [1, 0, 0],
+      angle: 0,
+      fallbackForward: basis.forward,
+    };
+  }
+  GlVec3.normalize(_v1, _v1); // move direction on tangent plane
+
+  GlVec3.cross(_v2, basis.normal, _v1);
+  if (GlVec3.squaredLength(_v2) <= EPS) {
+    return {
+      moved: false,
+      axis: [1, 0, 0],
+      angle: 0,
+      fallbackForward: basis.forward,
+    };
+  }
+  GlVec3.normalize(_v2, _v2);
+
+  return {
+    moved: true,
+    axis: [_v2[0], _v2[1], _v2[2]],
+    angle: stepAngle,
+    fallbackForward: basis.forward,
+  };
+}
+
+export function applyShipInputDelta(
+  position: Vec3Like,
+  direction: Vec3Like,
+  delta: ShipInputDelta
+): { moved: boolean; position: Vec3Like; direction: Vec3Like } {
+  const pos: Vec3Like = [position[0], position[1], position[2]];
+  const dir: Vec3Like = [direction[0], direction[1], direction[2]];
+
+  if (delta.moved) {
+    GlQuat.setAxisAngle(_q1, delta.axis, delta.angle);
+    GlVec3.transformQuat(pos, pos, _q1);
+    GlVec3.transformQuat(dir, dir, _q1);
+  }
+
+  const posNorm = normalizeVec3(pos);
+  const dirNorm = normalizeVec3(dir, delta.fallbackForward);
+  const dirDotPos = GlVec3.dot(dirNorm, posNorm);
+  GlVec3.scale(_v3, posNorm, dirDotPos);
+  GlVec3.sub(_v3, dirNorm, _v3);
+  if (GlVec3.squaredLength(_v3) <= EPS) {
+    GlVec3.copy(_v3, delta.fallbackForward);
+  }
+  GlVec3.normalize(_v3, _v3);
+
+  return {
+    moved: delta.moved,
+    position: posNorm,
+    direction: [_v3[0], _v3[1], _v3[2]],
+  };
+}
+
 /**
  * Data-oriented sphere motion step for entities with position+direction.
  * Uses shared great-circle motion and returns normalized outputs.
@@ -171,91 +261,4 @@ export function stepSurfaceMotionState(
     position: normalizeVec3(p),
     direction: normalizeVec3(d),
   };
-}
-
-export function applyShipInputTransformRelativeToReference(
-  position: Vec3Like,
-  direction: Vec3Like,
-  keys: InputState,
-  deltaTicks: number,
-  speedRadPerTick: number,
-  referencePosition: Vec3Like,
-  referenceDirection: Vec3Like
-): { moved: boolean; position: Vec3Like; direction: Vec3Like } {
-  const inputForward = (keys.forward ? 1 : 0) - (keys.backward ? 1 : 0);
-  const inputRight = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-  const stepAngle = speedRadPerTick * deltaTicks;
-
-  if ((inputForward === 0 && inputRight === 0) || Math.abs(stepAngle) <= EPS) {
-    return {
-      moved: false,
-      position: normalizeVec3(position),
-      direction: normalizeVec3(direction),
-    };
-  }
-
-  const basis = resolveReferenceBasis(referencePosition, referenceDirection);
-
-  GlVec3.scale(_v1, basis.forward, inputForward);
-  GlVec3.scaleAndAdd(_v1, _v1, basis.right, inputRight);
-  if (GlVec3.squaredLength(_v1) <= EPS) {
-    return {
-      moved: false,
-      position: normalizeVec3(position),
-      direction: normalizeVec3(direction),
-    };
-  }
-  GlVec3.normalize(_v1, _v1); // move direction on tangent plane
-
-  GlVec3.cross(_v2, basis.normal, _v1);
-  if (GlVec3.squaredLength(_v2) <= EPS) {
-    return {
-      moved: false,
-      position: normalizeVec3(position),
-      direction: normalizeVec3(direction),
-    };
-  }
-  GlVec3.normalize(_v2, _v2);
-
-  GlQuat.setAxisAngle(_q1, _v2, stepAngle);
-
-  const pos: Vec3Like = [position[0], position[1], position[2]];
-  const dir: Vec3Like = [direction[0], direction[1], direction[2]];
-  GlVec3.transformQuat(pos, pos, _q1);
-  GlVec3.transformQuat(dir, dir, _q1);
-  GlVec3.normalize(pos, pos);
-
-  const posNorm = normalizeVec3(pos);
-  const dirNorm = normalizeVec3(dir, basis.forward);
-  const dirDotPos = GlVec3.dot(dirNorm, posNorm);
-  GlVec3.scale(_v3, posNorm, dirDotPos);
-  GlVec3.sub(_v3, dirNorm, _v3);
-  if (GlVec3.squaredLength(_v3) <= EPS) {
-    GlVec3.copy(_v3, basis.forward);
-  }
-  GlVec3.normalize(_v3, _v3);
-
-  return {
-    moved: true,
-    position: [pos[0], pos[1], pos[2]],
-    direction: [_v3[0], _v3[1], _v3[2]],
-  };
-}
-
-export function applyShipInputTransform(
-  position: Vec3Like,
-  direction: Vec3Like,
-  keys: InputState,
-  deltaTicks: number,
-  speedRadPerTick: number
-): { moved: boolean; position: Vec3Like; direction: Vec3Like } {
-  return applyShipInputTransformRelativeToReference(
-    position,
-    direction,
-    keys,
-    deltaTicks,
-    speedRadPerTick,
-    position,
-    direction
-  );
 }

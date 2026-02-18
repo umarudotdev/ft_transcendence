@@ -3,6 +3,7 @@ import * as THREE from "three";
 
 import { SHIP_GEOMETRY, createShipGeometry } from "../assets/ship-geometry";
 import { RENDERER_CONST } from "../constants/renderer";
+import { copyVec3ToThree } from "../utils/three-conversions";
 
 // ============================================================================
 // Ship Renderer
@@ -100,13 +101,8 @@ export class ShipRenderer {
     directionAngle: number,
     aimAngle: number
   ): void {
-	// THIS NEED TO BE CLEAR ************************************************
-    this._normal
-      .set(state.position[0], state.position[1], state.position[2])
-      .normalize();
-    this._forward
-      .set(state.direction[0], state.direction[1], state.direction[2])
-      .normalize();
+    copyVec3ToThree(this._normal, state.position).normalize();
+    copyVec3ToThree(this._forward, state.direction).normalize();
     this.group.position.copy(this._normal).multiplyScalar(GAME_CONST.SPHERE_RADIUS);
 
     // Keep forward tangent to normal (stable near poles).
@@ -125,7 +121,6 @@ export class ShipRenderer {
     this._basis.makeBasis(this._right, this._forward, this._normal);
     this._basisQuat.setFromRotationMatrix(this._basis);
     this.group.quaternion.copy(this._basisQuat);
-	// END HEAR *************************************************************
 
     // Apply direction rotation (where ship tip points)
     // Canonical heading convention: 0 = up (+Y), PI/2 = right (+X)

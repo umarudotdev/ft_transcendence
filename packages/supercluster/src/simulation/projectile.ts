@@ -1,13 +1,14 @@
 import { Vec3 as GlVec3, type Vec3Like } from "gl-matrix";
 
-import type { InputState, ProjectileState } from "../types";
+import type { ProjectileState } from "../types";
 
 import { GAME_CONST } from "../constants";
 import {
-  applyShipInputTransformRelativeToReference,
+  applyShipInputDelta,
   normalizeVec3,
   resolveReferenceBasis,
   stepSurfaceMotionState,
+  type ShipInputDelta,
 } from "./movement";
 
 const EPS = 1e-8;
@@ -74,11 +75,8 @@ export function spawnProjectilesFromAim(
 
 export function stepProjectiles(
   projectiles: readonly ProjectileState[],
-  keys: InputState,
   deltaTicks: number,
-  shipSpeedRadPerTick: number,
-  referencePosition: Vec3Like,
-  referenceDirection: Vec3Like
+  shipDelta: ShipInputDelta
 ): ProjectileState[] {
   if (projectiles.length === 0) return [];
   const stepAngle = GAME_CONST.PROJECTILE_SPEED * deltaTicks;
@@ -93,14 +91,10 @@ export function stepProjectiles(
       projectile.direction,
       stepAngle
     );
-    const worldMotion = applyShipInputTransformRelativeToReference(
+    const worldMotion = applyShipInputDelta(
       steppedMotion.position,
       steppedMotion.direction,
-      keys,
-      deltaTicks,
-      shipSpeedRadPerTick,
-      referencePosition,
-      referenceDirection
+      shipDelta
     );
 
     stepped.push({

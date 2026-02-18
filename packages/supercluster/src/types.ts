@@ -7,7 +7,7 @@
 // - Collision checks compare entities directly in that same frame.
 // ============================================================================
 
-import type { QuatLike, Vec3Like } from "gl-matrix";
+import type { Vec3Like } from "gl-matrix";
 
 // ============================================================================
 // Game Entities
@@ -21,7 +21,6 @@ import type { QuatLike, Vec3Like } from "gl-matrix";
 export interface ShipState {
   position: Vec3Like; // Unit vector position in world frame
   direction: Vec3Like; // Tangent unit vector in world frame
-  orientation: QuatLike; // Compatibility/debug/network-only
   aimAngle: number; // Canonical aim angle in ship-local tangent frame (radians)
   lives: number;
   invincible: boolean; // After taking damage

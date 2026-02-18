@@ -1,8 +1,9 @@
 import type { ServerWebSocket } from "bun";
-import type { QuatLike, Vec3Like } from "gl-matrix";
+import type { Vec3Like } from "gl-matrix";
 
 import {
   applyShipCollisionDamage,
+  computeShipInputDelta,
   createAsteroidWave,
   createInitialShipState,
   createWaveArray,
@@ -16,7 +17,7 @@ import {
   stepAsteroidHitLifecycle,
   stepAsteroids,
   stepProjectiles,
-  stepShipPositionWorld,
+  stepShipPositionFromDelta,
   stepShipInvincibilityState,
   type GameState,
   type InputState,
@@ -160,7 +161,6 @@ function tick(): void {
   if (state.gameStatus !== "playing") return;
 
   const controller = controllingClient;
-  // JUST NEW DATA ?? ********************************************************
   const activeKeys = controller
     ? (sessions.get(controller)?.keys ?? { ...DEFAULT_KEYS })
     : { ...DEFAULT_KEYS };
@@ -175,17 +175,21 @@ function tick(): void {
     state.ship.direction[1],
     state.ship.direction[2],
   ];
-  // END HERE ****************************************************************
+  const shipDelta = computeShipInputDelta(
+    activeKeys,
+    1,
+    GAME_CONST.SHIP_SPEED,
+    referenceShipPosition,
+    referenceShipDirection
+  );
 
   if (controller) {
     const controllingSession = sessions.get(controller);
     if (controllingSession) {
-      const stepped = stepShipPositionWorld(
+      const stepped = stepShipPositionFromDelta(
         state.ship.position,
         state.ship.direction,
-        controllingSession.keys,
-        1,
-        GAME_CONST.SHIP_SPEED
+        shipDelta
       );
       state.ship.position = stepped.position;
       state.ship.direction = stepped.direction;
@@ -211,11 +215,8 @@ function tick(): void {
 
   state.projectiles = stepProjectiles(
     state.projectiles,
-    activeKeys,
     1,
-    GAME_CONST.SHIP_SPEED,
-    referenceShipPosition,
-    referenceShipDirection
+    shipDelta
   );
   state.asteroids = stepAsteroids(state.asteroids, 1);
   resolveCollisions();
@@ -293,7 +294,6 @@ function toMessage(): ServerMessage {
         ...state.ship,
         position: [...state.ship.position] as Vec3Like,
         direction: [...state.ship.direction] as Vec3Like,
-        orientation: [...state.ship.orientation] as QuatLike,
       },
     },
     lastInputSeq: lastProcessedInputSeq,

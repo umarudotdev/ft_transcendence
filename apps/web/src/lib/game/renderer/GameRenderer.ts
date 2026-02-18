@@ -1,8 +1,5 @@
-import type { Vec3Like } from "gl-matrix";
-
 import {
   GAME_CONST,
-  DEFAULT_GAMEPLAY,
   getTargetHeadingFromInput,
   type GameState,
   type InputState,
@@ -10,7 +7,7 @@ import {
 import * as THREE from "three";
 
 import { RENDERER_CONST } from "../constants/renderer";
-import { threeToVec3 } from "../utils/three-conversions";
+import { copyVec3ToThree } from "../utils/three-conversions";
 import { GameOverScreen } from "./GameOverScreen";
 import { GameStage } from "./GameStage";
 import { InputController } from "./InputController";
@@ -54,7 +51,6 @@ export class GameRenderer {
 
   // Animation state
   private animationId: number | null = null;
-  private lastState: GameState | null = null;
   private lastTime: number = 0; //previous frame timestamp in milliseconds
   private simulationAccumulator = 0; // accumulated seconds of sim time not yet processed
   private readonly fixedSimulationStep = 1 / GAME_CONST.TICK_RATE; // sim step size in seconds (at 60 Hz, ~0.0167 s)
@@ -71,10 +67,6 @@ export class GameRenderer {
 
   // Ship heading angle (visual only - not part of authoritative state)
   private targetHeadingAngle = 0; // Where ship tip should point (from WASD)
-
-  // Ship state (will come from server in future)
-  private shipLives = DEFAULT_GAMEPLAY.shipLives;
-  private shipInvincible = DEFAULT_GAMEPLAY.shipInvincible;
 
   // Game state
   private isGameOver = false;
@@ -143,19 +135,13 @@ export class GameRenderer {
     this.stage.initialize();
 
     // Reset ship position to initial position
-    this.shipPosition.set(
-      GAME_CONST.SHIP_INITIAL_POS[0],
-      GAME_CONST.SHIP_INITIAL_POS[1],
-      GAME_CONST.SHIP_INITIAL_POS[2]
-    );
+    copyVec3ToThree(this.shipPosition, GAME_CONST.SHIP_INITIAL_POS);
     this.shipDirection.set(0, 1, 0);
     this.stage.world.group.quaternion.identity();
     this.updateCameraFollow(this.shipPosition, this.shipDirection);
 
-    // Reset ship state
+    // Reset ship visual input state
     this.targetHeadingAngle = 0;
-    this.shipLives = DEFAULT_GAMEPLAY.shipLives;
-    this.shipInvincible = DEFAULT_GAMEPLAY.shipInvincible;
 
     // Reset input and shooting state
     this.input.reset();
@@ -195,26 +181,10 @@ export class GameRenderer {
   // Game State Updates (from server)
   // ========================================================================
   updateState(state: GameState): void {
-    this.lastState = state;
-
     // Update internal state from server
-    this.shipPosition
-      .set(
-        state.ship.position[0],
-        state.ship.position[1],
-        state.ship.position[2]
-      )
-      .normalize();
-    this.shipDirection
-      .set(
-        state.ship.direction[0],
-        state.ship.direction[1],
-        state.ship.direction[2]
-      )
-      .normalize();
+    copyVec3ToThree(this.shipPosition, state.ship.position).normalize();
+    copyVec3ToThree(this.shipDirection, state.ship.direction).normalize();
     this.input.setAimAngle(state.ship.aimAngle);
-    this.shipLives = state.ship.lives;
-    this.shipInvincible = state.ship.invincible;
 
     // Apply to visuals
     this.stage.world.group.quaternion.identity();
@@ -312,7 +282,7 @@ export class GameRenderer {
   private updateSimulation(deltaTime: number): void {
     this.stage.update(deltaTime, this.camera.position);
   }
-  // THIS NEED TO BE CLEAR ***************************************************
+
   private updateCameraFollow(
     shipPosition: THREE.Vector3,
     shipDirection: THREE.Vector3
@@ -341,20 +311,12 @@ export class GameRenderer {
     this.camera.up.copy(upCandidate.normalize());
     this.camera.lookAt(this.center);
   }
-  // END HERE ****************************************************************
 
   stop(): void {
     if (this.animationId !== null) {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;
     }
-  }
-
-  /**
-   * Get current ship position as a unit vector.
-   */
-  getShipPosition(): Vec3Like {
-    return threeToVec3(this.shipPosition);
   }
 
   render(): void {

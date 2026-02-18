@@ -1,5 +1,4 @@
 import type { AsteroidState } from "@ft/supercluster";
-import type { Vec3Like } from "gl-matrix";
 
 import { GAME_CONST, GAMEPLAY_CONST } from "@ft/supercluster";
 import * as THREE from "three";
@@ -13,7 +12,9 @@ const FALLBACK_RADIUS = 1;
 export type AsteroidSize = AsteroidState["size"];
 
 export interface AsteroidData {
-  state: AsteroidState;
+  id: number;
+  size: AsteroidSize;
+  isHit: boolean;
   position: THREE.Vector3;
   direction: THREE.Vector3;
   rotationSpeedX: number;
@@ -60,7 +61,7 @@ export class AsteroidRenderer {
   syncFromStates(states: readonly AsteroidState[]): void {
     const previousById = new Map<number, AsteroidData>();
     for (const asteroid of this.asteroids) {
-      previousById.set(asteroid.state.id, asteroid);
+      previousById.set(asteroid.id, asteroid);
     }
 
     const tickSeconds = 1 / GAME_CONST.TICK_RATE;
@@ -74,11 +75,9 @@ export class AsteroidRenderer {
         (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_ROT_SPEED;
 
       return {
-        state: {
-          ...state,
-          position: [...state.position] as Vec3Like,
-          direction: [...state.direction] as Vec3Like,
-        },
+        id: state.id,
+        size: state.size,
+        isHit: state.isHit,
         position: vec3ToThree(state.position).normalize(),
         direction: vec3ToThree(state.direction).normalize(),
         rotationSpeedX,
@@ -140,13 +139,13 @@ export class AsteroidRenderer {
     this._quaternion.multiply(selfRotation);
 
     const visualSize =
-      GAMEPLAY_CONST.ASTEROID_DIAM[asteroid.state.size - 1] ?? FALLBACK_RADIUS;
+      GAMEPLAY_CONST.ASTEROID_DIAM[asteroid.size - 1] ?? FALLBACK_RADIUS;
     this._scale.set(visualSize, visualSize, visualSize);
 
     this._matrix.compose(this._position, this._quaternion, this._scale);
     this.instancedMesh.setMatrixAt(index, this._matrix);
 
-    if (asteroid.state.isHit) {
+    if (asteroid.isHit) {
       this.instancedMesh.setColorAt(
         index,
         new THREE.Color(RENDERER_CONST.ASTEROID_HIT_COLOR)

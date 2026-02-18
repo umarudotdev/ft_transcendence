@@ -77,7 +77,6 @@ export function createInitialShipState(): ShipState {
       GAME_CONST.SHIP_INITIAL_POS[2],
     ],
     direction: [0, 1, 0],
-    orientation: [0, 0, 0, 1],
     aimAngle: 0,
     lives: DEFAULT_GAMEPLAY.shipLives,
     invincible: DEFAULT_GAMEPLAY.shipInvincible,

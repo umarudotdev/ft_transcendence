@@ -103,7 +103,7 @@ export class GameRenderer {
       RENDERER_CONST.CAMERA_NEAR,
       RENDERER_CONST.CAMERA_FAR
     );
-    this.setupCamera();
+    // this.setupCamera();
 
     // Add lighting
     this.addLights();
@@ -137,7 +137,7 @@ export class GameRenderer {
     // Reset ship position to initial position
     copyVec3ToThree(this.shipPosition, GAME_CONST.SHIP_INITIAL_POS);
     this.shipDirection.set(0, 1, 0);
-    this.stage.world.group.quaternion.identity();
+    // this.stage.world.group.quaternion.identity();
     this.updateCameraFollow(this.shipPosition, this.shipDirection);
 
     // Reset ship visual input state
@@ -173,9 +173,9 @@ export class GameRenderer {
     this.scene.add(directional);
   }
 
-  private setupCamera(): void {
-    this.updateCameraFollow(this.shipPosition, this.shipDirection);
-  }
+//   private setupCamera(): void {
+//     this.updateCameraFollow(this.shipPosition, this.shipDirection);
+//   }
 
   // ========================================================================
   // Game State Updates (from server)
@@ -187,7 +187,7 @@ export class GameRenderer {
     this.input.setAimAngle(state.ship.aimAngle);
 
     // Apply to visuals
-    this.stage.world.group.quaternion.identity();
+    // this.stage.world.group.quaternion.identity();
     this.updateCameraFollow(this.shipPosition, this.shipDirection);
     const shipDirectionAngle = this.stage.ship.lerpDirection(
       this.targetHeadingAngle,

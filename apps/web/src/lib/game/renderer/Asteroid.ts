@@ -11,6 +11,21 @@ const FALLBACK_RADIUS = 1;
 
 export type AsteroidSize = AsteroidState["size"];
 
+function resolveRotationSpeed(previousSpeed?: number): number {
+  return (
+    previousSpeed ?? (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_ROT_SPEED
+  );
+}
+
+function resolveRotationAngle(
+  previousAngle: number | undefined,
+  speed: number,
+  tickSeconds: number
+): number {
+  const base = previousAngle ?? Math.random() * Math.PI * 2;
+  return base + speed * tickSeconds;
+}
+
 export interface AsteroidData {
   id: number;
   size: AsteroidSize;
@@ -67,12 +82,8 @@ export class AsteroidRenderer {
     const tickSeconds = 1 / GAME_CONST.TICK_RATE;
     this.asteroids = states.map((state) => {
       const previous = previousById.get(state.id);
-      const rotationSpeedX =
-        previous?.rotationSpeedX ??
-        (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_ROT_SPEED;
-      const rotationSpeedY =
-        previous?.rotationSpeedY ??
-        (Math.random() - 0.5) * RENDERER_CONST.ASTEROID_ROT_SPEED;
+      const rotationSpeedX = resolveRotationSpeed(previous?.rotationSpeedX);
+      const rotationSpeedY = resolveRotationSpeed(previous?.rotationSpeedY);
 
       return {
         id: state.id,
@@ -82,12 +93,16 @@ export class AsteroidRenderer {
         direction: vec3ToThree(state.direction).normalize(),
         rotationSpeedX,
         rotationSpeedY,
-        rotationX:
-          (previous?.rotationX ?? Math.random() * Math.PI * 2) +
-          rotationSpeedX * tickSeconds,
-        rotationY:
-          (previous?.rotationY ?? Math.random() * Math.PI * 2) +
-          rotationSpeedY * tickSeconds,
+        rotationX: resolveRotationAngle(
+          previous?.rotationX,
+          rotationSpeedX,
+          tickSeconds
+        ),
+        rotationY: resolveRotationAngle(
+          previous?.rotationY,
+          rotationSpeedY,
+          tickSeconds
+        ),
       };
     });
 

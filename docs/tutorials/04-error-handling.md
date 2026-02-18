@@ -626,5 +626,4 @@ Think of your code as trains on a railway:
 
 - [ADR 008: neverthrow for Service Errors](/decisions/0008-use-neverthrow-for-service-errors)
 - [ADR 005: RFC 9457 Problem Details](/decisions/0005-use-rfc9457-problem-details-for-errors)
-- [neverthrow GitHub](https://github.com/supermacro/neverthrow)
 - [Railway Oriented Programming (F# for Fun and Profit)](https://fsharpforfunandprofit.com/rop/)

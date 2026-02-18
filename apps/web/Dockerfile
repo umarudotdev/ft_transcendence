@@ -13,6 +13,8 @@ COPY package.json bun.lock ./
 # Copy workspace package.json files
 COPY apps/web/package.json ./apps/web/
 COPY apps/api/package.json ./apps/api/
+COPY apps/game-server/package.json ./apps/game-server/
+COPY packages/supercluster/package.json ./packages/supercluster/
 
 # Install dependencies (skip prepare script - no git in container)
 RUN bun install --frozen-lockfile --ignore-scripts
@@ -28,6 +30,9 @@ COPY --from=install /usr/src/app/node_modules ./node_modules
 COPY --from=install /usr/src/app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=install /usr/src/app/apps/api/node_modules ./apps/api/node_modules
 COPY . .
+
+# Re-resolve workspace symlinks now that full source is available
+RUN bun install --ignore-scripts
 
 WORKDIR /usr/src/app/apps/web
 
@@ -48,6 +53,9 @@ COPY --from=install /usr/src/app/node_modules ./node_modules
 COPY --from=install /usr/src/app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=install /usr/src/app/apps/api/node_modules ./apps/api/node_modules
 COPY . .
+
+# Re-resolve workspace symlinks now that full source is available
+RUN bun install --ignore-scripts
 
 WORKDIR /usr/src/app/apps/web
 

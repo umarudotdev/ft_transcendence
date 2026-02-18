@@ -1,19 +1,27 @@
-_This project has been created as part of the 42 curriculum by [LOGIN_1], [LOGIN_2], [LOGIN_3], [LOGIN_4], [LOGIN_5]._
+_This project has been created as part of the 42 curriculum by [LOGIN_1],
+[LOGIN_2], [LOGIN_3], [LOGIN_4], [LOGIN_5]._
 
 # ft_transcendence
 
 ## Description
 
-**ft_transcendence** is a real-time multiplayer Pong platform featuring competitive gameplay, live chat, and secure authentication. Players can challenge each other to matches, compete against an AI opponent, track their statistics, and climb the leaderboard.
+**ft_transcendence** is a real-time multiplayer bullet hell shoot 'em up
+featuring competitive ranked gameplay, live chat, and secure authentication.
+Players control ships in top-down arenas, dodge bullet patterns, use abilities,
+and compete for Elo ratings on the leaderboard.
 
 ### Key Features
 
-- **Real-Time Multiplayer Pong** - Server-authoritative game state at 60 ticks/s prevents cheating
-- **AI Opponent** - Server-side bot with human-like reaction delays for single-player practice
+- **Real-Time Bullet Hell Combat** - Server-authoritative game state at 60
+  ticks/s via dedicated Rust game server
+- **Ranked Matchmaking** - Elo-based rating system with
+  Bronze/Silver/Gold/Platinum tiers
+- **AI Opponent** - Server-side bot with configurable difficulty for
+  single-player practice
+- **Ability System** - Dash, shield, bomb, and ultimate abilities with cooldowns
 - **Live Chat** - Direct messages and game invites via WebSocket
 - **Secure Authentication** - 42 OAuth integration with optional TOTP-based 2FA
 - **User Profiles** - Customizable avatars, friend system, and match history
-- **Leaderboard** - Win/loss tracking and player rankings
 
 ---
 
@@ -22,8 +30,10 @@ _This project has been created as part of the 42 curriculum by [LOGIN_1], [LOGIN
 ### Prerequisites
 
 - **Docker** & **Docker Compose** (latest versions)
-- **Ports available:** 443 (HTTPS), 3000 (frontend), 4000 (backend), 5432 (PostgreSQL)
-- **42 API credentials** - obtain from [42 Intra OAuth Applications](https://profile.intra.42.fr/oauth/applications)
+- **Ports available:** 443 (HTTPS), 3000 (frontend), 4000 (backend), 3001 (game
+  server), 5432 (PostgreSQL)
+- **42 API credentials** - obtain from
+  [42 Intra OAuth Applications](https://profile.intra.42.fr/oauth/applications)
 
 ### Installation & Execution
 
@@ -58,8 +68,8 @@ _This project has been created as part of the 42 curriculum by [LOGIN_1], [LOGIN
    docker compose up --build
    ```
 
-4. **Access the application:**
-   Open **https://localhost** (accept the self-signed certificate warning)
+4. **Access the application:** Open **https://localhost** (accept the
+   self-signed certificate warning)
 
 ### Stopping the Application
 
@@ -86,7 +96,8 @@ docker compose down -v   # Stop and reset database
 
 ### Methodology
 
-We use **Agile/Scrum** with weekly sprints and **Vertical Slice Architecture** to enable parallel development.
+We use **Agile/Scrum** with weekly sprints and **Vertical Slice Architecture**
+to enable parallel development.
 
 ### Tools & Communication
 
@@ -99,7 +110,7 @@ We use **Agile/Scrum** with weekly sprints and **Vertical Slice Architecture** t
 
 ### Workflow
 
-- **Branching:** `type/scope/description` (e.g., `feat/game/paddle-physics`)
+- **Branching:** `type/description` (e.g., `feat/bullet-patterns`)
 - **Commits:** Conventional Commits enforced by Lefthook
 - **Merge:** Squash and merge only
 
@@ -107,22 +118,28 @@ We use **Agile/Scrum** with weekly sprints and **Vertical Slice Architecture** t
 
 ## Technical Stack
 
-| Layer        | Technology               | Justification                                                                |
-| ------------ | ------------------------ | ---------------------------------------------------------------------------- |
-| **Runtime**  | Bun                      | Native TypeScript (no build step), 10x faster startup than Node.js           |
-| **Frontend** | SvelteKit                | Mandatory SSR, compiled output, simple state management via stores           |
-| **Backend**  | ElysiaJS                 | Bun-optimized, Eden Treaty provides end-to-end type safety with frontend     |
-| **Database** | PostgreSQL               | Relational integrity for Users, Matches, and Chat data                       |
-| **ORM**      | Drizzle                  | TypeScript-native, no binary dependencies, works in Bun/Alpine containers    |
-| **Auth**     | Arctic + Oslo            | Arctic for 42 OAuth, Oslo for TOTP 2FA. Database sessions for instant revoke |
-| **Styling**  | Tailwind + Shadcn-Svelte | Utility-first CSS with accessible component primitives (Bits UI)             |
-| **Infra**    | Docker + Nginx           | Containerized deployment with HTTPS termination                              |
+| Layer           | Technology               | Justification                                                                |
+| --------------- | ------------------------ | ---------------------------------------------------------------------------- |
+| **Runtime**     | Bun (API) + Rust (Game)  | TypeScript for CRUD services, Rust for real-time game performance            |
+| **Frontend**    | SvelteKit                | Mandatory SSR, compiled output, simple state management via stores           |
+| **API Server**  | ElysiaJS                 | Bun-optimized, Eden Treaty provides end-to-end type safety with frontend     |
+| **Game Server** | Axum + Tokio             | Async runtime, predictable 60Hz timing, no GC pauses                         |
+| **Database**    | PostgreSQL               | Relational integrity for Users, Matches, and Chat data                       |
+| **ORM**         | Drizzle                  | TypeScript-native, no binary dependencies, works in Bun/Alpine containers    |
+| **Auth**        | Arctic + Oslo            | Arctic for 42 OAuth, Oslo for TOTP 2FA. Database sessions for instant revoke |
+| **Styling**     | Tailwind + Shadcn-Svelte | Utility-first CSS with accessible component primitives (Bits UI)             |
+| **Infra**       | Docker + Nginx           | Containerized deployment with HTTPS termination                              |
 
 ### Why This Stack?
 
-- **End-to-End Type Safety:** Eden Treaty auto-generates typed API client from backend routes
-- **Database Sessions over JWT:** Immediate session revocation on logout/ban, fully explainable during defense
-- **Vertical Slice Architecture:** Features are self-contained modules, reducing merge conflicts
+- **Hybrid Architecture:** ElysiaJS handles HTTP/CRUD, Rust handles 60Hz game
+  loop with no GC pauses
+- **End-to-End Type Safety:** Eden Treaty auto-generates typed API client from
+  backend routes
+- **Database Sessions over JWT:** Immediate session revocation on logout/ban,
+  fully explainable during defense
+- **Vertical Slice Architecture:** Features are self-contained modules, reducing
+  merge conflicts
 
 ---
 
@@ -131,10 +148,13 @@ We use **Agile/Scrum** with weekly sprints and **Vertical Slice Architecture** t
 ```mermaid
 erDiagram
     users ||--o{ sessions : has
-    users ||--o{ matches : "plays as player1"
-    users ||--o{ matches : "plays as player2"
+    users ||--o{ game_session_players : joins
+    users ||--o{ matches : plays
     users ||--o{ messages : sends
     users ||--o{ friendships : has
+
+    game_sessions ||--o{ game_session_players : has
+    game_sessions ||--o{ matches : records
 
     users {
         serial id PK
@@ -143,6 +163,7 @@ erDiagram
         text avatar_url
         text totp_secret
         boolean totp_enabled
+        integer rating
         timestamp created_at
     }
 
@@ -150,15 +171,40 @@ erDiagram
         text session_id PK
         integer user_id FK
         timestamp expires_at
+    }
+
+    game_sessions {
+        uuid id PK
+        text mode
+        jsonb config
+        text state
+        text server_url
         timestamp created_at
+        timestamp started_at
+        timestamp ended_at
+    }
+
+    game_session_players {
+        serial id PK
+        uuid session_id FK
+        integer user_id FK
+        integer team
+        boolean ready
+    }
+
+    matchmaking_queue {
+        serial id PK
+        integer user_id FK UK
+        text mode
+        integer rating
+        timestamp queued_at
     }
 
     matches {
         serial id PK
-        integer player1_id FK
-        integer player2_id FK
-        integer player1_score
-        integer player2_score
+        uuid session_id FK
+        integer winner_id FK
+        jsonb game_data
         timestamp played_at
     }
 
@@ -179,13 +225,16 @@ erDiagram
     }
 ```
 
-| Table         | Purpose                                           |
-| ------------- | ------------------------------------------------- |
-| `users`       | Authentication data, profile info, 2FA settings   |
-| `sessions`    | Database-backed sessions for immediate revocation |
-| `matches`     | Game history with scores                          |
-| `messages`    | Chat logs between users                           |
-| `friendships` | Friend relationships (pending/accepted status)    |
+| Table                  | Purpose                                            |
+| ---------------------- | -------------------------------------------------- |
+| `users`                | Authentication data, profile info, 2FA, Elo rating |
+| `sessions`             | Database-backed sessions for immediate revocation  |
+| `game_sessions`        | Active and completed game instances                |
+| `game_session_players` | Players assigned to game sessions                  |
+| `matchmaking_queue`    | Players waiting for opponent pairing               |
+| `matches`              | Completed game results with winner and game data   |
+| `messages`             | Chat logs between users                            |
+| `friendships`          | Friend relationships (pending/accepted status)     |
 
 ---
 
@@ -211,12 +260,13 @@ erDiagram
 
 ### Gameplay
 
-| Feature            | Description                               | Owner     |
-| ------------------ | ----------------------------------------- | --------- |
-| Pong Game          | Canvas-based game with ball physics       | [LOGIN_5] |
-| Matchmaking Queue  | Auto-match within 30 seconds              | [LOGIN_5] |
-| AI Opponent        | Server-controlled bot with reaction delay | [LOGIN_5] |
-| Remote Multiplayer | Real-time play between two computers      | [LOGIN_5] |
+| Feature            | Description                                       | Owner     |
+| ------------------ | ------------------------------------------------- | --------- |
+| Bullet Hell Combat | Top-down ship combat on HTML5 Canvas              | [LOGIN_5] |
+| Ranked Matchmaking | Elo-based queue with rating tiers                 | [LOGIN_5] |
+| AI Opponent        | Server-side bot with configurable difficulty      | [LOGIN_5] |
+| Remote Multiplayer | Real-time play via Rust game server at 60 ticks/s | [LOGIN_5] |
+| Ability System     | Dash, shield, bomb, and ultimate abilities        | [LOGIN_5] |
 
 ### Chat
 
@@ -235,7 +285,7 @@ erDiagram
 | **Web**      | Use a Framework (Front+Back) | Major | 2      | SvelteKit (frontend) + ElysiaJS (backend)          | [LOGIN_1] |
 | **Web**      | Server-Side Rendering        | Minor | 1      | SvelteKit SSR for landing, profiles, match history | [LOGIN_2] |
 | **Web**      | Use an ORM                   | Minor | 1      | Drizzle ORM for all database interactions          | [LOGIN_4] |
-| **Gaming**   | Web-based Game               | Major | 2      | Pong on HTML5 Canvas with physics engine           | [LOGIN_5] |
+| **Gaming**   | Web-based Game               | Major | 2      | Bullet hell on HTML5 Canvas with physics engine    | [LOGIN_5] |
 | **Gaming**   | Remote Players               | Major | 2      | WebSocket synchronization at 60 ticks/s            | [LOGIN_5] |
 | **AI**       | AI Opponent                  | Major | 2      | Server-side bot with 100ms reaction delay          | [LOGIN_5] |
 | **User**     | Standard User Management     | Major | 2      | 42 OAuth, profile editing, avatar upload, friends  | [LOGIN_4] |
@@ -245,10 +295,14 @@ erDiagram
 
 ### Module Justifications
 
-- **Frameworks (2pts):** SvelteKit provides mandatory SSR; ElysiaJS offers Eden Treaty for end-to-end type safety
-- **ORM (1pt):** Drizzle chosen over Prisma for Bun/Alpine compatibility (no binary dependencies)
-- **AI Opponent (2pts):** Human-like behavior with 100ms reaction delay and ±20px error margin prevents perfect play
-- **2FA (1pt):** Oslo TOTP allows full code transparency for defense (no "black box" libraries)
+- **Frameworks (2pts):** SvelteKit provides mandatory SSR; ElysiaJS offers Eden
+  Treaty for end-to-end type safety
+- **ORM (1pt):** Drizzle chosen over Prisma for Bun/Alpine compatibility (no
+  binary dependencies)
+- **AI Opponent (2pts):** Human-like behavior with 100ms reaction delay and
+  ±20px error margin prevents perfect play
+- **2FA (1pt):** Oslo TOTP allows full code transparency for defense (no "black
+  box" libraries)
 
 ---
 
@@ -257,10 +311,12 @@ erDiagram
 ### [LOGIN_1] - Technical Lead / Architect
 
 - Set up Bun monorepo with workspaces configuration
+- Designed hybrid architecture (ElysiaJS API + Rust game server)
 - Configured Docker infrastructure (Nginx, PostgreSQL, multi-stage builds)
 - Established Biome/Lefthook tooling for code quality
 - Designed vertical slice architecture and reviewed all PRs
-- **Challenges:** Resolving Bun/Alpine compatibility issues with native modules
+- **Challenges:** Coordinating two-language stack (TypeScript + Rust) and
+  inter-service communication
 
 ### [LOGIN_2] - Product Owner / Frontend Lead
 
@@ -288,11 +344,14 @@ erDiagram
 
 ### [LOGIN_5] - Game Developer
 
-- Built PongEngine with server-authoritative physics
-- Implemented WebSocket gateway for real-time game state
-- Created AI opponent with configurable difficulty
-- Handled client prediction and server reconciliation
-- **Challenges:** Achieving smooth 60fps gameplay with network latency compensation
+- Built Rust game server with Axum + Tokio for 60Hz fixed timestep loop
+- Implemented entity systems (players, bullets), physics, and collision
+  detection
+- Created combat system with abilities and cooldowns
+- Implemented AI opponent with configurable difficulty and bullet patterns
+- Built frontend game renderer with client prediction and interpolation
+- **Challenges:** Achieving smooth 60fps gameplay with network latency
+  compensation in Rust
 
 ---
 
@@ -300,8 +359,10 @@ erDiagram
 
 ### Documentation
 
-- [ElysiaJS](https://elysiajs.com) - Backend framework
+- [ElysiaJS](https://elysiajs.com) - API server framework
 - [SvelteKit](https://kit.svelte.dev) - Frontend framework
+- [Axum](https://github.com/tokio-rs/axum) - Rust game server framework
+- [Tokio](https://tokio.rs) - Async Rust runtime
 - [Drizzle ORM](https://orm.drizzle.team) - Database ORM
 - [Bun](https://bun.sh) - JavaScript runtime
 - [Arctic](https://arcticjs.dev) - OAuth library
@@ -311,12 +372,17 @@ erDiagram
 
 AI tools (GitHub Copilot, Claude) were used to assist with:
 
-- **Boilerplate generation:** Initial Drizzle schema definitions and TypeBox validation types
-- **Debugging:** Analyzing Docker networking errors and WebSocket connection issues
+- **Boilerplate generation:** Initial Drizzle schema definitions and TypeBox
+  validation types
+- **Debugging:** Analyzing Docker networking errors and WebSocket connection
+  issues
 - **Documentation:** Drafting initial README structure and ADR templates
-- **Code review:** Identifying potential security vulnerabilities and type errors
+- **Code review:** Identifying potential security vulnerabilities and type
+  errors
 
-_All AI-generated code was manually reviewed, tested, and understood by team members. During evaluation, any team member can explain any part of the codebase._
+_All AI-generated code was manually reviewed, tested, and understood by team
+members. During evaluation, any team member can explain any part of the
+codebase._
 
 ---
 
@@ -329,4 +395,5 @@ _All AI-generated code was manually reviewed, tested, and understood by team mem
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
+for details.

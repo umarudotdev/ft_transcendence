@@ -9,7 +9,7 @@
 	import TrophyIcon from '@lucide/svelte/icons/trophy';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import SwordsIcon from '@lucide/svelte/icons/swords';
-	import UserIcon from '@lucide/svelte/icons/user';
+
 
 	const meQuery = createMeQuery();
 	const statsQuery = createMyStatsQuery();
@@ -46,16 +46,10 @@
 						Jump into a quick match against another player or practice your skills against the AI.
 					</p>
 				</div>
-				<div class="flex flex-col gap-2 sm:flex-row">
-					<Button size="lg" class="gap-2">
-						<SwordsIcon class="size-5" />
-						Quick Match
-					</Button>
-					<Button size="lg" variant="outline" class="gap-2">
-						<UserIcon class="size-5" />
-						Play vs AI
-					</Button>
-				</div>
+				<Button size="lg" class="gap-2" href="/game">
+					<SwordsIcon class="size-5" />
+					Quick Match
+				</Button>
 			</div>
 		</Card.Content>
 	</Card.Root>

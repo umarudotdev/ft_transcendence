@@ -9,6 +9,7 @@
     "dev": "bun run --filter './apps/*' dev",
     "dev:api": "bun run --filter '@ft/api' dev",
     "dev:web": "bun run --filter '@ft/web' dev",
+    "dev:game": "bun run --filter '@ft/game-server' dev",
     "build": "bun run --filter './apps/*' build",
     "build:api": "bun run --filter '@ft/api' build",
     "build:web": "bun run --filter '@ft/web' build",

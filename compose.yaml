@@ -30,8 +30,12 @@ services:
       LOG_FORMAT: pretty
       LOG_LEVEL: debug
       SHUTDOWN_TIMEOUT_MS: "10000"
-      CHAT_ENCRYPTION_KEY: dev-chat-encryption-key-32bytes!
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY}
+      CHAT_ENCRYPTION_KEY: ${CHAT_ENCRYPTION_KEY}
       FRONTEND_URL: http://localhost:5173
+      INTRA_CLIENT_ID: ${INTRA_CLIENT_ID:-}
+      INTRA_CLIENT_SECRET: ${INTRA_CLIENT_SECRET:-}
+      INTRA_REDIRECT_URI: ${INTRA_REDIRECT_URI:-http://localhost:3000/api/auth/42/callback}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@transcendence.umaru.dev}
     volumes:
@@ -51,6 +55,22 @@ services:
         - action: sync
           path: ./apps/api/src
           target: /usr/src/app/apps/api/src
+
+  game-server:
+    build:
+      context: .
+      dockerfile: apps/game-server/Dockerfile
+      target: development
+    restart: unless-stopped
+    ports:
+      - "9944:9944"
+    environment:
+      NODE_ENV: development
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/game-server/src
+          target: /usr/src/app/apps/game-server/src
 
   web:
     build:

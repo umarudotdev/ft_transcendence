@@ -54,5 +54,6 @@
   },
   "editor.codeActionsOnSave": {
     "source.fixAll.oxc": "explicit"
-  }
+  },
+  "npm.packageManager": "bun"
 }

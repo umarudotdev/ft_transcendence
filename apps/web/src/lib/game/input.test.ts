@@ -7,11 +7,18 @@ describe("createInputHandler", () => {
   let onInputChange: ReturnType<typeof vi.fn<(input: unknown) => void>>;
   let onAbility: ReturnType<typeof vi.fn<(slot: number) => void>>;
   let handler: ReturnType<typeof createInputHandler>;
+  let mockCanvas: HTMLCanvasElement;
 
   beforeEach(() => {
     onInputChange = vi.fn<(input: unknown) => void>();
     onAbility = vi.fn<(slot: number) => void>();
-    handler = createInputHandler(onInputChange, onAbility);
+    mockCanvas = document.createElement("canvas");
+    handler = createInputHandler(
+      onInputChange,
+      onAbility,
+      mockCanvas,
+      () => null
+    );
     handler.attach();
   });
 

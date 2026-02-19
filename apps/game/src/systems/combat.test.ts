@@ -23,6 +23,7 @@ function createTwoPlayerState(): {
   p1.x = 400;
   p1.y = 100;
   p1.connected = true;
+  p1.aimAngle = 0; // Aiming up
   state.players.set("p1", p1);
 
   const p2 = new PlayerSchema();
@@ -30,6 +31,7 @@ function createTwoPlayerState(): {
   p2.x = 400;
   p2.y = 500;
   p2.connected = true;
+  p2.aimAngle = Math.PI; // Aiming down
   state.players.set("p2", p2);
 
   return { state, p1, p2 };

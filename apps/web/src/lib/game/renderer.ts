@@ -33,6 +33,7 @@ export interface PlayerRenderState {
   ultimateCharge: number;
   ability1CooldownUntil: number;
   ability2CooldownUntil: number;
+  aimAngle: number;
 }
 
 export interface BulletRenderState {
@@ -123,27 +124,26 @@ function drawPlayers(
     ctx.shadowColor = color;
     ctx.shadowBlur = 12;
 
-    // Ship body (triangle)
+    // Ship body (triangle) — rotated to face aimAngle
     ctx.save();
     ctx.translate(player.x, player.y);
-
-    const direction = isP1 ? -1 : 1;
+    ctx.rotate(player.aimAngle);
 
     ctx.beginPath();
-    ctx.moveTo(0, -16 * direction);
-    ctx.lineTo(-12, 12 * direction);
-    ctx.lineTo(12, 12 * direction);
+    ctx.moveTo(0, -16);
+    ctx.lineTo(-12, 12);
+    ctx.lineTo(12, 12);
     ctx.closePath();
 
     ctx.fillStyle = color;
     ctx.fill();
 
-    // Engine glow
+    // Engine glow (always behind ship in local space)
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.moveTo(-6, 12 * direction);
-    ctx.lineTo(0, (18 + Math.sin(tick * 0.3) * 4) * direction);
-    ctx.lineTo(6, 12 * direction);
+    ctx.moveTo(-6, 12);
+    ctx.lineTo(0, 18 + Math.sin(tick * 0.3) * 4);
+    ctx.lineTo(6, 12);
     ctx.closePath();
     ctx.fill();
 

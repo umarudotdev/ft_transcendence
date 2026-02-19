@@ -34,6 +34,7 @@ const InputSchema = z.object({
   right: z.boolean(),
   fire: z.boolean(),
   focus: z.boolean(),
+  aimAngle: z.number(),
 });
 
 type InputState = z.infer<typeof InputSchema>;
@@ -195,6 +196,7 @@ export class GameRoom extends Room<{ state: GameState }> {
     // Player 1 spawns at bottom, Player 2 at top
     player.x = CANVAS_WIDTH / 2;
     player.y = index === 0 ? CANVAS_HEIGHT - 60 : 60;
+    player.aimAngle = index === 0 ? 0 : Math.PI;
 
     this.state.players.set(client.sessionId, player);
 
@@ -414,6 +416,7 @@ export class GameRoom extends Room<{ state: GameState }> {
 
     player.isFiring = input.fire;
     player.isFocusing = input.focus;
+    player.aimAngle = input.aimAngle;
   }
 
   private startCountdown() {

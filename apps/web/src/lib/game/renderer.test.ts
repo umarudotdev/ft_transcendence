@@ -27,6 +27,7 @@ function createMockCtx(): CanvasRenderingContext2D {
     save: vi.fn(),
     restore: vi.fn(),
     translate: vi.fn(),
+    rotate: vi.fn(),
   };
   return ctx as unknown as CanvasRenderingContext2D;
 }
@@ -49,6 +50,7 @@ function createDefaultPlayer(
     ultimateCharge: 0,
     ability1CooldownUntil: 0,
     ability2CooldownUntil: 0,
+    aimAngle: 0,
     ...overrides,
   };
 }

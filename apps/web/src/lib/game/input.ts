@@ -5,9 +5,12 @@ export interface InputState {
   right: boolean;
   fire: boolean;
   focus: boolean;
+  aimAngle: number;
 }
 
-const KEY_MAP: Record<string, keyof InputState> = {
+type BooleanKey = "up" | "down" | "left" | "right" | "fire" | "focus";
+
+const KEY_MAP: Record<string, BooleanKey> = {
   ArrowUp: "up",
   ArrowDown: "down",
   ArrowLeft: "left",
@@ -23,7 +26,9 @@ const KEY_MAP: Record<string, keyof InputState> = {
 
 export function createInputHandler(
   onInputChange: (input: InputState) => void,
-  onAbility: (slot: number) => void
+  onAbility: (slot: number) => void,
+  canvas: HTMLCanvasElement,
+  getMyPosition: () => { x: number; y: number } | null
 ) {
   const state: InputState = {
     up: false,
@@ -32,6 +37,7 @@ export function createInputHandler(
     right: false,
     fire: false,
     focus: false,
+    aimAngle: 0,
   };
 
   function handleKeyDown(e: KeyboardEvent) {
@@ -67,20 +73,44 @@ export function createInputHandler(
     }
   }
 
+  function handleMouseMove(e: MouseEvent) {
+    const pos = getMyPosition();
+    if (!pos) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    const cursorX = (e.clientX - rect.left) * scaleX;
+    const cursorY = (e.clientY - rect.top) * scaleY;
+
+    const dx = cursorX - pos.x;
+    const dy = cursorY - pos.y;
+
+    const newAngle = Math.atan2(dx, -dy);
+    if (newAngle !== state.aimAngle) {
+      state.aimAngle = newAngle;
+      onInputChange({ ...state });
+    }
+  }
+
   function attach() {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+    canvas.addEventListener("mousemove", handleMouseMove);
   }
 
   function detach() {
     window.removeEventListener("keydown", handleKeyDown);
     window.removeEventListener("keyup", handleKeyUp);
+    canvas.removeEventListener("mousemove", handleMouseMove);
     state.up = false;
     state.down = false;
     state.left = false;
     state.right = false;
     state.fire = false;
     state.focus = false;
+    state.aimAngle = 0;
   }
 
   return { attach, detach, state };

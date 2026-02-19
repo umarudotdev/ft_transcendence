@@ -17,11 +17,6 @@ let canvas: HTMLCanvasElement;
 let ctx: CanvasRenderingContext2D | null = null;
 let animationId: number;
 
-const inputHandler = createInputHandler(
-	(input) => gameStore.sendInput(input),
-	(slot) => gameStore.sendAbility(slot),
-);
-
 function gameLoop() {
 	if (!ctx) return;
 
@@ -42,6 +37,17 @@ function gameLoop() {
 
 onMount(() => {
 	ctx = canvas.getContext("2d");
+
+	const inputHandler = createInputHandler(
+		(input) => gameStore.sendInput(input),
+		(slot) => gameStore.sendAbility(slot),
+		canvas,
+		() => {
+			const player = gameStore.getMyPlayer();
+			if (!player) return null;
+			return { x: player.x, y: player.y };
+		},
+	);
 
 	inputHandler.attach();
 	animationId = requestAnimationFrame(gameLoop);

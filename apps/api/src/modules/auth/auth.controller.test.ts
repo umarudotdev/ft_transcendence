@@ -34,6 +34,7 @@ describe("Auth Schema Validation", () => {
             email: "test@example.com",
             password: "ValidPass123",
             displayName: "TestUser",
+            username: "testuser",
           }),
         })
       );
@@ -50,6 +51,7 @@ describe("Auth Schema Validation", () => {
             email: "not-an-email",
             password: "ValidPass123",
             displayName: "TestUser",
+            username: "testuser",
           }),
         })
       );
@@ -66,6 +68,7 @@ describe("Auth Schema Validation", () => {
             email: "test@example.com",
             password: "short",
             displayName: "TestUser",
+            username: "testuser",
           }),
         })
       );
@@ -73,7 +76,7 @@ describe("Auth Schema Validation", () => {
       expect(response.status).toBe(422);
     });
 
-    test("rejects display name shorter than 3 characters", async () => {
+    test("rejects username shorter than 3 characters", async () => {
       const response = await app.handle(
         new Request("http://localhost/register", {
           method: "POST",
@@ -81,7 +84,8 @@ describe("Auth Schema Validation", () => {
           body: JSON.stringify({
             email: "test@example.com",
             password: "ValidPass123",
-            displayName: "AB",
+            displayName: "TestUser",
+            username: "ab",
           }),
         })
       );
@@ -89,7 +93,7 @@ describe("Auth Schema Validation", () => {
       expect(response.status).toBe(422);
     });
 
-    test("rejects display name longer than 30 characters", async () => {
+    test("rejects display name longer than 50 characters", async () => {
       const response = await app.handle(
         new Request("http://localhost/register", {
           method: "POST",
@@ -97,7 +101,8 @@ describe("Auth Schema Validation", () => {
           body: JSON.stringify({
             email: "test@example.com",
             password: "ValidPass123",
-            displayName: "A".repeat(31),
+            displayName: "A".repeat(51),
+            username: "testuser",
           }),
         })
       );

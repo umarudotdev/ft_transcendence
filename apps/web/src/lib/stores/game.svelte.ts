@@ -420,6 +420,7 @@ export function createGameStore() {
         ultimateCharge: (p.ultimateCharge as number) ?? 0,
         ability1CooldownUntil: (p.ability1CooldownUntil as number) ?? 0,
         ability2CooldownUntil: (p.ability2CooldownUntil as number) ?? 0,
+        aimAngle: (p.aimAngle as number) ?? 0,
       };
     }
 

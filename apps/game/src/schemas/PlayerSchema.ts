@@ -10,6 +10,7 @@ export class PlayerSchema extends Schema {
   @type("number") y: number = 0;
   @type("number") velocityX: number = 0;
   @type("number") velocityY: number = 0;
+  @type("number") aimAngle: number = 0;
   @type("int16") hp: number = 100;
   @type("uint8") lives: number = 3;
   @type("boolean") connected: boolean = true;

@@ -36,7 +36,8 @@ export function processFireInput(state: GameState) {
   for (const [sessionId, player] of state.players) {
     if (!player.connected || !player.isFiring) continue;
 
-    const direction = player.playerIndex === 0 ? -1 : 1;
+    const aimX = Math.sin(player.aimAngle);
+    const aimY = -Math.cos(player.aimAngle);
 
     if (player.isFocusing) {
       // Focus mode: concentrated single shot (faster fire rate, more damage)
@@ -47,8 +48,8 @@ export function processFireInput(state: GameState) {
         state,
         player.x,
         player.y,
-        0,
-        direction * BULLET_SPEED,
+        aimX * BULLET_SPEED,
+        aimY * BULLET_SPEED,
         sessionId,
         15
       );
@@ -62,30 +63,32 @@ export function processFireInput(state: GameState) {
         state,
         player.x,
         player.y,
-        0,
-        direction * BULLET_SPEED,
+        aimX * BULLET_SPEED,
+        aimY * BULLET_SPEED,
         sessionId,
         8
       );
 
       // Left spread
+      const leftAngle = player.aimAngle - SPREAD_ANGLE;
       spawnBullet(
         state,
         player.x,
         player.y,
-        Math.sin(-SPREAD_ANGLE) * BULLET_SPEED,
-        direction * Math.cos(SPREAD_ANGLE) * BULLET_SPEED,
+        Math.sin(leftAngle) * BULLET_SPEED,
+        -Math.cos(leftAngle) * BULLET_SPEED,
         sessionId,
         8
       );
 
       // Right spread
+      const rightAngle = player.aimAngle + SPREAD_ANGLE;
       spawnBullet(
         state,
         player.x,
         player.y,
-        Math.sin(SPREAD_ANGLE) * BULLET_SPEED,
-        direction * Math.cos(SPREAD_ANGLE) * BULLET_SPEED,
+        Math.sin(rightAngle) * BULLET_SPEED,
+        -Math.cos(rightAngle) * BULLET_SPEED,
         sessionId,
         8
       );

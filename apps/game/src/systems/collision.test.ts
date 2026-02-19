@@ -50,7 +50,7 @@ describe("checkCollisions", () => {
     // Place a bullet from p1 right on top of p2
     addBullet(state, p2.x, p2.y, "p1", 10);
 
-    const hits = checkCollisions(state);
+    const { hits } = checkCollisions(state);
 
     expect(hits.length).toBe(1);
     expect(hits[0].playerId).toBe("p2");
@@ -64,7 +64,7 @@ describe("checkCollisions", () => {
     // Place p1's bullet on top of p1
     addBullet(state, p1.x, p1.y, "p1");
 
-    const hits = checkCollisions(state);
+    const { hits } = checkCollisions(state);
 
     expect(hits.length).toBe(0);
     expect(state.bullets.length).toBe(1); // Bullet stays
@@ -75,7 +75,7 @@ describe("checkCollisions", () => {
     // Place bullet far from both players
     addBullet(state, 100, 300, "p1");
 
-    const hits = checkCollisions(state);
+    const { hits } = checkCollisions(state);
 
     expect(hits.length).toBe(0);
     expect(state.bullets.length).toBe(1);
@@ -88,7 +88,7 @@ describe("checkCollisions", () => {
 
     addBullet(state, p2.x, p2.y, "p1");
 
-    const hits = checkCollisions(state);
+    const { hits } = checkCollisions(state);
 
     expect(hits.length).toBe(0);
   });
@@ -99,7 +99,7 @@ describe("checkCollisions", () => {
 
     addBullet(state, p2.x, p2.y, "p1");
 
-    const hits = checkCollisions(state);
+    const { hits } = checkCollisions(state);
 
     expect(hits.length).toBe(0);
   });
@@ -112,7 +112,7 @@ describe("checkCollisions", () => {
 
     addBullet(state, p1.x, p1.y, "external");
 
-    const hits = checkCollisions(state);
+    const { hits } = checkCollisions(state);
 
     // Only one hit should register
     expect(hits.length).toBe(1);
@@ -125,7 +125,7 @@ describe("checkCollisions", () => {
     addBullet(state, p1.x, p1.y, "p2", 10);
     addBullet(state, p2.x, p2.y, "p1", 15);
 
-    const hits = checkCollisions(state);
+    const { hits } = checkCollisions(state);
 
     expect(hits.length).toBe(2);
     expect(state.bullets.length).toBe(0);
@@ -134,7 +134,7 @@ describe("checkCollisions", () => {
   test("returns empty array when no bullets exist", () => {
     const { state } = createTwoPlayerState();
 
-    const hits = checkCollisions(state);
+    const { hits } = checkCollisions(state);
 
     expect(hits.length).toBe(0);
   });
@@ -144,7 +144,7 @@ describe("checkCollisions", () => {
     // Combined radius is 3+4=7, so distance > 7 should miss
     addBullet(state, p2.x + 10, p2.y, "p1");
 
-    const hits = checkCollisions(state);
+    const { hits } = checkCollisions(state);
 
     expect(hits.length).toBe(0);
   });

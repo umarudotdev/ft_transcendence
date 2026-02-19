@@ -47,7 +47,7 @@ Technical patterns and protocols for ft_transcendence bullet hell game.
 │  • User management                  │◄───┼───►│  • 60Hz game loop   │
 │  • Matchmaking queue                │    │    │  • Physics/collision│
 │  • Rankings & Elo                   │    │    │  • Combat & abilities│
-│  • Chat system                      │    │    │  • AI patterns      │
+│  • Chat system                      │    │    │  • Graze detection  │
 │  • Match history                    │    │    │  • State sync       │
 └──────────────┬──────────────────────┘    │    └──────────┬──────────┘
                │                           │               │
@@ -109,8 +109,7 @@ ft_transcendence/
 │   │       │   └── GameRoom.ts   # Game room handler
 │   │       ├── schemas/
 │   │       │   └── GameState.ts  # Colyseus Schema definitions
-│   │       ├── systems/          # Movement, collision, combat
-│   │       └── ai/              # AI patterns
+│   │       └── systems/          # Movement, collision, combat, abilities
 │   │
 │   └── web/                      # SvelteKit frontend
 │       └── src/
@@ -118,7 +117,7 @@ ft_transcendence/
 │           │   ├── api.ts        # Eden Treaty client
 │           │   ├── stores/       # Svelte stores
 │           │   ├── components/   # UI components
-│           │   └── game/         # Game renderer, input
+│           │   └── game/         # Renderer, particles, input, interpolation
 │           └── routes/           # SvelteKit pages
 │
 ├── packages/                     # Shared types/configs
@@ -150,15 +149,14 @@ apps/game/src/
 ├── rooms/
 │   └── GameRoom.ts       # Room lifecycle (onCreate, onJoin, onMessage, onLeave)
 ├── schemas/
-│   └── GameState.ts      # Schema with auto-sync (players, bullets, effects)
-├── systems/
-│   ├── movement.ts       # Player movement, focus mode
-│   ├── collision.ts      # Spatial hash, hitbox detection
-│   ├── combat.ts         # Damage, HP, lives
-│   └── abilities.ts      # Cooldowns, effects
-└── ai/
-    ├── opponent.ts        # AI controller
-    └── patterns.ts        # Bullet patterns
+│   ├── GameState.ts      # Root state (players, bullets, effects, tick, phase)
+│   ├── PlayerSchema.ts   # Player (x, y, hp, lives, aimAngle, abilities)
+│   └── BulletSchema.ts   # Bullet (x, y, velocity, angularVelocity, fireMode)
+└── systems/
+    ├── movement.ts       # Player movement, bullet angular velocity
+    ├── collision.ts      # Circle-circle hit + graze detection
+    ├── combat.ts         # Aim-based fire, spread/focus modes
+    └── abilities.ts      # Dash (clamped), bomb, ultimate (range-limited)
 ```
 
 ---
@@ -188,24 +186,27 @@ Database sessions (not JWT) for immediate revocation.
 
 ```typescript
 // Client → Server (room.send)
-{ type: "input", keys: { up: bool, down: bool, left: bool, right: bool, focus: bool, fire: bool } }
+{ type: "input", keys: { up, down, left, right, focus, fire: bool, aimAngle: number } }
 { type: "ability", slot: 1 | 2 | 3 }  // Q, E, R
 { type: "ready" }
 
-// Server → Client (automatic state sync via Colyseus Schema patches @ 60Hz)
+// Server → Client (automatic state sync via Colyseus Schema patches @ 20Hz)
 // GameState schema:
 {
-  players: MapSchema<PlayerSchema>,   // id, x, y, hp, lives, cooldowns
-  bullets: ArraySchema<BulletSchema>, // id, x, y, owner
-  effects: ArraySchema<EffectSchema>, // type, x, y
+  players: MapSchema<PlayerSchema>,   // x, y, hp, lives, aimAngle, cooldowns
+  bullets: ArraySchema<BulletSchema>, // x, y, velocityX/Y, angularVelocity, fireMode
+  effects: ArraySchema<EffectSchema>, // effectType, x, y, radius
   tick: number,
+  phase: string,
 }
 
 // Server → Client (room broadcast)
 { type: "countdown", seconds: 3 }
-{ type: "hit", playerId, damage }
-{ type: "death", playerId, livesRemaining }
-{ type: "gameOver", winner: playerId, stats }
+{ type: "hit", playerId, damage, hp, lives }
+{ type: "graze", playerId, x, y }
+{ type: "abilityUsed", playerId, slot }
+{ type: "gameOver", winnerId, winnerName }
+{ type: "matchResult", winnerId, players, duration }
 ```
 
 ### Chat (`wss://localhost/api/chat/ws`)

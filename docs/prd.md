@@ -9,14 +9,14 @@
 ## Executive Summary
 
 Real-time bullet hell shoot 'em up platform for 42 students with multiplayer
-gameplay, ranked matchmaking, chat, and 2FA. Target: **14 points** using
+gameplay, ranked matchmaking, chat, and 2FA. Target: **12 points** using
 TypeScript stack (ElysiaJS + Colyseus + SvelteKit).
 
 ## Success Metrics
 
 | Metric           | Target               |
 | :--------------- | :------------------- |
-| Evaluation Score | >= 14 points         |
+| Evaluation Score | >= 12 points         |
 | Game Latency     | < 50ms local network |
 | Tick Rate        | 60Hz stable          |
 | Concurrent Games | 10 simultaneous      |
@@ -29,7 +29,7 @@ TypeScript stack (ElysiaJS + Colyseus + SvelteKit).
 | Category      | Pts | Modules                                               |
 | :------------ | :-- | :---------------------------------------------------- |
 | **Web**       | 4   | Frontend + Backend Frameworks (2) + SSR (1) + ORM (1) |
-| **Gaming**    | 6   | Web Game (2) + Remote Players (2) + AI Opponent (2)   |
+| **Gaming**    | 4   | Web Game (2) + Remote Players (2)                     |
 | **User Mgmt** | 3   | Standard User Mgmt (2) + Game Stats (1)               |
 | **Security**  | 1   | 2FA TOTP (1)                                          |
 
@@ -53,7 +53,7 @@ TypeScript stack (ElysiaJS + Colyseus + SvelteKit).
 | ID    | Story                                     | Priority   |
 | :---- | :---------------------------------------- | :--------- |
 | US-07 | Matchmaking queue (rating-based)          | Must Have  |
-| US-08 | Play vs AI (configurable difficulty)      | Must Have  |
+| US-08 | Mouse aim with server-authoritative angle | Must Have  |
 | US-09 | 8-directional movement with focus mode    | Must Have  |
 | US-10 | Use abilities (Q, E, R)                   | Must Have  |
 | US-11 | Win by depleting opponent lives (3 lives) | Must Have  |
@@ -90,12 +90,13 @@ TypeScript stack (ElysiaJS + Colyseus + SvelteKit).
 
 ### Combat
 
-| Action       | Input | Cooldown | Description                  |
-| :----------- | :---- | :------- | :--------------------------- |
-| Primary Fire | Space | None     | Continuous projectile stream |
-| Ability 1    | Q     | 8s       | Dash / Shield / Special shot |
-| Ability 2    | E     | 12s      | AoE / Bomb / Utility         |
-| Ultimate     | R     | Charged  | Powerful attack (60s charge) |
+| Action       | Input | Cooldown  | Description                             |
+| :----------- | :---- | :-------- | :-------------------------------------- |
+| Aim          | Mouse | -         | Server-authoritative aim angle          |
+| Primary Fire | Space | 100/300ms | Spread (curving) or focused (straight)  |
+| Ability 1    | Q     | 8s        | Dash: teleport 100px + invincibility    |
+| Ability 2    | E     | 12s       | Bomb: clear bullets + 30 AOE damage     |
+| Ultimate     | R     | Charged   | Clear 200px radius + 50 damage in range |
 
 ### Win Condition
 
@@ -129,7 +130,6 @@ TypeScript stack (ElysiaJS + Colyseus + SvelteKit).
 | Method      | Path                     | Description          |
 | :---------- | :----------------------- | :------------------- |
 | POST/DELETE | `/api/matchmaking/queue` | Join/leave queue     |
-| POST        | `/api/matchmaking/ai`    | Start AI game        |
 | WS          | `/api/matchmaking/ws`    | Queue status updates |
 
 ### Game (Colyseus Server)

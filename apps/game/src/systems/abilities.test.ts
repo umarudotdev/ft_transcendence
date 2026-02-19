@@ -201,14 +201,28 @@ describe("activateAbility - Ultimate (slot 3)", () => {
     expect(p1.ultimateCharge).toBe(0);
   });
 
-  test("ultimate damages all enemies", () => {
+  test("ultimate damages enemy in range", () => {
     const { state, p1, p2 } = createTwoPlayerState();
     p1.ultimateCharge = 100;
+    // Place p2 within ultimate radius (200px)
+    p2.x = p1.x + 100;
+    p2.y = p1.y;
     const startHp = p2.hp;
 
     activateAbility(state, "p1", p1, 3);
 
     expect(p2.hp).toBeLessThan(startHp);
+  });
+
+  test("ultimate does not damage enemy out of range", () => {
+    const { state, p1, p2 } = createTwoPlayerState();
+    p1.ultimateCharge = 100;
+    // p2 at default position (400px away) — outside 200px radius
+    const startHp = p2.hp;
+
+    activateAbility(state, "p1", p1, 3);
+
+    expect(p2.hp).toBe(startHp);
   });
 
   test("ultimate clears enemy bullets", () => {

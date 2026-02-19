@@ -29,16 +29,29 @@ type safety.
 
 **Goal:** Two players can play a bullet hell match on different computers.
 
-- [ ] Colyseus game room with 60 ticks/s game loop
-- [ ] Automatic state synchronization via Colyseus Schema
-- [ ] Canvas rendering with client-side prediction
-- [ ] Basic chat with direct messages
+- [x] Colyseus game room with 60 ticks/s game loop
+- [x] Automatic state synchronization via Colyseus Schema (20Hz patches)
+- [x] Canvas rendering with interpolation (100ms delay buffer)
+- [x] Basic chat with direct messages
+
+## Milestone 3.5: Game Polish
+
+**Goal:** Deep, visually compelling gameplay with multiple skill axes.
+
+- [x] Bug fixes: dash boundary clamping, isDashing persistence, ultimate range
+- [x] Server-authoritative mouse aim (aimAngle)
+- [x] Angular velocity on spread bullets (curving patterns)
+- [x] Graze mechanic (anti-snowball ultimate charge)
+- [x] Additive glow rendering with pre-rendered gradient stamps
+- [x] Client-side particle system (1024-pool, ring-buffer)
+- [x] Bullet visual differentiation (spread circles vs focus lines)
+- [x] Opponent ability cooldown HUD indicators
+- [x] 70 game server tests, 103 web tests passing
 
 ## Milestone 4: Features
 
 **Goal:** All 14 points implemented.
 
-- [ ] AI opponent with reaction delay
 - [ ] Matchmaking queue
 - [ ] Profile editing and avatar upload
 - [ ] Friend system and user blocking
@@ -60,13 +73,12 @@ type safety.
 
 | Module                   | Points | Done |
 | :----------------------- | :----- | :--- |
-| Framework (Front + Back) | 2      | [ ]  |
-| Server-Side Rendering    | 1      | [ ]  |
-| ORM                      | 1      | [ ]  |
-| Web-based Game           | 2      | [ ]  |
-| Remote Players           | 2      | [ ]  |
-| AI Opponent              | 2      | [ ]  |
+| Framework (Front + Back) | 2      | [x]  |
+| Server-Side Rendering    | 1      | [x]  |
+| ORM                      | 1      | [x]  |
+| Web-based Game           | 2      | [x]  |
+| Remote Players           | 2      | [x]  |
 | User Management          | 2      | [ ]  |
 | Game Statistics          | 1      | [ ]  |
 | 2FA                      | 1      | [ ]  |
-| **Total**                | **14** |      |
+| **Total**                | **12** |      |

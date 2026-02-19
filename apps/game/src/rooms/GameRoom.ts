@@ -18,6 +18,7 @@ import {
   activateAbility,
   chargeUltimate,
   cleanupExpiredEffects,
+  updateDashFlags,
 } from "../systems/abilities";
 import { checkCollisions } from "../systems/collision";
 import {
@@ -362,8 +363,8 @@ export class GameRoom extends Room<{ state: GameState }> {
     // 2. Move players and bullets
     applyMovement(this.state, dt);
 
-    // 3. Check bullet-player collisions
-    const hits = checkCollisions(this.state);
+    // 3. Check bullet-player collisions and grazes
+    const { hits, grazes } = checkCollisions(this.state);
 
     // 4. Apply damage from hits and charge ultimate
     if (hits.length > 0) {
@@ -390,8 +391,22 @@ export class GameRoom extends Room<{ state: GameState }> {
       }
     }
 
-    // 5. Cleanup expired effects
+    // 4b. Process grazes — charge the grazer's ultimate (anti-snowball)
+    for (const graze of grazes) {
+      const grazer = this.state.players.get(graze.playerId);
+      if (grazer) {
+        chargeUltimate(grazer, 2);
+        this.broadcast("graze", {
+          playerId: graze.playerId,
+          x: graze.bulletX,
+          y: graze.bulletY,
+        });
+      }
+    }
+
+    // 5. Cleanup expired effects and dash flags
     cleanupExpiredEffects(this.state);
+    updateDashFlags(this.state);
 
     // 6. Check for game over
     const winnerId = checkGameOver(this.state);

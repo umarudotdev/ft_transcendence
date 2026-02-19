@@ -1,13 +1,14 @@
 import type { GameState } from "../schemas/GameState";
 import type { PlayerSchema } from "../schemas/PlayerSchema";
 
-import { TICK_RATE } from "../config";
+import { CANVAS_HEIGHT, CANVAS_WIDTH, TICK_RATE } from "../config";
 import { EffectSchema } from "../schemas/EffectSchema";
 import { applyDirectDamage } from "./combat";
 
 const DASH_COOLDOWN_TICKS = TICK_RATE * 8;
 const DASH_DISTANCE = 100;
 const DASH_INVINCIBILITY_TICKS = Math.round(TICK_RATE * 0.2);
+const DASH_VISUAL_TICKS = 6; // ~100ms — enough for 2 state patches at 20Hz
 
 const BOMB_COOLDOWN_TICKS = TICK_RATE * 12;
 const BOMB_RADIUS = 120;
@@ -69,14 +70,20 @@ function activateDash(
     dy /= len;
   }
 
-  player.x += dx * DASH_DISTANCE;
-  player.y += dy * DASH_DISTANCE;
+  player.x = Math.max(
+    16,
+    Math.min(CANVAS_WIDTH - 16, player.x + dx * DASH_DISTANCE)
+  );
+  player.y = Math.max(
+    16,
+    Math.min(CANVAS_HEIGHT - 16, player.y + dy * DASH_DISTANCE)
+  );
 
   // Grant brief invincibility
   player.invincibleUntil = state.tick + DASH_INVINCIBILITY_TICKS;
 
-  // isDashing resets after a few frames (visual only)
-  player.isDashing = false;
+  // Keep isDashing true for a few ticks so clients receive it in state patches
+  player.isDashingUntil = state.tick + DASH_VISUAL_TICKS;
 
   return true;
 }
@@ -154,10 +161,17 @@ function activateUltimate(
     }
   }
 
-  // Damage enemy
+  // Damage enemy if in range (same radius as bullet clear)
   for (const [otherId, other] of state.players) {
     if (otherId === sessionId) continue;
-    applyDirectDamage(state, otherId, other, ULTIMATE_DAMAGE);
+    const edx = other.x - player.x;
+    const edy = other.y - player.y;
+    if (
+      edx * edx + edy * edy <
+      ULTIMATE_BULLET_CLEAR_RADIUS * ULTIMATE_BULLET_CLEAR_RADIUS
+    ) {
+      applyDirectDamage(state, otherId, other, ULTIMATE_DAMAGE);
+    }
   }
 
   // Add visual effect
@@ -178,6 +192,14 @@ export function chargeUltimate(player: PlayerSchema, damageDealt: number) {
     ULTIMATE_CHARGE_REQUIRED,
     player.ultimateCharge + damageDealt * ULTIMATE_CHARGE_PER_DAMAGE
   );
+}
+
+export function updateDashFlags(state: GameState) {
+  for (const [, player] of state.players) {
+    if (player.isDashing && state.tick >= player.isDashingUntil) {
+      player.isDashing = false;
+    }
+  }
 }
 
 export function cleanupExpiredEffects(state: GameState) {

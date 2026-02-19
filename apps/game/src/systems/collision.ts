@@ -2,6 +2,7 @@ import type { GameState } from "../schemas/GameState";
 
 const PLAYER_HITBOX_RADIUS = 3;
 const BULLET_RADIUS = 4;
+const GRAZE_RADIUS = 20;
 
 export interface HitEvent {
   bulletIndex: number;
@@ -9,8 +10,20 @@ export interface HitEvent {
   damage: number;
 }
 
-export function checkCollisions(state: GameState): HitEvent[] {
+export interface GrazeEvent {
+  playerId: string;
+  bulletX: number;
+  bulletY: number;
+}
+
+export interface CollisionResult {
+  hits: HitEvent[];
+  grazes: GrazeEvent[];
+}
+
+export function checkCollisions(state: GameState): CollisionResult {
   const hits: HitEvent[] = [];
+  const grazes: GrazeEvent[] = [];
   const hitBulletIndices = new Set<number>();
 
   for (let i = state.bullets.length - 1; i >= 0; i--) {
@@ -20,22 +33,38 @@ export function checkCollisions(state: GameState): HitEvent[] {
     for (const [sessionId, player] of state.players) {
       // Skip own bullets
       if (bullet.ownerId === sessionId) continue;
-      // Skip disconnected or invincible players
+      // Skip disconnected players
       if (!player.connected) continue;
-      if (player.invincibleUntil > state.tick) continue;
 
       const dx = bullet.x - player.x;
       const dy = bullet.y - player.y;
-      const combinedRadius = PLAYER_HITBOX_RADIUS + BULLET_RADIUS;
+      const distSq = dx * dx + dy * dy;
 
-      if (dx * dx + dy * dy < combinedRadius * combinedRadius) {
-        hits.push({
-          bulletIndex: i,
+      // Skip invincible players for hit detection but still allow graze
+      if (player.invincibleUntil <= state.tick) {
+        const hitRadius = PLAYER_HITBOX_RADIUS + BULLET_RADIUS;
+        if (distSq < hitRadius * hitRadius) {
+          hits.push({
+            bulletIndex: i,
+            playerId: sessionId,
+            damage: bullet.damage,
+          });
+          hitBulletIndices.add(i);
+          break;
+        }
+      }
+
+      // Graze detection: within graze radius but not a hit, and not already grazed
+      if (
+        distSq < GRAZE_RADIUS * GRAZE_RADIUS &&
+        !bullet.grazedPlayers.has(sessionId)
+      ) {
+        bullet.grazedPlayers.add(sessionId);
+        grazes.push({
           playerId: sessionId,
-          damage: bullet.damage,
+          bulletX: bullet.x,
+          bulletY: bullet.y,
         });
-        hitBulletIndices.add(i);
-        break; // Bullet can only hit one player
       }
     }
   }
@@ -46,5 +75,5 @@ export function checkCollisions(state: GameState): HitEvent[] {
     state.bullets.splice(idx, 1);
   }
 
-  return hits;
+  return { hits, grazes };
 }

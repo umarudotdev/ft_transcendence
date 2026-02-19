@@ -1,3 +1,5 @@
+import type { ParticleSystem } from "./particles";
+
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
 
@@ -13,10 +15,11 @@ const COLORS = {
   hitbox: "rgba(255, 255, 255, 0.8)",
   shield: "rgba(100, 200, 255, 0.4)",
   bomb: "rgba(255, 200, 50, 0.3)",
-  hpBar: "#4caf50",
-  hpBarDamage: "#f44336",
-  hpBarBg: "rgba(0, 0, 0, 0.5)",
 };
+
+// RGB values for particle emitters
+const P1_RGB = { r: 107, g: 181, b: 255 };
+const P2_RGB = { r: 255, g: 107, b: 107 };
 
 export interface PlayerRenderState {
   x: number;
@@ -41,6 +44,8 @@ export interface BulletRenderState {
   y: number;
   ownerId: string;
   damage: number;
+  velocityX: number;
+  velocityY: number;
 }
 
 export interface EffectRenderState {
@@ -60,23 +65,59 @@ export interface GameRenderState {
   mySessionId: string;
 }
 
+// Pre-rendered glow stamps for additive blending (one per player color)
+let glowStampP1: CanvasImageSource | null = null;
+let glowStampP2: CanvasImageSource | null = null;
+const GLOW_STAMP_SIZE = 32;
+
+function createGlowStamp(r: number, g: number, b: number): CanvasImageSource {
+  const c = document.createElement("canvas");
+  c.width = GLOW_STAMP_SIZE;
+  c.height = GLOW_STAMP_SIZE;
+  const ctx = c.getContext("2d");
+  if (!ctx) return c;
+
+  const half = GLOW_STAMP_SIZE / 2;
+  const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
+  grad.addColorStop(0, `rgba(${r},${g},${b},0.6)`);
+  grad.addColorStop(0.4, `rgba(${r},${g},${b},0.15)`);
+  grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, GLOW_STAMP_SIZE, GLOW_STAMP_SIZE);
+  return c;
+}
+
+function ensureGlowStamps() {
+  if (typeof document === "undefined") return;
+  if (!glowStampP1) glowStampP1 = createGlowStamp(P1_RGB.r, P1_RGB.g, P1_RGB.b);
+  if (!glowStampP2) glowStampP2 = createGlowStamp(P2_RGB.r, P2_RGB.g, P2_RGB.b);
+}
+
 export function renderFrame(
   ctx: CanvasRenderingContext2D,
-  state: GameRenderState
+  state: GameRenderState,
+  particles?: ParticleSystem,
+  dt?: number
 ) {
+  ensureGlowStamps();
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
   drawBackground(ctx, state.tick);
-  drawEffects(ctx, state.effects);
-  drawBullets(ctx, state.bullets, state.mySessionId, state.players);
+  drawEffects(ctx, state.effects, state.tick);
+  drawBullets(ctx, state.bullets, state.players);
+  drawBulletGlow(ctx, state.bullets, state.players);
   drawPlayers(ctx, state.players, state.tick, state.mySessionId);
+
+  if (particles && dt != null) {
+    particles.update(dt);
+    particles.render(ctx);
+  }
 }
 
 function drawBackground(ctx: CanvasRenderingContext2D, tick: number) {
   ctx.fillStyle = COLORS.background;
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-  // Scrolling grid
   const gridSize = 40;
   const offset = (tick * 0.5) % gridSize;
 
@@ -120,11 +161,9 @@ function drawPlayers(
     const isInvincible = player.invincibleUntil > tick;
     if (isInvincible && Math.floor(tick / 4) % 2 === 0) continue;
 
-    // Glow
     ctx.shadowColor = color;
     ctx.shadowBlur = 12;
 
-    // Ship body (triangle) — rotated to face aimAngle
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(player.aimAngle);
@@ -138,7 +177,7 @@ function drawPlayers(
     ctx.fillStyle = color;
     ctx.fill();
 
-    // Engine glow (always behind ship in local space)
+    // Engine glow
     ctx.fillStyle = glow;
     ctx.beginPath();
     ctx.moveTo(-6, 12);
@@ -171,54 +210,139 @@ function drawPlayers(
   }
 }
 
+/**
+ * Draw bullet cores — batched by owner to minimize fillStyle changes.
+ * Focus bullets (damage > 10) render as elongated lines oriented to their velocity.
+ * Spread bullets (damage <= 10) render as small circles.
+ */
 function drawBullets(
   ctx: CanvasRenderingContext2D,
   bullets: BulletRenderState[],
-  _mySessionId: string,
   players: Map<string, PlayerRenderState>
 ) {
+  // Partition bullets by player index for batch rendering
+  const p1Bullets: BulletRenderState[] = [];
+  const p2Bullets: BulletRenderState[] = [];
+
   for (const bullet of bullets) {
     const owner = players.get(bullet.ownerId);
-    const isP1 = owner ? owner.playerIndex === 0 : true;
-    const color = isP1 ? COLORS.bullet1 : COLORS.bullet2;
-
-    ctx.fillStyle = color;
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 6;
-
-    ctx.beginPath();
-    ctx.arc(bullet.x, bullet.y, bullet.damage > 10 ? 5 : 3, 0, Math.PI * 2);
-    ctx.fill();
+    if (owner && owner.playerIndex === 1) {
+      p2Bullets.push(bullet);
+    } else {
+      p1Bullets.push(bullet);
+    }
   }
+
+  drawBulletBatch(ctx, p1Bullets, COLORS.bullet1);
+  drawBulletBatch(ctx, p2Bullets, COLORS.bullet2);
 
   ctx.shadowBlur = 0;
 }
 
+function drawBulletBatch(
+  ctx: CanvasRenderingContext2D,
+  bullets: BulletRenderState[],
+  color: string
+) {
+  if (bullets.length === 0) return;
+
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  ctx.shadowColor = color;
+
+  for (const bullet of bullets) {
+    const isFocus = bullet.damage > 10;
+
+    if (isFocus) {
+      // Elongated bright line oriented to velocity
+      ctx.shadowBlur = 10;
+      ctx.lineWidth = 2.5;
+      const angle = Math.atan2(bullet.velocityY, bullet.velocityX);
+      const len = 8;
+      ctx.beginPath();
+      ctx.moveTo(
+        bullet.x - Math.cos(angle) * len,
+        bullet.y - Math.sin(angle) * len
+      );
+      ctx.lineTo(
+        bullet.x + Math.cos(angle) * len,
+        bullet.y + Math.sin(angle) * len
+      );
+      ctx.stroke();
+    } else {
+      // Small circle for spread bullets
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(bullet.x, bullet.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+/**
+ * Additive glow layer — draws pre-rendered radial gradient stamps
+ * at each bullet position using 'lighter' composite operation.
+ */
+function drawBulletGlow(
+  ctx: CanvasRenderingContext2D,
+  bullets: BulletRenderState[],
+  players: Map<string, PlayerRenderState>
+) {
+  const prev = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = "lighter";
+  ctx.shadowBlur = 0;
+
+  const half = GLOW_STAMP_SIZE / 2;
+
+  for (const bullet of bullets) {
+    const owner = players.get(bullet.ownerId);
+    const isP1 = !owner || owner.playerIndex === 0;
+    const stamp = isP1 ? glowStampP1 : glowStampP2;
+    if (!stamp) continue;
+
+    const scale = bullet.damage > 10 ? 1.4 : 0.8;
+    const size = GLOW_STAMP_SIZE * scale;
+    ctx.drawImage(
+      stamp,
+      bullet.x - half * scale,
+      bullet.y - half * scale,
+      size,
+      size
+    );
+  }
+
+  ctx.globalCompositeOperation = prev;
+}
+
 function drawEffects(
   ctx: CanvasRenderingContext2D,
-  effects: EffectRenderState[]
+  effects: EffectRenderState[],
+  tick: number
 ) {
   for (const effect of effects) {
     switch (effect.effectType) {
       case "bomb": {
-        ctx.strokeStyle = COLORS.bomb;
+        // Animated pulsing bomb ring
+        const pulse = 0.8 + Math.sin(tick * 0.5) * 0.2;
+        ctx.strokeStyle = `rgba(255, 200, 50, ${(0.4 * pulse).toFixed(2)})`;
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(effect.x, effect.y, effect.radius, 0, Math.PI * 2);
         ctx.stroke();
 
-        ctx.fillStyle = "rgba(255, 200, 50, 0.1)";
+        ctx.fillStyle = `rgba(255, 200, 50, ${(0.12 * pulse).toFixed(2)})`;
         ctx.fill();
         break;
       }
       case "ultimate": {
-        ctx.strokeStyle = "rgba(255, 100, 255, 0.4)";
+        const pulse = 0.7 + Math.sin(tick * 0.4) * 0.3;
+        ctx.strokeStyle = `rgba(255, 100, 255, ${(0.5 * pulse).toFixed(2)})`;
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.arc(effect.x, effect.y, effect.radius, 0, Math.PI * 2);
         ctx.stroke();
 
-        ctx.fillStyle = "rgba(255, 100, 255, 0.08)";
+        ctx.fillStyle = `rgba(255, 100, 255, ${(0.1 * pulse).toFixed(2)})`;
         ctx.fill();
         break;
       }

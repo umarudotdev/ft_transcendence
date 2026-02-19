@@ -501,6 +501,8 @@ export function createGameStore() {
           y: (b.y as number) ?? 0,
           ownerId: (b.ownerId as string) ?? "",
           damage: (b.damage as number) ?? 10,
+          velocityX: (b.velocityX as number) ?? 0,
+          velocityY: (b.velocityY as number) ?? 0,
         }));
       }
 
@@ -524,6 +526,7 @@ export function createGameStore() {
     joinedRoom.onMessage("abilityUsed", () => {});
     joinedRoom.onMessage("hit", () => {});
     joinedRoom.onMessage("gameOver", () => {});
+    joinedRoom.onMessage("graze", () => {});
 
     // Match result from Colyseus broadcast (replaces broken matchmaking WS path).
     // The message may arrive before the "finished" state patch, so buffer it.

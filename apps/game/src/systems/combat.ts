@@ -12,6 +12,7 @@ const INVINCIBILITY_TICKS = Math.round(TICK_RATE * 1.5); // 1.5 seconds
 const MAX_HP = 100;
 
 const SPREAD_ANGLE = Math.PI / 12; // 15 degrees
+const SPREAD_ANGULAR_VELOCITY = 1.2; // radians/sec — how fast spread bullets curve
 
 function spawnBullet(
   state: GameState,
@@ -20,7 +21,9 @@ function spawnBullet(
   vx: number,
   vy: number,
   ownerId: string,
-  damage: number
+  damage: number,
+  angularVelocity = 0,
+  fireMode: "spread" | "focus" = "spread"
 ) {
   const bullet = new BulletSchema();
   bullet.x = x;
@@ -29,6 +32,9 @@ function spawnBullet(
   bullet.velocityY = vy;
   bullet.ownerId = ownerId;
   bullet.damage = damage;
+  bullet.angularVelocity = angularVelocity;
+  bullet.fireMode = fireMode;
+  bullet.speed = Math.sqrt(vx * vx + vy * vy);
   state.bullets.push(bullet);
 }
 
@@ -40,7 +46,7 @@ export function processFireInput(state: GameState) {
     const aimY = -Math.cos(player.aimAngle);
 
     if (player.isFocusing) {
-      // Focus mode: concentrated single shot (faster fire rate, more damage)
+      // Focus mode: concentrated single shot (faster fire rate, more damage, straight)
       if (state.tick - player.lastFireTick < FIRE_COOLDOWN_TICKS) continue;
       player.lastFireTick = state.tick;
 
@@ -51,14 +57,16 @@ export function processFireInput(state: GameState) {
         aimX * BULLET_SPEED,
         aimY * BULLET_SPEED,
         sessionId,
-        15
+        15,
+        0,
+        "focus"
       );
     } else {
-      // Normal mode: 3-way spread shot
+      // Normal mode: 3-way spread shot with curving outer bullets
       if (state.tick - player.lastFireTick < SPREAD_COOLDOWN_TICKS) continue;
       player.lastFireTick = state.tick;
 
-      // Center bullet
+      // Center bullet (straight)
       spawnBullet(
         state,
         player.x,
@@ -66,10 +74,12 @@ export function processFireInput(state: GameState) {
         aimX * BULLET_SPEED,
         aimY * BULLET_SPEED,
         sessionId,
-        8
+        8,
+        0,
+        "spread"
       );
 
-      // Left spread
+      // Left spread (curves outward — negative angular velocity)
       const leftAngle = player.aimAngle - SPREAD_ANGLE;
       spawnBullet(
         state,
@@ -78,10 +88,12 @@ export function processFireInput(state: GameState) {
         Math.sin(leftAngle) * BULLET_SPEED,
         -Math.cos(leftAngle) * BULLET_SPEED,
         sessionId,
-        8
+        8,
+        -SPREAD_ANGULAR_VELOCITY,
+        "spread"
       );
 
-      // Right spread
+      // Right spread (curves outward — positive angular velocity)
       const rightAngle = player.aimAngle + SPREAD_ANGLE;
       spawnBullet(
         state,
@@ -90,7 +102,9 @@ export function processFireInput(state: GameState) {
         Math.sin(rightAngle) * BULLET_SPEED,
         -Math.cos(rightAngle) * BULLET_SPEED,
         sessionId,
-        8
+        8,
+        SPREAD_ANGULAR_VELOCITY,
+        "spread"
       );
     }
   }

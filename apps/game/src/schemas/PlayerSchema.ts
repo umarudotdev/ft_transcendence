@@ -31,6 +31,7 @@ export class PlayerSchema extends Schema {
   lastFireTick: number = 0;
   ability1LastUsedTick: number = -99999;
   ability2LastUsedTick: number = -99999;
+  isDashingUntil: number = 0;
 
   applyMovement(deltaTime: number) {
     const baseSpeed = this.isFocusing ? FOCUS_SPEED : PLAYER_SPEED;

@@ -9,9 +9,18 @@ export function applyMovement(state: GameState, dt: number) {
     player.applyMovement(dt);
   }
 
-  // Move bullets and remove out-of-bounds
+  // Move bullets, apply angular velocity, and remove out-of-bounds
   for (let i = state.bullets.length - 1; i >= 0; i--) {
     const bullet = state.bullets[i];
+
+    // Rotate velocity vector if bullet has angular velocity
+    if (bullet.angularVelocity !== 0) {
+      const angle = Math.atan2(bullet.velocityY, bullet.velocityX);
+      const newAngle = angle + bullet.angularVelocity * dt;
+      bullet.velocityX = Math.cos(newAngle) * bullet.speed;
+      bullet.velocityY = Math.sin(newAngle) * bullet.speed;
+    }
+
     bullet.x += bullet.velocityX * dt;
     bullet.y += bullet.velocityY * dt;
 

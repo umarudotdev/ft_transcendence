@@ -17,6 +17,7 @@ function createMockCtx(): CanvasRenderingContext2D {
     lineWidth: 0,
     shadowColor: "",
     shadowBlur: 0,
+    globalCompositeOperation: "source-over",
     beginPath: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
@@ -28,6 +29,7 @@ function createMockCtx(): CanvasRenderingContext2D {
     restore: vi.fn(),
     translate: vi.fn(),
     rotate: vi.fn(),
+    drawImage: vi.fn(),
   };
   return ctx as unknown as CanvasRenderingContext2D;
 }
@@ -136,7 +138,16 @@ describe("renderFrame", () => {
   it("draws bullets", () => {
     const players = new Map<string, PlayerRenderState>();
     players.set("player1", createDefaultPlayer());
-    const bullets = [{ x: 50, y: 60, ownerId: "player1", damage: 10 }];
+    const bullets = [
+      {
+        x: 50,
+        y: 60,
+        ownerId: "player1",
+        damage: 10,
+        velocityX: 0,
+        velocityY: -500,
+      },
+    ];
     const state = createDefaultState({ players, bullets });
 
     renderFrame(ctx, state);

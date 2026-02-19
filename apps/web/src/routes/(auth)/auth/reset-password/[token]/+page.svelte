@@ -102,7 +102,9 @@
 	<Card.Content>
 		{#if success}
 			<div transition:fade={{ duration: 200 }}>
-				<Alert class="mb-4 border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+				<Alert
+					class="mb-4 border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
+				>
 					<CheckCircleIcon class="size-4" />
 					<AlertDescription>
 						Your password has been reset successfully! You can now sign in with your new password.
@@ -140,7 +142,10 @@
 						/>
 
 						{#if password.length > 0 && unmetPasswordReqs().length > 0}
-							<p transition:slide={{ duration: 150 }} class="flex items-center gap-2 text-sm text-muted-foreground">
+							<p
+								transition:slide={{ duration: 150 }}
+								class="flex items-center gap-2 text-sm text-muted-foreground"
+							>
 								<CircleAlertIcon class="size-4 shrink-0" />
 								Needs: {unmetPasswordReqs().join(', ')}
 							</p>
@@ -157,14 +162,21 @@
 							disabled={resetMutation.isPending}
 						/>
 						{#if confirmPassword && !passwordsMatch}
-							<p transition:slide={{ duration: 150 }} class="flex items-center gap-2 text-sm text-destructive">
+							<p
+								transition:slide={{ duration: 150 }}
+								class="flex items-center gap-2 text-sm text-destructive"
+							>
 								<CircleAlertIcon class="size-4 shrink-0" />
 								Passwords do not match
 							</p>
 						{/if}
 					</div>
 
-					<Button type="submit" class="w-full" disabled={resetMutation.isPending || !isPasswordValid || !passwordsMatch}>
+					<Button
+						type="submit"
+						class="w-full"
+						disabled={resetMutation.isPending || !isPasswordValid || !passwordsMatch}
+					>
 						{resetMutation.isPending ? 'Resetting...' : 'Reset Password'}
 					</Button>
 				</form>

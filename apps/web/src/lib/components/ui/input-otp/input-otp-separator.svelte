@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { HTMLAttributes } from "svelte/elements";
-	import type { WithElementRef } from "$lib/utils.js";
-	import MinusIcon from "@lucide/svelte/icons/minus";
+	import type { HTMLAttributes } from 'svelte/elements';
+	import type { WithElementRef } from '$lib/utils.js';
+	import MinusIcon from '@lucide/svelte/icons/minus';
 
 	let {
 		ref = $bindable(null),
@@ -14,7 +14,7 @@
 	bind:this={ref}
 	data-slot="input-otp-separator"
 	role="separator"
-	class="text-md3-on-surface-variant px-1"
+	class="px-1 text-md3-on-surface-variant"
 	{...restProps}
 >
 	{#if children}

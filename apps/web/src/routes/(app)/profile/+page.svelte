@@ -67,9 +67,7 @@
 
 	// Username validation
 	const usernameValid = $derived(
-		newUsername.length >= 3 &&
-			newUsername.length <= 20 &&
-			/^[a-z0-9_]+$/.test(newUsername)
+		newUsername.length >= 3 && newUsername.length <= 20 && /^[a-z0-9_]+$/.test(newUsername)
 	);
 
 	function openEditDialog() {

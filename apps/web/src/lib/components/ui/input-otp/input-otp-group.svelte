@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { HTMLAttributes } from "svelte/elements";
-	import { cn, type WithElementRef } from "$lib/utils.js";
+	import type { HTMLAttributes } from 'svelte/elements';
+	import { cn, type WithElementRef } from '$lib/utils.js';
 
 	let {
 		ref = $bindable(null),
@@ -15,7 +15,7 @@
 	data-slot="input-otp-group"
 	class={cn(
 		// MD3 OTP Group - removes gap between slots for connected appearance
-		"flex items-center",
+		'flex items-center',
 		className
 	)}
 	{...restProps}

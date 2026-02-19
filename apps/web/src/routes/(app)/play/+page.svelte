@@ -1,73 +1,66 @@
 <script lang="ts">
-import { onMount } from "svelte";
-import GamepadIcon from "@lucide/svelte/icons/gamepad-2";
-import SwordsIcon from "@lucide/svelte/icons/swords";
-import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
-import TrophyIcon from "@lucide/svelte/icons/trophy";
-import MatchmakingOverlay from "$lib/components/game/MatchmakingOverlay.svelte";
-import { Badge } from "$lib/components/ui/badge";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-import { Skeleton } from "$lib/components/ui/skeleton";
-import { createMeQuery } from "$lib/queries/auth";
-import { createMyMatchesQuery, createMyStatsQuery } from "$lib/queries/users";
-import { getGameStore } from "$lib/stores/game.svelte";
+	import { onMount } from 'svelte';
+	import GamepadIcon from '@lucide/svelte/icons/gamepad-2';
+	import SwordsIcon from '@lucide/svelte/icons/swords';
+	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
+	import TrophyIcon from '@lucide/svelte/icons/trophy';
+	import MatchmakingOverlay from '$lib/components/game/MatchmakingOverlay.svelte';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { createMeQuery } from '$lib/queries/auth';
+	import { createMyMatchesQuery, createMyStatsQuery } from '$lib/queries/users';
+	import { getGameStore } from '$lib/stores/game.svelte';
 
-const meQuery = createMeQuery();
-const statsQuery = createMyStatsQuery();
-const matchesQuery = createMyMatchesQuery({ limit: 5 });
-const gameStore = getGameStore();
+	const meQuery = createMeQuery();
+	const statsQuery = createMyStatsQuery();
+	const matchesQuery = createMyMatchesQuery({ limit: 5 });
+	const gameStore = getGameStore();
 
-// Clean up stale state from previous game (e.g. browser back button while in "finished" phase)
-onMount(() => {
-	gameStore.resetIfStale();
-});
+	// Clean up stale state from previous game (e.g. browser back button while in "finished" phase)
+	onMount(() => {
+		gameStore.resetIfStale();
+	});
 
-function handleQuickMatch() {
-	gameStore.joinQueue("ranked");
-}
+	function handleQuickMatch() {
+		gameStore.joinQueue('ranked');
+	}
 
-function handleCasualMatch() {
-	gameStore.joinQueue("casual");
-}
+	function handleCasualMatch() {
+		gameStore.joinQueue('casual');
+	}
 
-function formatWinRate(wins: number, total: number): string {
-	if (total === 0) return "0%";
-	return `${Math.round((wins / total) * 100)}%`;
-}
+	function formatWinRate(wins: number, total: number): string {
+		if (total === 0) return '0%';
+		return `${Math.round((wins / total) * 100)}%`;
+	}
 </script>
 
 <svelte:head>
 	<title>Play | ft_transcendence</title>
 </svelte:head>
 
-{#if gameStore.phase === "idle"}
+{#if gameStore.phase === 'idle'}
 	<div class="space-y-8">
 		<div class="flex items-center justify-between">
 			<div>
 				<h1 class="text-3xl font-bold tracking-tight">Play</h1>
-				<p class="text-muted-foreground">
-					Challenge players or practice your skills
-				</p>
+				<p class="text-muted-foreground">Challenge players or practice your skills</p>
 			</div>
 		</div>
 
 		<!-- Quick Play Section -->
-		<Card.Root
-			class="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent"
-		>
+		<Card.Root class="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
 			<Card.Content class="pt-6">
-				<div
-					class="flex flex-col items-center gap-6 py-8 text-center sm:flex-row sm:text-left"
-				>
+				<div class="flex flex-col items-center gap-6 py-8 text-center sm:flex-row sm:text-left">
 					<div class="rounded-full bg-primary/10 p-6">
 						<GamepadIcon class="size-12 text-primary" />
 					</div>
 					<div class="flex-1 space-y-2">
 						<h2 class="text-2xl font-bold">Ready to Play?</h2>
 						<p class="text-muted-foreground">
-							Jump into a ranked match against another player or play a casual
-							game.
+							Jump into a ranked match against another player or play a casual game.
 						</p>
 					</div>
 					<div class="flex flex-col gap-2 sm:flex-row">
@@ -75,12 +68,7 @@ function formatWinRate(wins: number, total: number): string {
 							<SwordsIcon class="size-5" />
 							Ranked Match
 						</Button>
-						<Button
-							size="lg"
-							variant="outline"
-							class="gap-2"
-							onclick={handleCasualMatch}
-						>
+						<Button size="lg" variant="outline" class="gap-2" onclick={handleCasualMatch}>
 							<GamepadIcon class="size-5" />
 							Casual Match
 						</Button>
@@ -99,9 +87,7 @@ function formatWinRate(wins: number, total: number): string {
 				<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					<div class="space-y-1">
 						<div class="font-medium">Movement</div>
-						<div class="text-sm text-muted-foreground">
-							WASD or Arrow Keys
-						</div>
+						<div class="text-sm text-muted-foreground">WASD or Arrow Keys</div>
 					</div>
 					<div class="space-y-1">
 						<div class="font-medium">Shoot</div>
@@ -109,9 +95,7 @@ function formatWinRate(wins: number, total: number): string {
 					</div>
 					<div class="space-y-1">
 						<div class="font-medium">Focus Mode</div>
-						<div class="text-sm text-muted-foreground">
-							Shift (slower + precise shot)
-						</div>
+						<div class="text-sm text-muted-foreground">Shift (slower + precise shot)</div>
 					</div>
 					<div class="space-y-1">
 						<div class="font-medium">Dash</div>
@@ -119,15 +103,11 @@ function formatWinRate(wins: number, total: number): string {
 					</div>
 					<div class="space-y-1">
 						<div class="font-medium">Bomb</div>
-						<div class="text-sm text-muted-foreground">
-							E (clear bullets, 12s cooldown)
-						</div>
+						<div class="text-sm text-muted-foreground">E (clear bullets, 12s cooldown)</div>
 					</div>
 					<div class="space-y-1">
 						<div class="font-medium">Ultimate</div>
-						<div class="text-sm text-muted-foreground">
-							R (charge by dealing damage)
-						</div>
+						<div class="text-sm text-muted-foreground">R (charge by dealing damage)</div>
 					</div>
 				</div>
 			</Card.Content>
@@ -175,10 +155,7 @@ function formatWinRate(wins: number, total: number): string {
 								<div class="flex items-center gap-1">
 									<TrendingUpIcon class="size-4 text-primary" />
 									<span class="text-2xl font-bold"
-										>{formatWinRate(
-											stats.wins,
-											stats.wins + stats.losses,
-										)}</span
+										>{formatWinRate(stats.wins, stats.wins + stats.losses)}</span
 									>
 								</div>
 								<p class="text-sm text-muted-foreground">Win Rate</p>
@@ -225,25 +202,21 @@ function formatWinRate(wins: number, total: number): string {
 					{:else if matchesQuery.data && matchesQuery.data.matches.length > 0}
 						<div class="space-y-2">
 							{#each matchesQuery.data.matches as match}
-								<div
-									class="flex items-center justify-between rounded-lg border p-3"
-								>
+								<div class="flex items-center justify-between rounded-lg border p-3">
 									<div class="flex items-center gap-3">
-										<span class="font-medium"
-											>{match.opponent.displayName}</span
-										>
+										<span class="font-medium">{match.opponent.displayName}</span>
 									</div>
 									<div class="flex items-center gap-3">
 										<span class="font-mono text-sm">
 											{match.playerScore} - {match.opponentScore}
 										</span>
 										<Badge
-											variant={match.result === "win" ? "default" : "secondary"}
-											class={match.result === "win"
-												? "bg-green-600 hover:bg-green-600"
-												: "bg-red-600 text-white hover:bg-red-600"}
+											variant={match.result === 'win' ? 'default' : 'secondary'}
+											class={match.result === 'win'
+												? 'bg-green-600 hover:bg-green-600'
+												: 'bg-red-600 text-white hover:bg-red-600'}
 										>
-											{match.result === "win" ? "Win" : "Loss"}
+											{match.result === 'win' ? 'Win' : 'Loss'}
 										</Badge>
 									</div>
 								</div>
@@ -251,9 +224,7 @@ function formatWinRate(wins: number, total: number): string {
 						</div>
 					{:else}
 						<div class="py-8 text-center">
-							<p class="text-muted-foreground">
-								No matches yet. Play your first game!
-							</p>
+							<p class="text-muted-foreground">No matches yet. Play your first game!</p>
 						</div>
 					{/if}
 				</Card.Content>

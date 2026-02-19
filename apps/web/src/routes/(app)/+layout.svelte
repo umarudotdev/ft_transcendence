@@ -1,10 +1,10 @@
 <script lang="ts">
-	import * as Sidebar from "$lib/components/ui/sidebar";
-	import AppSidebar from "$lib/components/app-sidebar.svelte";
-	import { NotificationBell } from "$lib/components/notifications";
-	import { DailyRewardButton } from "$lib/components/gamification";
-	import CommandMenu from "$lib/components/command-menu.svelte";
-	import HeaderUserMenu from "$lib/components/header-user-menu.svelte";
+	import * as Sidebar from '$lib/components/ui/sidebar';
+	import AppSidebar from '$lib/components/app-sidebar.svelte';
+	import { NotificationBell } from '$lib/components/notifications';
+	import { DailyRewardButton } from '$lib/components/gamification';
+	import CommandMenu from '$lib/components/command-menu.svelte';
+	import HeaderUserMenu from '$lib/components/header-user-menu.svelte';
 
 	let { children } = $props();
 </script>

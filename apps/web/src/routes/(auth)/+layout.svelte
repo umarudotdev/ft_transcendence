@@ -4,9 +4,13 @@
 	let { children } = $props();
 </script>
 
-<div class="relative flex min-h-screen items-center justify-center overflow-hidden bg-md3-surface p-4">
+<div
+	class="relative flex min-h-screen items-center justify-center overflow-hidden bg-md3-surface p-4"
+>
 	<!-- Gradient background -->
-	<div class="absolute inset-0 bg-gradient-to-br from-md3-surface via-md3-surface to-primary/10 dark:to-primary/5"></div>
+	<div
+		class="absolute inset-0 bg-gradient-to-br from-md3-surface via-md3-surface to-primary/10 dark:to-primary/5"
+	></div>
 
 	<!-- Grid pattern -->
 	<div
@@ -15,7 +19,9 @@
 	></div>
 
 	<!-- Radial glow -->
-	<div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent dark:from-primary/5"></div>
+	<div
+		class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent dark:from-primary/5"
+	></div>
 
 	<!-- CRT scanlines -->
 	<div
@@ -24,7 +30,9 @@
 	></div>
 
 	<!-- CRT vignette -->
-	<div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_transparent_60%,_rgba(0,0,0,0.15)_100%)] dark:bg-[radial-gradient(ellipse_at_center,_transparent_0%,_transparent_60%,_rgba(0,0,0,0.3)_100%)]"></div>
+	<div
+		class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_transparent_60%,_rgba(0,0,0,0.15)_100%)] dark:bg-[radial-gradient(ellipse_at_center,_transparent_0%,_transparent_60%,_rgba(0,0,0,0.3)_100%)]"
+	></div>
 
 	<div class="absolute top-4 right-4 z-10">
 		<ThemeToggle />

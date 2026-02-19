@@ -1,39 +1,37 @@
 <script lang="ts">
-import MedalIcon from "@lucide/svelte/icons/medal";
-import MessageSquareIcon from "@lucide/svelte/icons/message-square";
-import PlayIcon from "@lucide/svelte/icons/play";
-import SettingsIcon from "@lucide/svelte/icons/settings";
-import ShieldIcon from "@lucide/svelte/icons/shield";
-import TrophyIcon from "@lucide/svelte/icons/trophy";
-import UserIcon from "@lucide/svelte/icons/user";
-import { page } from "$app/stores";
-import ThemeToggle from "$lib/components/theme-toggle.svelte";
-import { Button } from "$lib/components/ui/button";
-import * as Sidebar from "$lib/components/ui/sidebar";
-import { createMeQuery } from "$lib/queries/auth";
+	import MedalIcon from '@lucide/svelte/icons/medal';
+	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
+	import PlayIcon from '@lucide/svelte/icons/play';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import TrophyIcon from '@lucide/svelte/icons/trophy';
+	import UserIcon from '@lucide/svelte/icons/user';
+	import { page } from '$app/stores';
+	import ThemeToggle from '$lib/components/theme-toggle.svelte';
+	import { Button } from '$lib/components/ui/button';
+	import * as Sidebar from '$lib/components/ui/sidebar';
+	import { createMeQuery } from '$lib/queries/auth';
 
-const meQuery = createMeQuery();
+	const meQuery = createMeQuery();
 
-const currentPath = $derived($page.url.pathname);
+	const currentPath = $derived($page.url.pathname);
 
-const navItems = [
-	{ href: "/leaderboard", label: "Leaderboard", icon: TrophyIcon },
-	{ href: "/achievements", label: "Achievements", icon: MedalIcon },
-	{ href: "/chat", label: "Chat", icon: MessageSquareIcon },
-	{ href: "/profile", label: "Profile", icon: UserIcon },
-	{ href: "/settings", label: "Settings", icon: SettingsIcon },
-];
+	const navItems = [
+		{ href: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
+		{ href: '/achievements', label: 'Achievements', icon: MedalIcon },
+		{ href: '/chat', label: 'Chat', icon: MessageSquareIcon },
+		{ href: '/profile', label: 'Profile', icon: UserIcon },
+		{ href: '/settings', label: 'Settings', icon: SettingsIcon }
+	];
 
-const isAdmin = $derived(
-	meQuery.data?.role === "admin" || meQuery.data?.role === "moderator",
-);
+	const isAdmin = $derived(meQuery.data?.role === 'admin' || meQuery.data?.role === 'moderator');
 
-function isActive(href: string): boolean {
-	if (href === "/") {
-		return currentPath === "/";
+	function isActive(href: string): boolean {
+		if (href === '/') {
+			return currentPath === '/';
+		}
+		return currentPath === href || currentPath.startsWith(`${href}/`);
 	}
-	return currentPath === href || currentPath.startsWith(`${href}/`);
-}
 </script>
 
 <Sidebar.Root collapsible="icon">
@@ -76,7 +74,7 @@ function isActive(href: string): boolean {
 
 					<!-- Admin Link (conditional) -->
 					{#if isAdmin}
-						{@const adminActive = isActive("/admin")}
+						{@const adminActive = isActive('/admin')}
 						<Sidebar.MenuItem class="w-full">
 							<Sidebar.MenuButton
 								isActive={adminActive}

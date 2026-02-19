@@ -133,7 +133,9 @@
 	<Card.Content>
 		{#if registeredSuccess || verifiedSuccess}
 			<div transition:fade={{ duration: 200 }}>
-				<Alert class="mb-4 border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
+				<Alert
+					class="mb-4 border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"
+				>
 					<CheckCircleIcon class="size-4" />
 					<AlertDescription>
 						{registeredSuccess

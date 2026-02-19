@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { Dialog as DialogPrimitive } from "bits-ui";
-	import DialogPortal from "./dialog-portal.svelte";
-	import XIcon from "@lucide/svelte/icons/x";
-	import type { Snippet } from "svelte";
-	import * as Dialog from "./index.js";
-	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
-	import type { ComponentProps } from "svelte";
+	import { Dialog as DialogPrimitive } from 'bits-ui';
+	import DialogPortal from './dialog-portal.svelte';
+	import XIcon from '@lucide/svelte/icons/x';
+	import type { Snippet } from 'svelte';
+	import * as Dialog from './index.js';
+	import { cn, type WithoutChildrenOrChild } from '$lib/utils.js';
+	import type { ComponentProps } from 'svelte';
 
 	let {
 		ref = $bindable(null),
@@ -28,20 +28,20 @@
 		data-slot="dialog-content"
 		class={cn(
 			// MD3 Dialog styles
-			"bg-md3-surface-container-high text-md3-on-surface",
+			'bg-md3-surface-container-high text-md3-on-surface',
 			// Positioning
-			"fixed top-[50%] left-[50%] z-50 translate-x-[-50%] translate-y-[-50%]",
+			'fixed top-[50%] left-[50%] z-50 translate-x-[-50%] translate-y-[-50%]',
 			// Layout
-			"grid w-full max-w-[calc(100%-3rem)] gap-6 p-6 sm:max-w-lg",
+			'grid w-full max-w-[calc(100%-3rem)] gap-6 p-6 sm:max-w-lg',
 			// Shape (MD3 extra-large for dialogs)
-			"rounded-[var(--md3-shape-extra-large)]",
+			'rounded-[var(--md3-shape-extra-large)]',
 			// Elevation
-			"shadow-lg",
+			'shadow-lg',
 			// Animation (MD3 emphasized easing)
-			"data-[state=open]:animate-in data-[state=closed]:animate-out",
-			"data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-			"data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-			"duration-[var(--md3-duration-medium2)]",
+			'data-[state=closed]:animate-out data-[state=open]:animate-in',
+			'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+			'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+			'duration-[var(--md3-duration-medium2)]',
 			className
 		)}
 		{...restProps}
@@ -49,7 +49,7 @@
 		{@render children?.()}
 		{#if showCloseButton}
 			<DialogPrimitive.Close
-				class="ring-offset-background focus:ring-ring absolute end-4 top-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+				class="absolute end-4 top-4 rounded-xs opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
 			>
 				<XIcon />
 				<span class="sr-only">Close</span>

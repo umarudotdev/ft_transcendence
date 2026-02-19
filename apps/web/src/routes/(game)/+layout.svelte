@@ -1,5 +1,5 @@
 <script lang="ts">
-	import ArrowLeftIcon from "@lucide/svelte/icons/arrow-left";
+	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 
 	let { children } = $props();
 	let showControls = $state(true);
@@ -20,7 +20,9 @@
 	onmousemove={handleMouseMove}
 >
 	<!-- Radial vignette -->
-	<div class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_transparent_50%,_rgba(0,0,0,0.4)_100%)]"></div>
+	<div
+		class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_transparent_50%,_rgba(0,0,0,0.4)_100%)]"
+	></div>
 
 	<!-- Back button -->
 	<a

@@ -1,23 +1,23 @@
 <script lang="ts">
-import GamepadIcon from "@lucide/svelte/icons/gamepad-2";
-import SwordsIcon from "@lucide/svelte/icons/swords";
-import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
-import TrophyIcon from "@lucide/svelte/icons/trophy";
-import { Badge } from "$lib/components/ui/badge";
-import { Button } from "$lib/components/ui/button";
-import * as Card from "$lib/components/ui/card";
-import { Skeleton } from "$lib/components/ui/skeleton";
-import { createMeQuery } from "$lib/queries/auth";
-import { createMyMatchesQuery, createMyStatsQuery } from "$lib/queries/users";
+	import GamepadIcon from '@lucide/svelte/icons/gamepad-2';
+	import SwordsIcon from '@lucide/svelte/icons/swords';
+	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
+	import TrophyIcon from '@lucide/svelte/icons/trophy';
+	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
+	import * as Card from '$lib/components/ui/card';
+	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { createMeQuery } from '$lib/queries/auth';
+	import { createMyMatchesQuery, createMyStatsQuery } from '$lib/queries/users';
 
-const meQuery = createMeQuery();
-const statsQuery = createMyStatsQuery();
-const matchesQuery = createMyMatchesQuery({ limit: 5 });
+	const meQuery = createMeQuery();
+	const statsQuery = createMyStatsQuery();
+	const matchesQuery = createMyMatchesQuery({ limit: 5 });
 
-function formatWinRate(wins: number, total: number): string {
-	if (total === 0) return "0%";
-	return `${Math.round((wins / total) * 100)}%`;
-}
+	function formatWinRate(wins: number, total: number): string {
+		if (total === 0) return '0%';
+		return `${Math.round((wins / total) * 100)}%`;
+	}
 </script>
 
 <svelte:head>
@@ -41,9 +41,7 @@ function formatWinRate(wins: number, total: number): string {
 				</div>
 				<div class="flex-1 space-y-2">
 					<h2 class="text-2xl font-bold">Ready to Play?</h2>
-					<p class="text-muted-foreground">
-						Jump into a quick match against another player.
-					</p>
+					<p class="text-muted-foreground">Jump into a quick match against another player.</p>
 				</div>
 				<div class="flex flex-col gap-2 sm:flex-row">
 					<Button size="lg" class="gap-2" href="/play">

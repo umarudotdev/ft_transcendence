@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { OpponentInfo } from "$lib/stores/game.svelte";
-	import { getTierColor } from "$lib/game/matchmaking-utils";
+	import type { OpponentInfo } from '$lib/stores/game.svelte';
+	import { getTierColor } from '$lib/game/matchmaking-utils';
 
 	interface Props {
 		playerName: string;
@@ -16,8 +16,12 @@
 	<!-- VS layout -->
 	<div class="flex items-center gap-6">
 		<!-- Player card -->
-		<div class="slide-in-left flex w-48 flex-col items-center gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 p-6">
-			<div class="flex size-16 items-center justify-center rounded-full bg-blue-500/20 text-2xl font-bold text-blue-400">
+		<div
+			class="slide-in-left flex w-48 flex-col items-center gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 p-6"
+		>
+			<div
+				class="flex size-16 items-center justify-center rounded-full bg-blue-500/20 text-2xl font-bold text-blue-400"
+			>
 				{playerName.charAt(0).toUpperCase()}
 			</div>
 			<div class="text-center">
@@ -33,13 +37,20 @@
 		</div>
 
 		<!-- VS -->
-		<div class="vs-pulse text-4xl font-black tracking-wider text-white" style="text-shadow: 0 0 20px rgba(255,255,255,0.5), 0 0 40px rgba(255,255,255,0.2);">
+		<div
+			class="vs-pulse text-4xl font-black tracking-wider text-white"
+			style="text-shadow: 0 0 20px rgba(255,255,255,0.5), 0 0 40px rgba(255,255,255,0.2);"
+		>
 			VS
 		</div>
 
 		<!-- Opponent card -->
-		<div class="slide-in-right flex w-48 flex-col items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-6">
-			<div class="flex size-16 items-center justify-center rounded-full bg-red-500/20 text-2xl font-bold text-red-400">
+		<div
+			class="slide-in-right flex w-48 flex-col items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-6"
+		>
+			<div
+				class="flex size-16 items-center justify-center rounded-full bg-red-500/20 text-2xl font-bold text-red-400"
+			>
 				{opponent.displayName.charAt(0).toUpperCase()}
 			</div>
 			<div class="text-center">

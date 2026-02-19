@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Button } from "$lib/components/ui/button";
-	import type { MatchResult } from "$lib/stores/game.svelte";
+	import { Button } from '$lib/components/ui/button';
+	import type { MatchResult } from '$lib/stores/game.svelte';
 
 	interface Props {
 		won: boolean;
@@ -21,12 +21,13 @@
 		class:text-red-400={!won}
 		style="text-shadow: 0 0 30px {won ? 'rgba(74, 222, 128, 0.4)' : 'rgba(248, 113, 113, 0.4)'};"
 	>
-		{won ? "VICTORY" : "DEFEAT"}
+		{won ? 'VICTORY' : 'DEFEAT'}
 	</div>
 
 	<!-- Score -->
 	<div class="text-4xl font-bold text-white">
-		{score} <span class="text-white/40">-</span> {opponentScore}
+		{score} <span class="text-white/40">-</span>
+		{opponentScore}
 	</div>
 
 	<!-- Rating change -->
@@ -39,7 +40,7 @@
 					class:text-green-400={matchResult.ratingChange > 0}
 					class:text-red-400={matchResult.ratingChange < 0}
 				>
-					{matchResult.ratingChange > 0 ? "+" : ""}{matchResult.ratingChange}
+					{matchResult.ratingChange > 0 ? '+' : ''}{matchResult.ratingChange}
 				</span>
 			</div>
 			<div class="flex items-center justify-between">

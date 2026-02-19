@@ -72,14 +72,13 @@
 		if (username.length === 0) return null;
 		if (!usernameRequirements.minLength) return 'Username must be at least 3 characters';
 		if (!usernameRequirements.maxLength) return 'Username must be at most 20 characters';
-		if (!usernameRequirements.validChars) return 'Only lowercase letters, numbers, and underscores allowed';
+		if (!usernameRequirements.validChars)
+			return 'Only lowercase letters, numbers, and underscores allowed';
 		return null;
 	});
 
 	// Step validation
-	const isStep1Valid = $derived(
-		email.length > 0 && isPasswordValid && passwordsMatch
-	);
+	const isStep1Valid = $derived(email.length > 0 && isPasswordValid && passwordsMatch);
 
 	const isStep2Valid = $derived(
 		displayName.length > 0 &&
@@ -190,7 +189,10 @@
 						/>
 
 						{#if password.length > 0 && unmetPasswordReqs().length > 0}
-							<p transition:slide={{ duration: 150 }} class="flex items-center gap-2 text-sm text-muted-foreground">
+							<p
+								transition:slide={{ duration: 150 }}
+								class="flex items-center gap-2 text-sm text-muted-foreground"
+							>
 								<CircleAlertIcon class="size-4 shrink-0" />
 								Needs: {unmetPasswordReqs().join(', ')}
 							</p>
@@ -207,7 +209,10 @@
 							disabled={registerMutation.isPending}
 						/>
 						{#if confirmPassword && !passwordsMatch}
-							<p transition:slide={{ duration: 150 }} class="flex items-center gap-2 text-sm text-destructive">
+							<p
+								transition:slide={{ duration: 150 }}
+								class="flex items-center gap-2 text-sm text-destructive"
+							>
 								<CircleAlertIcon class="size-4 shrink-0" />
 								Passwords do not match
 							</p>
@@ -279,7 +284,10 @@
 							disabled={registerMutation.isPending}
 						/>
 						{#if usernameError()}
-							<p transition:slide={{ duration: 150 }} class="flex items-center gap-2 text-sm text-destructive">
+							<p
+								transition:slide={{ duration: 150 }}
+								class="flex items-center gap-2 text-sm text-destructive"
+							>
 								<CircleAlertIcon class="size-4 shrink-0" />
 								{usernameError()}
 							</p>

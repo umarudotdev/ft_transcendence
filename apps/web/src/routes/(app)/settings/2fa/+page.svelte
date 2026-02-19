@@ -121,21 +121,26 @@
 		{#if successMessage}
 			<Card.Root>
 				<Card.Header class="text-center">
-					<div class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+					<div
+						class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-900"
+					>
 						<CheckCircleIcon class="size-7 text-green-600 dark:text-green-400" />
 					</div>
 					<Card.Title class="text-xl">Success</Card.Title>
 					<Card.Description>{successMessage}</Card.Description>
 				</Card.Header>
 				<Card.Content>
-					<p class="text-center text-sm text-muted-foreground">Redirecting to security settings...</p>
+					<p class="text-center text-sm text-muted-foreground">
+						Redirecting to security settings...
+					</p>
 				</Card.Content>
 			</Card.Root>
-
 		{:else if isDisableMode}
 			<Card.Root>
 				<Card.Header class="text-center">
-					<div class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-destructive/10">
+					<div
+						class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-destructive/10"
+					>
 						<ShieldOffIcon class="size-7 text-destructive" />
 					</div>
 					<Card.Title class="text-xl">Disable Two-Factor Authentication</Card.Title>
@@ -151,7 +156,9 @@
 						</Alert>
 					{:else}
 						<form onsubmit={handleDisable} class="space-y-6">
-							<Alert class="border-yellow-200 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200">
+							<Alert
+								class="border-yellow-200 bg-yellow-50 text-yellow-800 dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-200"
+							>
 								<AlertTriangleIcon class="size-4" />
 								<AlertDescription>
 									<strong>Warning:</strong> Disabling 2FA will make your account less secure.
@@ -207,15 +214,18 @@
 					{/if}
 				</Card.Content>
 			</Card.Root>
-
 		{:else if user.twoFactorEnabled}
 			<Card.Root>
 				<Card.Header class="text-center">
-					<div class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+					<div
+						class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-green-100 dark:bg-green-900"
+					>
 						<ShieldCheckIcon class="size-7 text-green-600 dark:text-green-400" />
 					</div>
 					<Card.Title class="text-xl">Already Enabled</Card.Title>
-					<Card.Description>Two-factor authentication is already enabled on your account.</Card.Description>
+					<Card.Description
+						>Two-factor authentication is already enabled on your account.</Card.Description
+					>
 				</Card.Header>
 				<Card.Content>
 					<Button variant="outline" class="w-full" href="/settings/security">
@@ -224,11 +234,12 @@
 					</Button>
 				</Card.Content>
 			</Card.Root>
-
 		{:else if step === 'initial'}
 			<Card.Root>
 				<Card.Header class="text-center">
-					<div class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-primary/10">
+					<div
+						class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-primary/10"
+					>
 						<ShieldIcon class="size-7 text-primary" />
 					</div>
 					<Card.Title class="text-xl">Enable Two-Factor Authentication</Card.Title>
@@ -261,11 +272,12 @@
 					</Button>
 				</Card.Content>
 			</Card.Root>
-
 		{:else if step === 'verify' && qrData}
 			<Card.Root>
 				<Card.Header class="text-center">
-					<div class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-primary/10">
+					<div
+						class="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-primary/10"
+					>
 						<QrCodeIcon class="size-7 text-primary" />
 					</div>
 					<Card.Title class="text-xl">Scan QR Code</Card.Title>
@@ -280,9 +292,13 @@
 						</div>
 
 						<details class="rounded-lg bg-muted">
-							<summary class="cursor-pointer p-3 text-sm font-medium">Can't scan? Enter manually</summary>
-							<div class="border-t px-3 pb-3 pt-2">
-								<code class="block rounded bg-background p-2 text-center font-mono text-xs break-all select-all">
+							<summary class="cursor-pointer p-3 text-sm font-medium"
+								>Can't scan? Enter manually</summary
+							>
+							<div class="border-t px-3 pt-2 pb-3">
+								<code
+									class="block rounded bg-background p-2 text-center font-mono text-xs break-all select-all"
+								>
 									{qrData.secret}
 								</code>
 							</div>

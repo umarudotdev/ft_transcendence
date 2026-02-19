@@ -1,31 +1,31 @@
 <script lang="ts">
-	import * as Command from "$lib/components/ui/command";
-	import * as Kbd from "$lib/components/ui/kbd";
-	import { goto } from "$app/navigation";
-	import { setMode, resetMode } from "mode-watcher";
-	import { createLogoutMutation } from "$lib/queries/auth";
-	import { api } from "$lib/api";
-	import { getInitials } from "$lib/utils";
+	import * as Command from '$lib/components/ui/command';
+	import * as Kbd from '$lib/components/ui/kbd';
+	import { goto } from '$app/navigation';
+	import { setMode, resetMode } from 'mode-watcher';
+	import { createLogoutMutation } from '$lib/queries/auth';
+	import { api } from '$lib/api';
+	import { getInitials } from '$lib/utils';
 
-	import SearchIcon from "@lucide/svelte/icons/search";
-	import GamepadIcon from "@lucide/svelte/icons/gamepad-2";
-	import TrophyIcon from "@lucide/svelte/icons/trophy";
-	import MedalIcon from "@lucide/svelte/icons/medal";
-	import BellIcon from "@lucide/svelte/icons/bell";
-	import UserIcon from "@lucide/svelte/icons/user";
-	import SettingsIcon from "@lucide/svelte/icons/settings";
-	import ShieldIcon from "@lucide/svelte/icons/shield";
-	import KeyIcon from "@lucide/svelte/icons/key-round";
-	import SunIcon from "@lucide/svelte/icons/sun";
-	import MoonIcon from "@lucide/svelte/icons/moon";
-	import MonitorIcon from "@lucide/svelte/icons/monitor";
-	import LogOutIcon from "@lucide/svelte/icons/log-out";
-	import LoaderIcon from "@lucide/svelte/icons/loader-circle";
+	import SearchIcon from '@lucide/svelte/icons/search';
+	import GamepadIcon from '@lucide/svelte/icons/gamepad-2';
+	import TrophyIcon from '@lucide/svelte/icons/trophy';
+	import MedalIcon from '@lucide/svelte/icons/medal';
+	import BellIcon from '@lucide/svelte/icons/bell';
+	import UserIcon from '@lucide/svelte/icons/user';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import KeyIcon from '@lucide/svelte/icons/key-round';
+	import SunIcon from '@lucide/svelte/icons/sun';
+	import MoonIcon from '@lucide/svelte/icons/moon';
+	import MonitorIcon from '@lucide/svelte/icons/monitor';
+	import LogOutIcon from '@lucide/svelte/icons/log-out';
+	import LoaderIcon from '@lucide/svelte/icons/loader-circle';
 
 	const logoutMutation = createLogoutMutation();
 
 	let open = $state(false);
-	let searchValue = $state("");
+	let searchValue = $state('');
 	let userResults = $state<Array<{ id: number; displayName: string; avatarUrl: string | null }>>(
 		[]
 	);
@@ -50,7 +50,7 @@
 		debounceTimer = setTimeout(async () => {
 			const response = await api.api.users.search.get({
 				query: { q: searchValue },
-				fetch: { credentials: "include" },
+				fetch: { credentials: 'include' }
 			});
 
 			if (!response.error) {
@@ -67,14 +67,14 @@
 
 	$effect(() => {
 		if (!open) {
-			searchValue = "";
+			searchValue = '';
 			userResults = [];
 			hasSearched = false;
 		}
 	});
 
 	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+		if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
 			e.preventDefault();
 			open = !open;
 		}
@@ -85,9 +85,9 @@
 		goto(path);
 	}
 
-	function setTheme(theme: "light" | "dark" | "system") {
+	function setTheme(theme: 'light' | 'dark' | 'system') {
 		open = false;
-		if (theme === "system") {
+		if (theme === 'system') {
 			resetMode();
 		} else {
 			setMode(theme);
@@ -98,8 +98,8 @@
 		open = false;
 		logoutMutation.mutate(undefined, {
 			onSuccess: () => {
-				goto("/auth/login");
-			},
+				goto('/auth/login');
+			}
 		});
 	}
 </script>
@@ -163,53 +163,53 @@
 			<Command.Separator />
 		{/if}
 		<Command.Group heading="Navigation">
-			<Command.Item onSelect={() => navigate("/")}>
+			<Command.Item onSelect={() => navigate('/')}>
 				<GamepadIcon />
 				<span>Game Lobby</span>
 			</Command.Item>
-			<Command.Item onSelect={() => navigate("/leaderboard")}>
+			<Command.Item onSelect={() => navigate('/leaderboard')}>
 				<TrophyIcon />
 				<span>Leaderboard</span>
 			</Command.Item>
-			<Command.Item onSelect={() => navigate("/achievements")}>
+			<Command.Item onSelect={() => navigate('/achievements')}>
 				<MedalIcon />
 				<span>Achievements</span>
 			</Command.Item>
-			<Command.Item onSelect={() => navigate("/notifications")}>
+			<Command.Item onSelect={() => navigate('/notifications')}>
 				<BellIcon />
 				<span>Notifications</span>
 			</Command.Item>
-			<Command.Item onSelect={() => navigate("/profile")}>
+			<Command.Item onSelect={() => navigate('/profile')}>
 				<UserIcon />
 				<span>Profile</span>
 			</Command.Item>
 		</Command.Group>
 		<Command.Separator />
 		<Command.Group heading="Settings">
-			<Command.Item onSelect={() => navigate("/settings")}>
+			<Command.Item onSelect={() => navigate('/settings')}>
 				<SettingsIcon />
 				<span>Account</span>
 			</Command.Item>
-			<Command.Item onSelect={() => navigate("/settings/security")}>
+			<Command.Item onSelect={() => navigate('/settings/security')}>
 				<ShieldIcon />
 				<span>Security</span>
 			</Command.Item>
-			<Command.Item onSelect={() => navigate("/settings/2fa")}>
+			<Command.Item onSelect={() => navigate('/settings/2fa')}>
 				<KeyIcon />
 				<span>Two-Factor Auth</span>
 			</Command.Item>
 		</Command.Group>
 		<Command.Separator />
 		<Command.Group heading="Theme">
-			<Command.Item onSelect={() => setTheme("light")}>
+			<Command.Item onSelect={() => setTheme('light')}>
 				<SunIcon />
 				<span>Light</span>
 			</Command.Item>
-			<Command.Item onSelect={() => setTheme("dark")}>
+			<Command.Item onSelect={() => setTheme('dark')}>
 				<MoonIcon />
 				<span>Dark</span>
 			</Command.Item>
-			<Command.Item onSelect={() => setTheme("system")}>
+			<Command.Item onSelect={() => setTheme('system')}>
 				<MonitorIcon />
 				<span>System</span>
 			</Command.Item>

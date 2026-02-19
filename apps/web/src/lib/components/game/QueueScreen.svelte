@@ -1,13 +1,13 @@
 <script lang="ts">
-	import XIcon from "@lucide/svelte/icons/x";
-	import { Button } from "$lib/components/ui/button";
-	import { formatTime } from "$lib/game/matchmaking-utils";
+	import XIcon from '@lucide/svelte/icons/x';
+	import { Button } from '$lib/components/ui/button';
+	import { formatTime } from '$lib/game/matchmaking-utils';
 
 	interface Props {
 		elapsedSeconds: number;
 		queuePosition: number;
 		estimatedWait: number;
-		mode: "ranked" | "casual" | null;
+		mode: 'ranked' | 'casual' | null;
 		onCancel: () => void;
 	}
 
@@ -17,9 +17,21 @@
 <div class="flex w-full flex-col items-center gap-8 py-12">
 	<!-- Radar rings -->
 	<div class="relative flex h-48 w-48 items-center justify-center">
-		<div class="radar-ring absolute size-full rounded-full border-2 border-primary/40" role="presentation" style="animation-delay: 0s"></div>
-		<div class="radar-ring absolute size-full rounded-full border-2 border-primary/40" role="presentation" style="animation-delay: 0.8s"></div>
-		<div class="radar-ring absolute size-full rounded-full border-2 border-primary/40" role="presentation" style="animation-delay: 1.6s"></div>
+		<div
+			class="radar-ring absolute size-full rounded-full border-2 border-primary/40"
+			role="presentation"
+			style="animation-delay: 0s"
+		></div>
+		<div
+			class="radar-ring absolute size-full rounded-full border-2 border-primary/40"
+			role="presentation"
+			style="animation-delay: 0.8s"
+		></div>
+		<div
+			class="radar-ring absolute size-full rounded-full border-2 border-primary/40"
+			role="presentation"
+			style="animation-delay: 1.6s"
+		></div>
 
 		<!-- Center content -->
 		<div class="relative z-10 flex flex-col items-center gap-2">
@@ -29,11 +41,12 @@
 
 			{#if mode}
 				<span
-					class="rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-widest {mode === 'ranked'
+					class="rounded-full px-3 py-0.5 text-xs font-bold tracking-widest uppercase {mode ===
+					'ranked'
 						? 'bg-primary/20 text-primary'
 						: 'bg-secondary/20 text-secondary'}"
 				>
-					{mode === "ranked" ? "RANKED" : "CASUAL"}
+					{mode === 'ranked' ? 'RANKED' : 'CASUAL'}
 				</span>
 			{/if}
 		</div>

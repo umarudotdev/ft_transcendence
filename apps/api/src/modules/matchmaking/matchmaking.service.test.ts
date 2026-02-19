@@ -30,7 +30,7 @@ describe("MatchmakingService WS Tokens", () => {
   });
 
   test("validateWsToken returns null after expiry", () => {
-    const token = MatchmakingService.generateWsToken(1);
+    const _token = MatchmakingService.generateWsToken(1);
 
     // Manually expire the token by reaching into the internal map
     // We test the logic path by creating a token with past expiry

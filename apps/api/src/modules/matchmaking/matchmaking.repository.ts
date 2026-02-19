@@ -39,32 +39,43 @@ export const matchmakingRepository = {
     });
   },
 
-  /** Atomically mark a session as finished only if it's not already finished.
-   *  Returns the updated session, or undefined if not found or already finished. */
-  async finishGameSession(id: string) {
-    const [session] = await db
-      .update(gameSessions)
-      .set({ state: "finished", endedAt: new Date() })
-      .where(and(eq(gameSessions.id, id), ne(gameSessions.state, "finished")))
-      .returning();
-    return session;
-  },
+  /** Atomically finish a session and create a match record in a single transaction.
+   *  Returns null if the session is not found or already in a terminal state. */
+  async completeGameSession(
+    sessionId: string,
+    matchData: {
+      player1Id: number;
+      player2Id: number;
+      player1Score: number;
+      player2Score: number;
+      winnerId: number | null;
+      gameType: string;
+      isAiGame: boolean;
+      duration: number;
+    }
+  ) {
+    return db.transaction(async (tx) => {
+      const [session] = await tx
+        .update(gameSessions)
+        .set({ state: "finished", endedAt: new Date() })
+        .where(
+          and(
+            eq(gameSessions.id, sessionId),
+            ne(gameSessions.state, "finished"),
+            ne(gameSessions.state, "abandoned")
+          )
+        )
+        .returning();
 
-  // --- Matches ---
+      if (!session) return null;
 
-  async createMatch(data: {
-    player1Id: number;
-    player2Id: number;
-    player1Score: number;
-    player2Score: number;
-    winnerId: number | null;
-    gameType: string;
-    isAiGame: boolean;
-    duration: number;
-    sessionId?: string;
-  }) {
-    const [match] = await db.insert(matches).values(data).returning();
-    return match;
+      const [match] = await tx
+        .insert(matches)
+        .values({ ...matchData, sessionId })
+        .returning();
+
+      return { session, match };
+    });
   },
 
   // --- Matchmaking Queue (crash recovery) ---

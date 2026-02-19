@@ -350,8 +350,7 @@ export function createGameStore() {
 
       phase = "waiting";
       setupRoomCallbacks(joinedRoom);
-    } catch (error) {
-      console.error("[game] joinOrCreate failed:", error);
+    } catch {
       phase = "idle";
       resetGameState();
     }
@@ -469,6 +468,7 @@ export function createGameStore() {
       // Forward-only phase advancement from server
       const serverPhase = state.phase as string;
       if (
+        serverPhase === "waiting" ||
         serverPhase === "countdown" ||
         serverPhase === "playing" ||
         serverPhase === "finished"
@@ -479,6 +479,13 @@ export function createGameStore() {
         if (newOrder > currentOrder || phase === "reconnecting") {
           phase = serverPhase as GamePhase;
         }
+      }
+
+      // Drain buffered matchResult if we just entered "finished"
+      if (phase === "finished" && pendingMatchResult) {
+        const data = pendingMatchResult;
+        pendingMatchResult = null;
+        applyMatchResult(data);
       }
 
       // Rebuild bullets array from state
@@ -517,47 +524,57 @@ export function createGameStore() {
     joinedRoom.onMessage("hit", () => {});
     joinedRoom.onMessage("gameOver", () => {});
 
-    // Match result from Colyseus broadcast (replaces broken matchmaking WS path)
-    joinedRoom.onMessage(
-      "matchResult",
-      (data: {
-        winnerId: number | null;
-        players: Record<number, { ratingChange: number; score: number }>;
-        duration: number;
-      }) => {
-        if (_currentRoom !== joinedRoom || phase !== "finished") return;
+    // Match result from Colyseus broadcast (replaces broken matchmaking WS path).
+    // The message may arrive before the "finished" state patch, so buffer it.
+    type MatchResultPayload = {
+      winnerId: number | null;
+      players: Record<number, { ratingChange: number; score: number }>;
+      duration: number;
+    };
+    let pendingMatchResult: MatchResultPayload | null = null;
 
-        // Find our rating change — we know the opponent's userId, ours is the other entry
-        const opponentUserId = opponent?.id;
-        let ratingChange = 0;
+    function applyMatchResult(data: MatchResultPayload) {
+      if (matchResult) return; // Already applied
 
-        for (const [playerIdStr, playerData] of Object.entries(data.players)) {
-          if (Number(playerIdStr) !== opponentUserId) {
-            ratingChange = playerData.ratingChange;
-            break;
-          }
+      const opponentUserId = opponent?.id;
+      let ratingChange = 0;
+
+      for (const [playerIdStr, playerData] of Object.entries(data.players)) {
+        if (Number(playerIdStr) !== opponentUserId) {
+          ratingChange = playerData.ratingChange;
+          break;
         }
-
-        matchResult = {
-          won: winnerId !== "" && winnerId === mySessionId,
-          ratingChange,
-          newRating: 0,
-        };
-
-        // Fetch actual post-match rating from API
-        api.api.rankings.me
-          .get()
-          .then(({ data: rankingData }) => {
-            const rating = (
-              rankingData as { ranking?: { rating?: number } } | null
-            )?.ranking?.rating;
-            if (rating != null && matchResult) {
-              matchResult = { ...matchResult, newRating: rating };
-            }
-          })
-          .catch(() => {});
       }
-    );
+
+      matchResult = {
+        won: winnerId !== "" && winnerId === mySessionId,
+        ratingChange,
+        newRating: 0,
+      };
+
+      // Fetch actual post-match rating from API
+      api.api.rankings.me
+        .get()
+        .then(({ data: rankingData }) => {
+          const rating = (
+            rankingData as { ranking?: { rating?: number } } | null
+          )?.ranking?.rating;
+          if (rating != null && matchResult) {
+            matchResult = { ...matchResult, newRating: rating };
+          }
+        })
+        .catch(() => {});
+    }
+
+    joinedRoom.onMessage("matchResult", (data: MatchResultPayload) => {
+      if (_currentRoom !== joinedRoom) return;
+
+      if (phase === "finished") {
+        applyMatchResult(data);
+      } else {
+        pendingMatchResult = data;
+      }
+    });
 
     // Connection events
     joinedRoom.onDrop(() => {

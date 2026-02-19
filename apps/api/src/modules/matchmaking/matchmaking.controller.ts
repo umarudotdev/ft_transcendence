@@ -12,7 +12,6 @@ import { logger } from "../../common/logger";
 import { env } from "../../env";
 import { RankingsService } from "../rankings/rankings.service";
 import { MatchmakingModel, type WSClientMessage } from "./matchmaking.model";
-import { matchmakingRepository } from "./matchmaking.repository";
 import { MatchmakingService } from "./matchmaking.service";
 
 const matchmakingLogger = logger.child().withContext({ module: "matchmaking" });
@@ -237,20 +236,18 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
       .post(
         "/sessions/:sessionId/abandon",
         async ({ params, set }) => {
-          const session = await matchmakingRepository.getGameSession(
+          const result = await MatchmakingService.abandonSession(
             params.sessionId
           );
-          if (!session) {
-            set.status = 404;
-            return notFound("Session not found");
-          }
-          if (session.state !== "finished" && session.state !== "abandoned") {
-            await matchmakingRepository.updateGameSession(params.sessionId, {
-              state: "abandoned",
-              endedAt: new Date(),
-            });
-          }
-          return { success: true };
+
+          return result.match(
+            (data) => data,
+            (error) => {
+              const problem = mapMatchmakingError(error);
+              set.status = problem.status;
+              return problem;
+            }
+          );
         },
         {
           params: t.Object({ sessionId: t.String() }),

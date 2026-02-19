@@ -123,6 +123,29 @@ abstract class MatchmakingService {
     return entry.data;
   }
 
+  // --- Session management ---
+
+  static abandonSession(
+    sessionId: string
+  ): ResultAsync<{ success: boolean }, MatchmakingError> {
+    return ResultAsync.fromPromise(
+      (async () => {
+        const session = await matchmakingRepository.getGameSession(sessionId);
+        if (!session) {
+          return err({ type: "SESSION_NOT_FOUND" as const });
+        }
+        if (session.state !== "finished" && session.state !== "abandoned") {
+          await matchmakingRepository.updateGameSession(sessionId, {
+            state: "abandoned",
+            endedAt: new Date(),
+          });
+        }
+        return ok({ success: true });
+      })(),
+      () => ({ type: "INTERNAL_ERROR" as const })
+    ).andThen((result) => result);
+  }
+
   // --- Token sweep (fix: memory leak from unexpired tokens) ---
 
   private static sweepExpiredTokens() {
@@ -231,15 +254,26 @@ abstract class MatchmakingService {
   > {
     return ResultAsync.fromPromise(
       (async () => {
-        // Atomic idempotency guard: conditionally update state to "finished"
-        // only if it's not already finished. This prevents TOCTOU races where
-        // concurrent retry requests both pass a read-then-update check.
-        const finished = await matchmakingRepository.finishGameSession(
-          data.sessionId
+        // Atomically finish the session and create the match record in one
+        // transaction. This prevents lost results when createMatch fails
+        // after the session is already marked "finished" (retries would
+        // see ALREADY_COMPLETED with no match record).
+        const result = await matchmakingRepository.completeGameSession(
+          data.sessionId,
+          {
+            player1Id: data.player1Id,
+            player2Id: data.player2Id,
+            player1Score: data.player1Score,
+            player2Score: data.player2Score,
+            winnerId: data.winnerId,
+            gameType: data.gameType,
+            isAiGame: data.isAiGame,
+            duration: data.duration,
+          }
         );
 
-        if (!finished) {
-          // Either session doesn't exist or was already finished
+        if (!result) {
+          // Either session doesn't exist or is already in a terminal state
           const existing = await matchmakingRepository.getGameSession(
             data.sessionId
           );
@@ -249,18 +283,7 @@ abstract class MatchmakingService {
           return err({ type: "ALREADY_COMPLETED" as const });
         }
 
-        // Create match record
-        const match = await matchmakingRepository.createMatch({
-          player1Id: data.player1Id,
-          player2Id: data.player2Id,
-          player1Score: data.player1Score,
-          player2Score: data.player2Score,
-          winnerId: data.winnerId,
-          gameType: data.gameType,
-          isAiGame: data.isAiGame,
-          duration: data.duration,
-          sessionId: data.sessionId,
-        });
+        const { match } = result;
 
         // Update Elo ratings
         const ratingResult = await RankingsService.updateRatingsAfterMatch(

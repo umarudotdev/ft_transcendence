@@ -37,7 +37,7 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
   // Join matchmaking queue
   .post(
     "/queue",
-    async ({ body, user }) => {
+    async ({ body, user, set }) => {
       const mode = body.mode ?? "ranked";
 
       // Get or create the user's rating
@@ -62,7 +62,11 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
           const wsToken = MatchmakingService.generateWsToken(user.id);
           return { ...data, wsToken };
         },
-        (error) => mapMatchmakingError(error)
+        (error) => {
+          const problem = mapMatchmakingError(error);
+          set.status = problem.status;
+          return problem;
+        }
       );
     },
     {
@@ -74,12 +78,16 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
   // Leave matchmaking queue
   .delete(
     "/queue",
-    ({ user }) => {
+    ({ user, set }) => {
       const result = MatchmakingService.leaveQueue(user.id);
 
       return result.match(
         () => ({ success: true }),
-        (error) => mapMatchmakingError(error)
+        (error) => {
+          const problem = mapMatchmakingError(error);
+          set.status = problem.status;
+          return problem;
+        }
       );
     },
     { isSignedIn: true }
@@ -167,12 +175,16 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
       })
       .post(
         "/matches/complete",
-        async ({ body }) => {
+        async ({ body, set }) => {
           const result = await MatchmakingService.completeMatch(body);
 
           return result.match(
             (data) => data,
-            (error) => mapMatchmakingError(error)
+            (error) => {
+              const problem = mapMatchmakingError(error);
+              set.status = problem.status;
+              return problem;
+            }
           );
         },
         { body: MatchmakingModel.matchCompletion }

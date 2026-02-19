@@ -58,7 +58,9 @@ WORKDIR /usr/src/app/apps/web
 RUN bun run svelte-kit sync
 
 ARG VITE_GAME_URL
+ARG VITE_API_URL
 ENV VITE_GAME_URL=$VITE_GAME_URL
+ENV VITE_API_URL=$VITE_API_URL
 ENV NODE_ENV=production
 RUN bun run build
 

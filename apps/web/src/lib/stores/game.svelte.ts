@@ -55,9 +55,13 @@ export interface OpponentInfo {
 }
 
 function getMatchmakingWsUrl(token: string): string {
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = import.meta.env.DEV ? "localhost:3000" : window.location.host;
-  return `${protocol}//${host}/api/matchmaking/ws?token=${encodeURIComponent(token)}`;
+  if (import.meta.env.DEV) {
+    return `ws://localhost:3000/api/matchmaking/ws?token=${encodeURIComponent(token)}`;
+  }
+  // In production, connect directly to the API server (SvelteKit can't proxy WebSockets)
+  const apiUrl = import.meta.env.VITE_API_URL ?? window.location.origin;
+  const wsUrl = apiUrl.replace(/^http/, "ws");
+  return `${wsUrl}/api/matchmaking/ws?token=${encodeURIComponent(token)}`;
 }
 
 function getGameServerUrl(): string {

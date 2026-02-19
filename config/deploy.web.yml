@@ -52,5 +52,6 @@ builder:
   context: .
   args:
     VITE_GAME_URL: wss://game.transcendence.umaru.dev
+    VITE_API_URL: https://api.transcendence.umaru.dev
   cache:
     type: gha

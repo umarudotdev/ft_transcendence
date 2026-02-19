@@ -10,7 +10,6 @@ describe("GameResultScreen", () => {
     score: 3,
     opponentScore: 1,
     matchResult: { won: true, ratingChange: 25, newRating: 1525 },
-    onPlayAgain: vi.fn(),
     onBackToLobby: vi.fn(),
   };
 
@@ -41,15 +40,6 @@ describe("GameResultScreen", () => {
   it("renders new rating", async () => {
     render(GameResultScreen, defaultProps);
     await expect.element(page.getByText("1525")).toBeInTheDocument();
-  });
-
-  it("Play Again button calls onPlayAgain", async () => {
-    const onPlayAgain = vi.fn();
-    render(GameResultScreen, { ...defaultProps, onPlayAgain });
-
-    const btn = page.getByRole("button", { name: /play again/i });
-    await btn.click();
-    expect(onPlayAgain).toHaveBeenCalledOnce();
   });
 
   it("Back to Lobby button calls onBackToLobby", async () => {

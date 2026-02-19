@@ -283,20 +283,23 @@ abstract class MatchmakingService {
           return err({ type: "ALREADY_COMPLETED" as const });
         }
 
-        const { match } = result;
+        const { session, match } = result;
 
-        // Update Elo ratings
-        const ratingResult = await RankingsService.updateRatingsAfterMatch(
-          match.id,
-          data.player1Id,
-          data.player2Id,
-          data.winnerId
-        );
+        // Only update Elo ratings for ranked matches
+        let ratingChanges = { player1Change: 0, player2Change: 0 };
+        if (session.mode === "ranked") {
+          const ratingResult = await RankingsService.updateRatingsAfterMatch(
+            match.id,
+            data.player1Id,
+            data.player2Id,
+            data.winnerId
+          );
 
-        const ratingChanges = ratingResult.match(
-          (changes) => changes,
-          () => ({ player1Change: 0, player2Change: 0 })
-        );
+          ratingChanges = ratingResult.match(
+            (changes) => changes,
+            () => ({ player1Change: 0, player2Change: 0 })
+          );
+        }
 
         matchmakingLogger
           .withMetadata({

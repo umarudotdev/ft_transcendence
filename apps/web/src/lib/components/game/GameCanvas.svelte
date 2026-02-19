@@ -12,6 +12,7 @@ import { getGameStore } from "$lib/stores/game.svelte";
 
 const gameStore = getGameStore();
 
+// oxlint-disable-next-line no-unassigned-vars -- assigned via bind:this
 let canvas: HTMLCanvasElement;
 let ctx: CanvasRenderingContext2D | null = null;
 let animationId: number;

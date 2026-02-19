@@ -7,11 +7,10 @@
 		score: number;
 		opponentScore: number;
 		matchResult: MatchResult | null;
-		onPlayAgain: () => void;
 		onBackToLobby: () => void;
 	}
 
-	const { won, score, opponentScore, matchResult, onPlayAgain, onBackToLobby }: Props = $props();
+	const { won, score, opponentScore, matchResult, onBackToLobby }: Props = $props();
 </script>
 
 <div class="result-enter flex flex-col items-center gap-6">
@@ -52,8 +51,7 @@
 
 	<!-- Actions -->
 	<div class="flex gap-3">
-		<Button onclick={onPlayAgain}>Play Again</Button>
-		<Button variant="outline" onclick={onBackToLobby}>Back to Lobby</Button>
+		<Button onclick={onBackToLobby}>Back to Lobby</Button>
 	</div>
 </div>
 

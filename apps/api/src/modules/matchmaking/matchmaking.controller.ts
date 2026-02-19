@@ -9,7 +9,6 @@ import {
 import { AuthMacro } from "../../common/guards/auth.macro";
 import { logger } from "../../common/logger";
 import { env } from "../../env";
-import { AuthService } from "../auth/auth.service";
 import { RankingsService } from "../rankings/rankings.service";
 import { MatchmakingModel, type WSClientMessage } from "./matchmaking.model";
 import { MatchmakingService } from "./matchmaking.service";
@@ -59,7 +58,10 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
       );
 
       return result.match(
-        (data) => data,
+        (data) => {
+          const wsToken = MatchmakingService.generateWsToken(user.id);
+          return { ...data, wsToken };
+        },
         (error) => mapMatchmakingError(error)
       );
     },
@@ -95,34 +97,35 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
   // WebSocket for real-time matchmaking updates
   .ws("/ws", {
     query: t.Object({
-      sessionId: t.String(),
+      token: t.String(),
     }),
-    async open(ws) {
-      const sessionId = ws.data.query.sessionId;
+    open(ws) {
+      const token = ws.data.query.token;
 
-      const result = await AuthService.validateSession(sessionId);
+      const userId = MatchmakingService.validateWsToken(token);
 
-      if (result.isErr()) {
+      if (userId === null) {
         matchmakingLogger.info({
           action: "ws_auth_failed",
-          error: "Invalid session",
+          error: "Invalid or expired token",
         });
-        ws.send(JSON.stringify({ type: "error", error: "Invalid session" }));
+        ws.send(
+          JSON.stringify({ type: "error", error: "Invalid or expired token" })
+        );
         ws.close();
         return;
       }
 
-      const user = result.value;
-      (ws.data as { userId?: number }).userId = user.id;
+      (ws.data as { userId?: number }).userId = userId;
 
       MatchmakingService.registerConnection(
-        user.id,
+        userId,
         ws.raw as unknown as WebSocket
       );
 
       matchmakingLogger.info({
         action: "ws_connected",
-        userId: user.id,
+        userId,
       });
     },
 
@@ -176,5 +179,27 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
           );
         },
         { body: MatchmakingModel.matchCompletion }
+      )
+      .post(
+        "/validate-join",
+        ({ body, set }) => {
+          const data = MatchmakingService.validateJoinToken(body.joinToken);
+
+          if (!data) {
+            set.status = 401;
+            return unauthorized("Invalid or expired join token");
+          }
+
+          return {
+            id: data.userId,
+            displayName: data.displayName,
+            matchSessionId: data.matchSessionId,
+          };
+        },
+        {
+          body: t.Object({
+            joinToken: t.String(),
+          }),
+        }
       )
   );

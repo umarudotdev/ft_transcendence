@@ -1,4 +1,5 @@
 import { err, ok, type Result, ResultAsync } from "neverthrow";
+import { randomUUID } from "node:crypto";
 
 import type {
   MatchCompletionData,
@@ -8,7 +9,6 @@ import type {
 } from "./matchmaking.model";
 
 import { logger } from "../../common/logger";
-import { env } from "../../env";
 import { RankingsService } from "../rankings/rankings.service";
 import { matchmakingRepository } from "./matchmaking.repository";
 
@@ -21,10 +21,29 @@ const MAX_RATING_BAND = 500;
 const PAIRING_INTERVAL_MS = 2000;
 const ESTIMATED_WAIT_BASE_S = 15;
 
+const WS_TOKEN_TTL_MS = 30_000;
+const JOIN_TOKEN_TTL_MS = 60_000;
+
+interface JoinTokenData {
+  userId: number;
+  displayName: string;
+  matchSessionId: string;
+}
+
 abstract class MatchmakingService {
   private static queue = new Map<number, QueueEntry>();
   private static connections = new Map<number, Set<WebSocket>>();
   private static pairingTimer: ReturnType<typeof setInterval> | null = null;
+
+  // Short-lived, single-use tokens
+  private static wsTokens = new Map<
+    string,
+    { userId: number; expiresAt: number }
+  >();
+  private static joinTokens = new Map<
+    string,
+    { data: JoinTokenData; expiresAt: number }
+  >();
 
   static initialize() {
     if (MatchmakingService.pairingTimer) return;
@@ -45,6 +64,52 @@ abstract class MatchmakingService {
       clearInterval(MatchmakingService.pairingTimer);
       MatchmakingService.pairingTimer = null;
     }
+  }
+
+  // --- Token management ---
+
+  static generateWsToken(userId: number): string {
+    const token = randomUUID();
+    MatchmakingService.wsTokens.set(token, {
+      userId,
+      expiresAt: Date.now() + WS_TOKEN_TTL_MS,
+    });
+    return token;
+  }
+
+  static validateWsToken(token: string): number | null {
+    const entry = MatchmakingService.wsTokens.get(token);
+    if (!entry) return null;
+
+    // Single-use: always delete
+    MatchmakingService.wsTokens.delete(token);
+
+    if (Date.now() > entry.expiresAt) return null;
+    return entry.userId;
+  }
+
+  static generateJoinToken(
+    userId: number,
+    displayName: string,
+    matchSessionId: string
+  ): string {
+    const token = randomUUID();
+    MatchmakingService.joinTokens.set(token, {
+      data: { userId, displayName, matchSessionId },
+      expiresAt: Date.now() + JOIN_TOKEN_TTL_MS,
+    });
+    return token;
+  }
+
+  static validateJoinToken(token: string): JoinTokenData | null {
+    const entry = MatchmakingService.joinTokens.get(token);
+    if (!entry) return null;
+
+    // Single-use: always delete
+    MatchmakingService.joinTokens.delete(token);
+
+    if (Date.now() > entry.expiresAt) return null;
+    return entry.data;
   }
 
   static joinQueue(
@@ -292,33 +357,7 @@ abstract class MatchmakingService {
         state: "waiting",
       });
 
-      // Create room in Colyseus via HTTP matchmaker API
-      const response = await fetch(
-        `${env.GAME_URL}/matchmake/joinOrCreate/game_room`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            mode: player1.mode,
-            sessionId: session.id,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        matchmakingLogger.error({
-          action: "room_creation_failed",
-          status: response.status,
-          sessionId: session.id,
-        });
-        return;
-      }
-
-      const roomData = (await response.json()) as { room: { roomId: string } };
-      const roomId = roomData.room.roomId;
-
-      // Update session with room ID
-      await matchmakingRepository.updateGameSession(session.id, { roomId });
+      const matchSessionId = session.id;
 
       // Remove both from queue
       MatchmakingService.queue.delete(player1.userId);
@@ -326,15 +365,27 @@ abstract class MatchmakingService {
       matchmakingRepository.removeFromQueue(player1.userId).catch(() => {});
       matchmakingRepository.removeFromQueue(player2.userId).catch(() => {});
 
+      // Generate single-use join tokens for each player
+      const p1JoinToken = MatchmakingService.generateJoinToken(
+        player1.userId,
+        player1.displayName,
+        matchSessionId
+      );
+      const p2JoinToken = MatchmakingService.generateJoinToken(
+        player2.userId,
+        player2.displayName,
+        matchSessionId
+      );
+
       // Get tier info for opponent display
       const p1Tier = RankingsService.getTierFromRating(player1.rating);
       const p2Tier = RankingsService.getTierFromRating(player2.rating);
 
-      // Notify both players
+      // Notify both players with their join tokens
       MatchmakingService.sendToUser(player1.userId, {
         type: "match_found",
-        roomId,
-        sessionId: session.id,
+        matchSessionId,
+        joinToken: p1JoinToken,
         opponent: {
           id: player2.userId,
           displayName: player2.displayName,
@@ -345,8 +396,8 @@ abstract class MatchmakingService {
 
       MatchmakingService.sendToUser(player2.userId, {
         type: "match_found",
-        roomId,
-        sessionId: session.id,
+        matchSessionId,
+        joinToken: p2JoinToken,
         opponent: {
           id: player1.userId,
           displayName: player1.displayName,
@@ -357,8 +408,7 @@ abstract class MatchmakingService {
 
       matchmakingLogger.info({
         action: "match_created",
-        sessionId: session.id,
-        roomId,
+        matchSessionId,
         player1: player1.userId,
         player2: player2.userId,
         ratingDiff: Math.abs(player1.rating - player2.rating),

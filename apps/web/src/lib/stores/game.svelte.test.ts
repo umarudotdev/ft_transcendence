@@ -7,7 +7,7 @@ vi.mock("$lib/api", () => ({
       matchmaking: {
         queue: {
           post: vi.fn().mockResolvedValue({
-            data: { position: 1, estimatedWait: 30 },
+            data: { position: 1, estimatedWait: 30, wsToken: "test-ws-token" },
             error: null,
           }),
           delete: vi
@@ -24,14 +24,6 @@ vi.mock("@colyseus/sdk", () => ({
   Client: vi.fn(),
   Callbacks: { get: vi.fn() },
 }));
-
-// Mock cookie access
-function mockSessionCookie(sessionId: string | null) {
-  Object.defineProperty(document, "cookie", {
-    writable: true,
-    value: sessionId ? `session=${sessionId}` : "",
-  });
-}
 
 class MockWebSocket {
   static readonly CONNECTING = 0;
@@ -78,7 +70,6 @@ describe("game store", () => {
   beforeEach(async () => {
     MockWebSocket.instances = [];
     vi.stubGlobal("WebSocket", MockWebSocket);
-    mockSessionCookie("test-session-id");
 
     // Dynamic import to ensure mocks are in place
     const mod = await import("./game.svelte");
@@ -110,6 +101,13 @@ describe("game store", () => {
     const store = createGameStore();
     await store.joinQueue("casual");
     expect(store.queueMode).toBe("casual");
+  });
+
+  it("joinQueue connects WS with token from API response", async () => {
+    const store = createGameStore();
+    await store.joinQueue("ranked");
+    expect(MockWebSocket.instances).toHaveLength(1);
+    expect(MockWebSocket.instances[0].url).toContain("token=test-ws-token");
   });
 
   it("leaveQueue resets queueMode to null", async () => {

@@ -69,7 +69,13 @@ services:
     depends_on:
       - api
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:2567/health"]
+      test:
+        [
+          "CMD",
+          "bun",
+          "--eval",
+          "fetch('http://localhost:2567/health').then(r=>{if(!r.ok)throw 1})",
+        ]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -90,7 +96,7 @@ services:
       - "5173:5173"
     environment:
       API_URL: http://api:3000
-      VITE_GAME_URL: ws://game:2567
+      VITE_GAME_URL: ws://localhost:2567
       NODE_ENV: development
     depends_on:
       - api

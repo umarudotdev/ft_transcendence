@@ -73,7 +73,7 @@ TypeScript:
 | Component     | Choice            | Rationale                             |
 | ------------- | ----------------- | ------------------------------------- |
 | Runtime       | Bun               | Same runtime as API server            |
-| Framework     | Colyseus 0.15     | Room-based multiplayer, state sync    |
+| Framework     | Colyseus 0.17     | Room-based multiplayer, state sync    |
 | Transport     | WebSocket         | Built into Colyseus                   |
 | Serialization | Colyseus Schema   | Binary delta encoding, auto-generated |
 | Monitoring    | @colyseus/monitor | Built-in room/client dashboard        |

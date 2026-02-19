@@ -46,8 +46,8 @@ export type WSServerMessage =
   | { type: "queue_update"; position: number; estimatedWait: number }
   | {
       type: "match_found";
-      roomId: string;
-      sessionId: string;
+      matchSessionId: string;
+      joinToken: string;
       opponent: {
         id: number;
         displayName: string;

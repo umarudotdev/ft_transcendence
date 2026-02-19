@@ -94,37 +94,47 @@ export class GameRoom extends Room<{ state: GameState }> {
 
   async onAuth(
     _client: Client,
-    _options: Record<string, unknown>,
-    context: AuthContext
+    options: Record<string, unknown>,
+    _context: AuthContext
   ) {
-    const token = context.token;
+    const joinToken = options.joinToken as string | undefined;
 
     // In development, accept a userId from options for testing
-    if (!token && process.env.NODE_ENV === "development") {
-      const userId = _options.userId as number | undefined;
+    if (!joinToken && process.env.NODE_ENV === "development") {
+      const userId = options.userId as number | undefined;
       const displayName =
-        (_options.displayName as string) ?? `Player ${userId ?? 0}`;
+        (options.displayName as string) ?? `Player ${userId ?? 0}`;
       return { id: userId ?? 0, displayName };
     }
 
-    // Validate session against API
-    const response = await fetch(`${API_URL}/api/auth/me`, {
-      headers: { Cookie: `session=${token}` },
+    if (!joinToken) {
+      throw new Error("Missing join token");
+    }
+
+    // Validate join token against API
+    const url = `${API_URL}/api/matchmaking/internal/validate-join`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${GAME_INTERNAL_SECRET}`,
+      },
+      body: JSON.stringify({ joinToken }),
     });
 
     if (!response.ok) {
-      throw new Error("Invalid session");
+      throw new Error("Invalid join token");
     }
 
-    const user = (await response.json()) as {
+    return (await response.json()) as {
       id: number;
       displayName: string;
     };
-    return user;
   }
 
   onCreate(options: Record<string, unknown>) {
-    this.sessionId = (options.sessionId as string) ?? null;
+    this.sessionId = (options.matchSessionId as string) ?? null;
 
     this.setSimulationInterval(
       (deltaTime) => this.update(deltaTime),
@@ -177,7 +187,7 @@ export class GameRoom extends Room<{ state: GameState }> {
     if (player) {
       player.connected = false;
     }
-    this.allowReconnection(client, RECONNECT_TIMEOUT_SECONDS);
+    this.allowReconnection(client, RECONNECT_TIMEOUT_SECONDS).catch(() => {});
   }
 
   onReconnect(client: Client) {

@@ -13,9 +13,8 @@ const _sessionId = (page.params as Record<string, string>).sessionId;
 onMount(() => {
 	// If we're not already connected (e.g. direct URL navigation), try to join
 	if (gameStore.phase === "idle" || gameStore.phase === "matched") {
-		const roomId = gameStore.matchRoomId;
-		if (roomId) {
-			gameStore.joinGame(roomId);
+		if (gameStore.matchSessionId && gameStore.joinToken) {
+			gameStore.joinGame();
 		}
 	}
 

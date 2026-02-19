@@ -15,8 +15,8 @@ type MatchmakingServerMessage =
   | { type: "queue_update"; position: number; estimatedWait: number }
   | {
       type: "match_found";
-      roomId: string;
-      sessionId: string;
+      matchSessionId: string;
+      joinToken: string;
       opponent: {
         id: number;
         displayName: string;
@@ -54,23 +54,10 @@ export interface OpponentInfo {
   tier: string;
 }
 
-function getSessionId(): string | null {
-  if (typeof document === "undefined") return null;
-
-  const cookies = document.cookie.split(";");
-  for (const cookie of cookies) {
-    const [name, value] = cookie.trim().split("=");
-    if (name === "session") {
-      return value;
-    }
-  }
-  return null;
-}
-
-function getMatchmakingWsUrl(sessionId: string): string {
+function getMatchmakingWsUrl(token: string): string {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const host = import.meta.env.DEV ? "localhost:3000" : window.location.host;
-  return `${protocol}//${host}/api/matchmaking/ws?sessionId=${encodeURIComponent(sessionId)}`;
+  return `${protocol}//${host}/api/matchmaking/ws?token=${encodeURIComponent(token)}`;
 }
 
 function getGameServerUrl(): string {
@@ -88,7 +75,7 @@ export function createGameStore() {
   let estimatedWait = $state(0);
   let opponent: OpponentInfo | null = $state(null);
   let matchSessionId: string | null = $state(null);
-  let matchRoomId: string | null = $state(null);
+  let joinToken: string | null = $state(null);
   let queueMode: "ranked" | "casual" | null = $state(null);
 
   // --- Game state ---
@@ -108,9 +95,6 @@ export function createGameStore() {
   // --- Matchmaking ---
 
   async function joinQueue(mode: "ranked" | "casual" = "ranked") {
-    const sessionId = getSessionId();
-    if (!sessionId) return;
-
     phase = "queuing";
     queueMode = mode;
 
@@ -122,17 +106,19 @@ export function createGameStore() {
         return;
       }
 
-      queuePosition = (data as { position: number; estimatedWait: number })
-        .position;
-      estimatedWait = (data as { position: number; estimatedWait: number })
-        .estimatedWait;
+      const response = data as {
+        position: number;
+        estimatedWait: number;
+        wsToken: string;
+      };
+      queuePosition = response.position;
+      estimatedWait = response.estimatedWait;
+
+      // Open matchmaking WS using the server-issued token
+      connectMatchmakingWs(response.wsToken);
     } catch {
       phase = "idle";
-      return;
     }
-
-    // Open matchmaking WS
-    connectMatchmakingWs(sessionId);
   }
 
   function leaveQueue() {
@@ -143,8 +129,8 @@ export function createGameStore() {
     queueMode = null;
   }
 
-  function connectMatchmakingWs(sessionId: string) {
-    const url = getMatchmakingWsUrl(sessionId);
+  function connectMatchmakingWs(token: string) {
+    const url = getMatchmakingWsUrl(token);
 
     try {
       matchmakingWs = new WebSocket(url);
@@ -183,8 +169,8 @@ export function createGameStore() {
       }
       case "match_found": {
         opponent = message.opponent;
-        matchSessionId = message.sessionId;
-        matchRoomId = message.roomId;
+        matchSessionId = message.matchSessionId;
+        joinToken = message.joinToken;
         phase = "matched";
         disconnectMatchmakingWs();
         break;
@@ -203,18 +189,21 @@ export function createGameStore() {
 
   // --- Colyseus Game Connection ---
 
-  async function joinGame(roomId?: string) {
-    const targetRoomId = roomId ?? matchRoomId;
-    if (!targetRoomId) return;
+  async function joinGame() {
+    if (!matchSessionId || !joinToken || phase === "connecting") return;
 
     phase = "connecting";
+
+    // Consume the token locally to prevent double-use
+    const token = joinToken;
+    joinToken = null;
 
     try {
       const client = new Client(getGameServerUrl());
 
-      const sessionId = getSessionId();
-      const joinedRoom = await client.joinById(targetRoomId, {
-        sessionId,
+      const joinedRoom = await client.joinOrCreate("game_room", {
+        matchSessionId,
+        joinToken: token,
       });
 
       room = joinedRoom;
@@ -225,7 +214,8 @@ export function createGameStore() {
       joinedRoom.reconnection.maxDelay = 5000;
 
       setupRoomCallbacks(joinedRoom);
-    } catch {
+    } catch (error) {
+      console.error("[game] joinOrCreate failed:", error);
       phase = "idle";
     }
   }
@@ -331,6 +321,13 @@ export function createGameStore() {
       }
     });
 
+    // Server broadcast messages
+    joinedRoom.onMessage("assignPlayer", () => {});
+    joinedRoom.onMessage("countdown", () => {});
+    joinedRoom.onMessage("abilityUsed", () => {});
+    joinedRoom.onMessage("hit", () => {});
+    joinedRoom.onMessage("gameOver", () => {});
+
     // Connection events
     joinedRoom.onDrop(() => {
       phase = "reconnecting";
@@ -376,6 +373,8 @@ export function createGameStore() {
     effects = [];
     interpolator.clear();
     matchResult = null;
+    matchSessionId = null;
+    joinToken = null;
     opponent = null;
     queueMode = null;
   }
@@ -412,8 +411,8 @@ export function createGameStore() {
     get matchSessionId() {
       return matchSessionId;
     },
-    get matchRoomId() {
-      return matchRoomId;
+    get joinToken() {
+      return joinToken;
     },
     get queueMode() {
       return queueMode;

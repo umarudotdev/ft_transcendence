@@ -136,7 +136,7 @@ TypeScript stack (ElysiaJS + Colyseus + SvelteKit).
 
 | Method | Path                         | Description              |
 | :----- | :--------------------------- | :----------------------- |
-| WS     | `ws://game:3001`             | Colyseus room WebSocket  |
+| WS     | `ws://localhost:2567`        | Colyseus room WebSocket  |
 | POST   | `/internal/matches/complete` | Record result (internal) |
 
 ### Rankings

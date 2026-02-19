@@ -1,21 +1,15 @@
-import { BunWebSockets } from "@colyseus/bun-websockets";
 import { defineRoom, defineServer } from "colyseus";
 
 import { NODE_ENV, PORT } from "./config";
 import { GameRoom } from "./rooms/GameRoom";
+import { PatchedBunWebSockets } from "./transport";
 
 const server = defineServer({
   rooms: {
-    game_room: defineRoom(GameRoom).filterBy(["mode"]),
+    game_room: defineRoom(GameRoom).filterBy(["matchSessionId"]),
   },
 
-  transport: new BunWebSockets(),
-
-  express: (app) => {
-    app.get("/health", (_req, res) => {
-      res.json({ status: "ok" });
-    });
-  },
+  transport: new PatchedBunWebSockets(),
 
   devMode: NODE_ENV !== "production",
 });

@@ -14,4 +14,6 @@ const getBaseUrl = () => {
   return import.meta.env.API_URL ?? "http://localhost:3000";
 };
 
-export const api = treaty<App>(getBaseUrl());
+export const api = treaty<App>(getBaseUrl(), {
+  fetch: { credentials: "include" },
+});

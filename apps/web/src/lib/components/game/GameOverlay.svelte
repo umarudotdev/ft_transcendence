@@ -20,13 +20,13 @@ let won = $derived.by(() => {
 	return false;
 });
 
-function handlePlayAgain() {
-	gameStore.disconnect();
+async function handlePlayAgain() {
+	await gameStore.disconnect();
 	gameStore.joinQueue();
 }
 
-function handleBackToLobby() {
-	gameStore.disconnect();
+async function handleBackToLobby() {
+	await gameStore.disconnect();
 	goto("/play");
 }
 </script>

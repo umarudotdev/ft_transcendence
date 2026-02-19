@@ -23,6 +23,7 @@ const ESTIMATED_WAIT_BASE_S = 15;
 
 const WS_TOKEN_TTL_MS = 30_000;
 const JOIN_TOKEN_TTL_MS = 60_000;
+const TOKEN_SWEEP_INTERVAL_MS = 60_000;
 
 interface JoinTokenData {
   userId: number;
@@ -34,6 +35,8 @@ abstract class MatchmakingService {
   private static queue = new Map<number, QueueEntry>();
   private static connections = new Map<number, Set<WebSocket>>();
   private static pairingTimer: ReturnType<typeof setInterval> | null = null;
+  private static pairingInProgress = false;
+  private static tokenSweepTimer: ReturnType<typeof setInterval> | null = null;
 
   // Short-lived, single-use tokens
   private static wsTokens = new Map<
@@ -53,6 +56,11 @@ abstract class MatchmakingService {
       PAIRING_INTERVAL_MS
     );
 
+    MatchmakingService.tokenSweepTimer = setInterval(
+      () => MatchmakingService.sweepExpiredTokens(),
+      TOKEN_SWEEP_INTERVAL_MS
+    );
+
     matchmakingLogger
       .withMetadata({ action: "initialized" })
       .info("Matchmaking service started");
@@ -62,6 +70,10 @@ abstract class MatchmakingService {
     if (MatchmakingService.pairingTimer) {
       clearInterval(MatchmakingService.pairingTimer);
       MatchmakingService.pairingTimer = null;
+    }
+    if (MatchmakingService.tokenSweepTimer) {
+      clearInterval(MatchmakingService.tokenSweepTimer);
+      MatchmakingService.tokenSweepTimer = null;
     }
   }
 
@@ -111,6 +123,26 @@ abstract class MatchmakingService {
     return entry.data;
   }
 
+  // --- Token sweep (fix: memory leak from unexpired tokens) ---
+
+  private static sweepExpiredTokens() {
+    const now = Date.now();
+
+    for (const [token, entry] of MatchmakingService.wsTokens) {
+      if (entry.expiresAt <= now) {
+        MatchmakingService.wsTokens.delete(token);
+      }
+    }
+
+    for (const [token, entry] of MatchmakingService.joinTokens) {
+      if (entry.expiresAt <= now) {
+        MatchmakingService.joinTokens.delete(token);
+      }
+    }
+  }
+
+  // --- Queue management ---
+
   static joinQueue(
     userId: number,
     mode: string,
@@ -131,8 +163,15 @@ abstract class MatchmakingService {
 
     MatchmakingService.queue.set(userId, entry);
 
-    // Persist to DB for crash recovery (fire and forget)
-    matchmakingRepository.addToQueue({ userId, mode, rating }).catch(() => {});
+    // Persist to DB for crash recovery (fire and forget, but log errors)
+    matchmakingRepository
+      .addToQueue({ userId, mode, rating })
+      .catch((error) => {
+        matchmakingLogger
+          .withMetadata({ action: "db_queue_add_failed", userId })
+          .withError(error instanceof Error ? error : new Error(String(error)))
+          .warn("Failed to persist player to DB queue");
+      });
 
     const position = MatchmakingService.queue.size;
     const estimatedWait = ESTIMATED_WAIT_BASE_S;
@@ -151,7 +190,12 @@ abstract class MatchmakingService {
 
     MatchmakingService.queue.delete(userId);
 
-    matchmakingRepository.removeFromQueue(userId).catch(() => {});
+    matchmakingRepository.removeFromQueue(userId).catch((error) => {
+      matchmakingLogger
+        .withMetadata({ action: "db_queue_remove_failed", userId })
+        .withError(error instanceof Error ? error : new Error(String(error)))
+        .warn("Failed to remove player from DB queue");
+    });
 
     matchmakingLogger
       .withMetadata({ action: "queue_left", userId })
@@ -177,6 +221,8 @@ abstract class MatchmakingService {
     return { inQueue: true, position };
   }
 
+  // --- Match completion (with idempotency guard) ---
+
   static completeMatch(
     data: MatchCompletionData
   ): ResultAsync<
@@ -185,11 +231,23 @@ abstract class MatchmakingService {
   > {
     return ResultAsync.fromPromise(
       (async () => {
-        // Update game session state
-        await matchmakingRepository.updateGameSession(data.sessionId, {
-          state: "finished",
-          endedAt: new Date(),
-        });
+        // Atomic idempotency guard: conditionally update state to "finished"
+        // only if it's not already finished. This prevents TOCTOU races where
+        // concurrent retry requests both pass a read-then-update check.
+        const finished = await matchmakingRepository.finishGameSession(
+          data.sessionId
+        );
+
+        if (!finished) {
+          // Either session doesn't exist or was already finished
+          const existing = await matchmakingRepository.getGameSession(
+            data.sessionId
+          );
+          if (!existing) {
+            return err({ type: "SESSION_NOT_FOUND" as const });
+          }
+          return err({ type: "ALREADY_COMPLETED" as const });
+        }
 
         // Create match record
         const match = await matchmakingRepository.createMatch({
@@ -227,17 +285,43 @@ abstract class MatchmakingService {
           })
           .info("Match completed");
 
-        // Notify players via WS
-        MatchmakingService.notifyMatchComplete(
-          data.player1Id,
-          data.winnerId === data.player1Id,
-          ratingChanges.player1Change
-        );
-        MatchmakingService.notifyMatchComplete(
-          data.player2Id,
-          data.winnerId === data.player2Id,
-          ratingChanges.player2Change
-        );
+        // Notify players via WS (best-effort, log failures)
+        await Promise.all([
+          MatchmakingService.notifyMatchComplete(
+            data.player1Id,
+            data.winnerId === data.player1Id,
+            ratingChanges.player1Change
+          ).catch((notifyError) => {
+            matchmakingLogger
+              .withMetadata({
+                action: "notify_failed",
+                userId: data.player1Id,
+              })
+              .withError(
+                notifyError instanceof Error
+                  ? notifyError
+                  : new Error(String(notifyError))
+              )
+              .warn("Failed to notify player of match completion");
+          }),
+          MatchmakingService.notifyMatchComplete(
+            data.player2Id,
+            data.winnerId === data.player2Id,
+            ratingChanges.player2Change
+          ).catch((notifyError) => {
+            matchmakingLogger
+              .withMetadata({
+                action: "notify_failed",
+                userId: data.player2Id,
+              })
+              .withError(
+                notifyError instanceof Error
+                  ? notifyError
+                  : new Error(String(notifyError))
+              )
+              .warn("Failed to notify player of match completion");
+          }),
+        ]);
 
         return ok({
           matchId: match.id,
@@ -267,6 +351,10 @@ abstract class MatchmakingService {
         MatchmakingService.connections.delete(userId);
       }
     }
+  }
+
+  static getConnectionCount(userId: number): number {
+    return MatchmakingService.connections.get(userId)?.size ?? 0;
   }
 
   private static sendToUser(userId: number, message: WSServerMessage) {
@@ -305,43 +393,57 @@ abstract class MatchmakingService {
     );
   }
 
-  // --- Pairing loop ---
+  // --- Pairing loop (with mutex and WS-connected filter) ---
 
   private static async pairingLoop() {
-    const entries = [...MatchmakingService.queue.values()];
-    if (entries.length < 2) return;
+    // Prevent concurrent executions if createMatchFromPair takes >2s
+    if (MatchmakingService.pairingInProgress) return;
+    MatchmakingService.pairingInProgress = true;
 
-    const paired = new Set<number>();
+    try {
+      const entries = [...MatchmakingService.queue.values()];
+      if (entries.length < 2) return;
 
-    // Sort by queue time (FIFO)
-    entries.sort((a, b) => a.queuedAt - b.queuedAt);
-
-    for (let i = 0; i < entries.length; i++) {
-      const player1 = entries[i];
-      if (paired.has(player1.userId)) continue;
-
-      const secondsInQueue = (Date.now() - player1.queuedAt) / 1000;
-      const ratingBand = Math.min(
-        INITIAL_RATING_BAND +
-          Math.floor(secondsInQueue / RATING_BAND_EXPANSION_INTERVAL_S) *
-            RATING_BAND_EXPANSION,
-        MAX_RATING_BAND
+      // Only pair players who have an active WS connection
+      const connectedEntries = entries.filter(
+        (e) => (MatchmakingService.connections.get(e.userId)?.size ?? 0) > 0
       );
+      if (connectedEntries.length < 2) return;
 
-      for (let j = i + 1; j < entries.length; j++) {
-        const player2 = entries[j];
-        if (paired.has(player2.userId)) continue;
-        if (player1.mode !== player2.mode) continue;
+      const paired = new Set<number>();
 
-        const ratingDiff = Math.abs(player1.rating - player2.rating);
-        if (ratingDiff <= ratingBand) {
-          paired.add(player1.userId);
-          paired.add(player2.userId);
+      // Sort by queue time (FIFO)
+      connectedEntries.sort((a, b) => a.queuedAt - b.queuedAt);
 
-          await MatchmakingService.createMatchFromPair(player1, player2);
-          break;
+      for (let i = 0; i < connectedEntries.length; i++) {
+        const player1 = connectedEntries[i];
+        if (paired.has(player1.userId)) continue;
+
+        const secondsInQueue = (Date.now() - player1.queuedAt) / 1000;
+        const ratingBand = Math.min(
+          INITIAL_RATING_BAND +
+            Math.floor(secondsInQueue / RATING_BAND_EXPANSION_INTERVAL_S) *
+              RATING_BAND_EXPANSION,
+          MAX_RATING_BAND
+        );
+
+        for (let j = i + 1; j < connectedEntries.length; j++) {
+          const player2 = connectedEntries[j];
+          if (paired.has(player2.userId)) continue;
+          if (player1.mode !== player2.mode) continue;
+
+          const ratingDiff = Math.abs(player1.rating - player2.rating);
+          if (ratingDiff <= ratingBand) {
+            paired.add(player1.userId);
+            paired.add(player2.userId);
+
+            await MatchmakingService.createMatchFromPair(player1, player2);
+            break;
+          }
         }
       }
+    } finally {
+      MatchmakingService.pairingInProgress = false;
     }
   }
 
@@ -361,8 +463,24 @@ abstract class MatchmakingService {
       // Remove both from queue
       MatchmakingService.queue.delete(player1.userId);
       MatchmakingService.queue.delete(player2.userId);
-      matchmakingRepository.removeFromQueue(player1.userId).catch(() => {});
-      matchmakingRepository.removeFromQueue(player2.userId).catch(() => {});
+      matchmakingRepository.removeFromQueue(player1.userId).catch((error) => {
+        matchmakingLogger
+          .withMetadata({
+            action: "db_queue_remove_failed",
+            userId: player1.userId,
+          })
+          .withError(error instanceof Error ? error : new Error(String(error)))
+          .warn("Failed to remove matched player from DB queue");
+      });
+      matchmakingRepository.removeFromQueue(player2.userId).catch((error) => {
+        matchmakingLogger
+          .withMetadata({
+            action: "db_queue_remove_failed",
+            userId: player2.userId,
+          })
+          .withError(error instanceof Error ? error : new Error(String(error)))
+          .warn("Failed to remove matched player from DB queue");
+      });
 
       // Generate single-use join tokens for each player
       const p1JoinToken = MatchmakingService.generateJoinToken(

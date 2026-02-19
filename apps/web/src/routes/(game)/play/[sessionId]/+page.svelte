@@ -1,5 +1,6 @@
 <script lang="ts">
 import { onMount } from "svelte";
+import { goto } from "$app/navigation";
 import { page } from "$app/state";
 
 import GameCanvas from "$lib/components/game/GameCanvas.svelte";
@@ -11,8 +12,20 @@ const gameStore = getGameStore();
 const _sessionId = (page.params as Record<string, string>).sessionId;
 
 onMount(() => {
-	// If we're not already connected (e.g. direct URL navigation), try to join
-	if (gameStore.phase === "idle" || gameStore.phase === "matched") {
+	if (gameStore.phase === "idle") {
+		if (gameStore.matchSessionId && gameStore.joinToken) {
+			// Normal join flow (e.g. direct URL navigation with in-memory state)
+			gameStore.joinGame();
+		} else {
+			// Page reload — attempt reconnection via saved session data
+			gameStore.reconnectToGame().then(() => {
+				// If reconnection failed (back to idle), redirect to lobby
+				if (gameStore.phase === "idle") {
+					goto("/play");
+				}
+			});
+		}
+	} else if (gameStore.phase === "matched") {
 		if (gameStore.matchSessionId && gameStore.joinToken) {
 			gameStore.joinGame();
 		}

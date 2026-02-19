@@ -3,6 +3,7 @@ import { Elysia, t } from "elysia";
 import {
   badRequest,
   conflict,
+  internalError,
   notFound,
   unauthorized,
 } from "../../common/errors/problem-details-helper";
@@ -11,6 +12,7 @@ import { logger } from "../../common/logger";
 import { env } from "../../env";
 import { RankingsService } from "../rankings/rankings.service";
 import { MatchmakingModel, type WSClientMessage } from "./matchmaking.model";
+import { matchmakingRepository } from "./matchmaking.repository";
 import { MatchmakingService } from "./matchmaking.service";
 
 const matchmakingLogger = logger.child().withContext({ module: "matchmaking" });
@@ -21,10 +23,16 @@ function mapMatchmakingError(error: { type: string }) {
       return conflict("Already in matchmaking queue");
     case "NOT_IN_QUEUE":
       return notFound("Not in matchmaking queue");
+    case "ALREADY_COMPLETED":
+      return conflict("Match result already recorded");
+    case "SESSION_NOT_FOUND":
+      return notFound("Game session not found");
     case "ROOM_CREATION_FAILED":
       return badRequest("Failed to create game room");
+    case "INTERNAL_ERROR":
+      return internalError();
     default:
-      return badRequest("Internal server error");
+      return badRequest("Unknown error");
   }
 }
 
@@ -153,6 +161,21 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
           userId,
           ws.raw as unknown as WebSocket
         );
+
+        // Auto-remove from queue when last WS connection drops
+        if (MatchmakingService.getConnectionCount(userId) === 0) {
+          const queueStatus = MatchmakingService.getQueueStatus(userId);
+          if (queueStatus.inQueue) {
+            MatchmakingService.leaveQueue(userId);
+            matchmakingLogger
+              .withMetadata({
+                action: "ws_disconnect_queue_cleanup",
+                userId,
+              })
+              .info("Removed disconnected player from queue");
+          }
+        }
+
         matchmakingLogger
           .withMetadata({ action: "ws_disconnected", userId })
           .info("WS disconnected");
@@ -209,6 +232,28 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
           body: t.Object({
             joinToken: t.String(),
           }),
+        }
+      )
+      .post(
+        "/sessions/:sessionId/abandon",
+        async ({ params, set }) => {
+          const session = await matchmakingRepository.getGameSession(
+            params.sessionId
+          );
+          if (!session) {
+            set.status = 404;
+            return notFound("Session not found");
+          }
+          if (session.state !== "finished" && session.state !== "abandoned") {
+            await matchmakingRepository.updateGameSession(params.sessionId, {
+              state: "abandoned",
+              endedAt: new Date(),
+            });
+          }
+          return { success: true };
+        },
+        {
+          params: t.Object({ sessionId: t.String() }),
         }
       )
   );

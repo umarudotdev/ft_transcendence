@@ -72,20 +72,65 @@ function getGameServerUrl(): string {
   return import.meta.env.VITE_GAME_URL ?? "ws://localhost:2567";
 }
 
+// --- Session persistence for page reload resilience ---
+
+const RECONNECTION_KEY = "ft_game_reconnection";
+
+interface ReconnectionData {
+  reconnectionToken: string;
+  matchSessionId: string;
+  opponent: OpponentInfo;
+  queueMode: "ranked" | "casual";
+}
+
+function saveReconnectionData(data: ReconnectionData) {
+  try {
+    sessionStorage.setItem(RECONNECTION_KEY, JSON.stringify(data));
+  } catch {
+    // sessionStorage unavailable (SSR, private browsing quota)
+  }
+}
+
+function loadReconnectionData(): ReconnectionData | null {
+  try {
+    const raw = sessionStorage.getItem(RECONNECTION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as ReconnectionData;
+  } catch {
+    return null;
+  }
+}
+
+function clearReconnectionData() {
+  try {
+    sessionStorage.removeItem(RECONNECTION_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+/** Phase ordering for forward-only transitions (higher = later in lifecycle) */
+const PHASE_ORDER: Record<GamePhase, number> = {
+  idle: 0,
+  queuing: 1,
+  matched: 2,
+  connecting: 3,
+  waiting: 4,
+  countdown: 5,
+  playing: 6,
+  reconnecting: 6, // same level as playing (lateral transition)
+  finished: 7,
+};
+
 export function createGameStore() {
-  // --- Matchmaking state ---
-  let matchmakingWs: WebSocket | null = $state(null);
+  // --- Reactive state ---
+  let phase: GamePhase = $state("idle");
   let queuePosition = $state(0);
   let estimatedWait = $state(0);
+  let queueMode: "ranked" | "casual" | null = $state(null);
   let opponent: OpponentInfo | null = $state(null);
   let matchSessionId: string | null = $state(null);
   let joinToken: string | null = $state(null);
-  let queueMode: "ranked" | "casual" | null = $state(null);
-
-  // --- Game state ---
-  let phase: GamePhase = $state("idle");
-  let room: Room | null = $state(null);
-  let mySessionId: string | null = $state(null);
   let players: Map<string, PlayerRenderState> = $state(new Map());
   let bullets: BulletRenderState[] = $state([]);
   let effects: EffectRenderState[] = $state([]);
@@ -93,8 +138,34 @@ export function createGameStore() {
   let countdownTimer = $state(0);
   let winnerId = $state("");
   let matchResult: MatchResult | null = $state(null);
+  let mySessionId: string | null = $state(null);
+
+  // --- Internal guards (non-reactive) ---
+  let _joiningLock = false;
+  let _readySent = false;
+  let _matchmakingWs: WebSocket | null = null;
+  let _currentRoom: Room | null = null;
 
   const interpolator = createInterpolator();
+
+  // --- Helpers ---
+
+  function resetGameState() {
+    players = new Map();
+    bullets = [];
+    effects = [];
+    gameTick = 0;
+    countdownTimer = 0;
+    winnerId = "";
+    matchResult = null;
+    mySessionId = null;
+    matchSessionId = null;
+    joinToken = null;
+    opponent = null;
+    queueMode = null;
+    _readySent = false;
+    interpolator.clear();
+  }
 
   // --- Matchmaking ---
 
@@ -102,6 +173,9 @@ export function createGameStore() {
     mode: "ranked" | "casual" = "ranked",
     retried = false
   ) {
+    if (phase !== "idle" || _joiningLock) return;
+    _joiningLock = true;
+
     phase = "queuing";
     queueMode = mode;
 
@@ -113,13 +187,20 @@ export function createGameStore() {
       // Already in queue (stale server state) — leave and retry once
       if (status === 409 && !retried) {
         await api.api.matchmaking.queue.delete();
+        phase = "idle";
+        queueMode = null;
+        _joiningLock = false;
         return joinQueue(mode, true);
       }
 
       if (error || !data) {
         phase = "idle";
+        queueMode = null;
         return;
       }
+
+      // User might have cancelled while we were awaiting the API call
+      if (phase !== "queuing") return;
 
       const response = data as {
         position: number;
@@ -132,25 +213,34 @@ export function createGameStore() {
       // Open matchmaking WS using the server-issued token
       connectMatchmakingWs(response.wsToken);
     } catch {
-      phase = "idle";
+      if (phase === "queuing") {
+        phase = "idle";
+        queueMode = null;
+      }
+    } finally {
+      _joiningLock = false;
     }
   }
 
   function leaveQueue() {
-    api.api.matchmaking.queue.delete().catch(() => {});
+    if (phase !== "queuing") return;
 
+    api.api.matchmaking.queue.delete().catch(() => {});
     disconnectMatchmakingWs();
     phase = "idle";
     queueMode = null;
   }
 
   function connectMatchmakingWs(token: string) {
+    disconnectMatchmakingWs();
+
     const url = getMatchmakingWsUrl(token);
 
     try {
-      matchmakingWs = new WebSocket(url);
+      const ws = new WebSocket(url);
+      _matchmakingWs = ws;
 
-      matchmakingWs.onmessage = (event) => {
+      ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data) as MatchmakingServerMessage;
           handleMatchmakingMessage(message);
@@ -159,8 +249,10 @@ export function createGameStore() {
         }
       };
 
-      matchmakingWs.onclose = () => {
-        matchmakingWs = null;
+      ws.onclose = () => {
+        if (_matchmakingWs === ws) {
+          _matchmakingWs = null;
+        }
       };
     } catch {
       // Connection failed
@@ -168,9 +260,9 @@ export function createGameStore() {
   }
 
   function disconnectMatchmakingWs() {
-    if (matchmakingWs) {
-      matchmakingWs.close();
-      matchmakingWs = null;
+    if (_matchmakingWs) {
+      _matchmakingWs.close();
+      _matchmakingWs = null;
     }
   }
 
@@ -178,25 +270,36 @@ export function createGameStore() {
     switch (message.type) {
       case "queue_joined":
       case "queue_update": {
-        queuePosition = message.position;
-        estimatedWait = message.estimatedWait;
+        if (phase === "queuing") {
+          queuePosition = message.position;
+          estimatedWait = message.estimatedWait;
+        }
         break;
       }
       case "match_found": {
+        if (phase !== "queuing") break;
+        disconnectMatchmakingWs();
         opponent = message.opponent;
         matchSessionId = message.matchSessionId;
         joinToken = message.joinToken;
         phase = "matched";
-        disconnectMatchmakingWs();
         break;
       }
       case "match_complete": {
-        matchResult = message.result;
-        phase = "finished";
+        // Delivered via matchmaking WS — but WS is closed before game ends,
+        // so this is unlikely to arrive. matchResult is now primarily set
+        // via Colyseus broadcast. Keep as fallback.
+        if (phase === "finished") {
+          matchResult = message.result;
+        }
         break;
       }
       case "error": {
-        phase = "idle";
+        disconnectMatchmakingWs();
+        if (phase === "queuing") {
+          phase = "idle";
+          queueMode = null;
+        }
         break;
       }
     }
@@ -205,7 +308,7 @@ export function createGameStore() {
   // --- Colyseus Game Connection ---
 
   async function joinGame() {
-    if (!matchSessionId || !joinToken || phase === "connecting") return;
+    if (phase !== "matched" || !matchSessionId || !joinToken) return;
 
     phase = "connecting";
 
@@ -221,17 +324,77 @@ export function createGameStore() {
         joinToken: token,
       });
 
-      room = joinedRoom;
+      // If user navigated away or called disconnect() while connecting
+      if (phase !== "connecting") {
+        joinedRoom.leave().catch(() => {});
+        return;
+      }
+
+      _currentRoom = joinedRoom;
       mySessionId = joinedRoom.sessionId;
+      _readySent = false;
 
       // Configure reconnection
       joinedRoom.reconnection.maxRetries = 15;
       joinedRoom.reconnection.maxDelay = 5000;
 
+      // Persist for page reload resilience
+      if (matchSessionId && opponent && queueMode) {
+        saveReconnectionData({
+          reconnectionToken: joinedRoom.reconnectionToken,
+          matchSessionId,
+          opponent,
+          queueMode,
+        });
+      }
+
+      phase = "waiting";
       setupRoomCallbacks(joinedRoom);
     } catch (error) {
       console.error("[game] joinOrCreate failed:", error);
       phase = "idle";
+      resetGameState();
+    }
+  }
+
+  async function reconnectToGame() {
+    const saved = loadReconnectionData();
+    if (!saved || phase !== "idle") return;
+
+    phase = "reconnecting";
+    matchSessionId = saved.matchSessionId;
+    opponent = saved.opponent;
+    queueMode = saved.queueMode;
+
+    try {
+      const client = new Client(getGameServerUrl());
+      const joinedRoom = await client.reconnect(saved.reconnectionToken);
+
+      // If user navigated away while reconnecting
+      if (phase !== "reconnecting") {
+        joinedRoom.leave().catch(() => {});
+        return;
+      }
+
+      _currentRoom = joinedRoom;
+      mySessionId = joinedRoom.sessionId;
+      _readySent = false;
+
+      joinedRoom.reconnection.maxRetries = 15;
+      joinedRoom.reconnection.maxDelay = 5000;
+
+      // Update stored token (changes after reconnect)
+      saveReconnectionData({
+        ...saved,
+        reconnectionToken: joinedRoom.reconnectionToken,
+      });
+
+      setupRoomCallbacks(joinedRoom);
+      // Phase will advance via onStateChange from server state sync
+    } catch {
+      clearReconnectionData();
+      phase = "idle";
+      resetGameState();
     }
   }
 
@@ -265,12 +428,14 @@ export function createGameStore() {
     cb.onAdd(
       "players",
       (player: Record<string, unknown>, sessionId: string) => {
+        if (_currentRoom !== joinedRoom) return;
         const p = extractPlayer(player);
         players.set(sessionId, p);
         players = new Map(players);
         interpolator.pushSnapshot(sessionId, p.x, p.y);
 
         cb.onChange(player, () => {
+          if (_currentRoom !== joinedRoom) return;
           const updated = extractPlayer(player);
           players.set(sessionId, updated);
           players = new Map(players);
@@ -280,6 +445,7 @@ export function createGameStore() {
     );
 
     cb.onRemove("players", (_player: unknown, sessionId: string) => {
+      if (_currentRoom !== joinedRoom) return;
       players.delete(sessionId);
       players = new Map(players);
       interpolator.removeEntity(sessionId);
@@ -292,25 +458,27 @@ export function createGameStore() {
     cb.onAdd("effects", () => {});
 
     // Full state sync
-    joinedRoom.onStateChange.once((rawState: unknown) => {
-      const state = rawState as Record<string, unknown>;
-      phase = (state.phase as GamePhase) ?? "waiting";
-    });
-
     joinedRoom.onStateChange((rawState: unknown) => {
+      if (_currentRoom !== joinedRoom) return;
+
       const state = rawState as Record<string, unknown>;
       gameTick = (state.tick as number) ?? 0;
       countdownTimer = (state.countdownTimer as number) ?? 0;
       winnerId = (state.winnerId as string) ?? "";
 
-      const newPhase = (state.phase as string) ?? "waiting";
+      // Forward-only phase advancement from server
+      const serverPhase = state.phase as string;
       if (
-        newPhase === "playing" ||
-        newPhase === "countdown" ||
-        newPhase === "waiting" ||
-        newPhase === "finished"
+        serverPhase === "countdown" ||
+        serverPhase === "playing" ||
+        serverPhase === "finished"
       ) {
-        phase = newPhase as GamePhase;
+        const currentOrder = PHASE_ORDER[phase] ?? 0;
+        const newOrder = PHASE_ORDER[serverPhase as GamePhase] ?? 0;
+        // Allow "reconnecting" to accept any server phase (page reload reconnect)
+        if (newOrder > currentOrder || phase === "reconnecting") {
+          phase = serverPhase as GamePhase;
+        }
       }
 
       // Rebuild bullets array from state
@@ -349,21 +517,77 @@ export function createGameStore() {
     joinedRoom.onMessage("hit", () => {});
     joinedRoom.onMessage("gameOver", () => {});
 
+    // Match result from Colyseus broadcast (replaces broken matchmaking WS path)
+    joinedRoom.onMessage(
+      "matchResult",
+      (data: {
+        winnerId: number | null;
+        players: Record<number, { ratingChange: number; score: number }>;
+        duration: number;
+      }) => {
+        if (_currentRoom !== joinedRoom || phase !== "finished") return;
+
+        // Find our rating change — we know the opponent's userId, ours is the other entry
+        const opponentUserId = opponent?.id;
+        let ratingChange = 0;
+
+        for (const [playerIdStr, playerData] of Object.entries(data.players)) {
+          if (Number(playerIdStr) !== opponentUserId) {
+            ratingChange = playerData.ratingChange;
+            break;
+          }
+        }
+
+        matchResult = {
+          won: winnerId !== "" && winnerId === mySessionId,
+          ratingChange,
+          newRating: 0,
+        };
+
+        // Fetch actual post-match rating from API
+        api.api.rankings.me
+          .get()
+          .then(({ data: rankingData }) => {
+            const rating = (
+              rankingData as { ranking?: { rating?: number } } | null
+            )?.ranking?.rating;
+            if (rating != null && matchResult) {
+              matchResult = { ...matchResult, newRating: rating };
+            }
+          })
+          .catch(() => {});
+      }
+    );
+
     // Connection events
     joinedRoom.onDrop(() => {
+      if (_currentRoom !== joinedRoom) return;
       phase = "reconnecting";
     });
 
     joinedRoom.onReconnect(() => {
+      if (_currentRoom !== joinedRoom) return;
       if (phase === "reconnecting") {
         phase = "playing";
+      }
+      // Update stored token (may change after auto-reconnect)
+      const saved = loadReconnectionData();
+      if (saved) {
+        saveReconnectionData({
+          ...saved,
+          reconnectionToken: joinedRoom.reconnectionToken,
+        });
       }
     });
 
     joinedRoom.onLeave(() => {
-      room = null;
+      if (_currentRoom !== joinedRoom) return;
+      // Don't reset if finished (user sees result screen and cleans up via disconnect)
       if (phase !== "finished") {
+        _currentRoom = null;
         phase = "idle";
+        resetGameState();
+        clearReconnectionData();
       }
     });
   }
@@ -371,36 +595,58 @@ export function createGameStore() {
   // --- Input ---
 
   function sendInput(input: InputState) {
-    room?.send("input", input);
+    _currentRoom?.send("input", input);
   }
 
   function sendAbility(slot: number) {
-    room?.send("ability", { slot });
+    if (phase !== "playing") return;
+    _currentRoom?.send("ability", { slot });
   }
 
   function sendReady() {
-    room?.send("ready", {});
+    if (phase !== "waiting" || _readySent) return;
+    _readySent = true;
+    _currentRoom?.send("ready", {});
   }
 
   // --- Cleanup ---
 
-  function disconnect() {
+  async function disconnect() {
     disconnectMatchmakingWs();
-    room?.leave();
-    room = null;
+    clearReconnectionData();
+
+    const roomToLeave = _currentRoom;
+    _currentRoom = null;
+
+    // Reset state immediately (before await) to prevent race conditions
     phase = "idle";
-    players = new Map();
-    bullets = [];
-    effects = [];
-    interpolator.clear();
-    matchResult = null;
-    matchSessionId = null;
-    joinToken = null;
-    opponent = null;
-    queueMode = null;
+    resetGameState();
+
+    // Wait for room to actually disconnect
+    if (roomToLeave) {
+      try {
+        await roomToLeave.leave();
+      } catch {
+        // Room might already be disconnected
+      }
+    }
   }
 
-  // --- Getters for my player ---
+  /** Reset to idle if in a terminal state (e.g. navigating back to /play after a game) */
+  function resetIfStale() {
+    if (phase === "finished") {
+      const roomToLeave = _currentRoom;
+      _currentRoom = null;
+      phase = "idle";
+      resetGameState();
+      clearReconnectionData();
+      if (roomToLeave) {
+        roomToLeave.leave().catch(() => {});
+      }
+    }
+  }
+
+  // --- Player getters ---
 
   function getMyPlayer(): PlayerRenderState | null {
     if (!mySessionId) return null;
@@ -469,10 +715,12 @@ export function createGameStore() {
     joinQueue,
     leaveQueue,
     joinGame,
+    reconnectToGame,
     sendInput,
     sendAbility,
     sendReady,
     disconnect,
+    resetIfStale,
     getMyPlayer,
     getOpponentPlayer,
   };

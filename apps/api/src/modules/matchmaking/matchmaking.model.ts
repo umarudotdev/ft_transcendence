@@ -30,6 +30,7 @@ export type MatchmakingError =
   | { type: "NOT_IN_QUEUE" }
   | { type: "MATCH_NOT_FOUND" }
   | { type: "SESSION_NOT_FOUND" }
+  | { type: "ALREADY_COMPLETED" }
   | { type: "ROOM_CREATION_FAILED" }
   | { type: "INTERNAL_ERROR" };
 

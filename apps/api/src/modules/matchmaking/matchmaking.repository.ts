@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 
 import { db } from "../../db";
 import {
@@ -37,6 +37,17 @@ export const matchmakingRepository = {
     return db.query.gameSessions.findFirst({
       where: eq(gameSessions.id, id),
     });
+  },
+
+  /** Atomically mark a session as finished only if it's not already finished.
+   *  Returns the updated session, or undefined if not found or already finished. */
+  async finishGameSession(id: string) {
+    const [session] = await db
+      .update(gameSessions)
+      .set({ state: "finished", endedAt: new Date() })
+      .where(and(eq(gameSessions.id, id), ne(gameSessions.state, "finished")))
+      .returning();
+    return session;
   },
 
   // --- Matches ---

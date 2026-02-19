@@ -36,9 +36,13 @@
 
 	$effect(() => {
 		if (phase === "matched" && matchSessionId) {
-			const timeout = setTimeout(() => {
-				gameStore.joinGame();
-				goto(`/play/${matchSessionId}`);
+			const sessionId = matchSessionId;
+			const timeout = setTimeout(async () => {
+				await gameStore.joinGame();
+				// Only navigate if joinGame succeeded (not reset to idle)
+				if (gameStore.phase !== "idle") {
+					goto(`/play/${sessionId}`);
+				}
 			}, 2000);
 
 			return () => clearTimeout(timeout);

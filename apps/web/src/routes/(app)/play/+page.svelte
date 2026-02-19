@@ -1,4 +1,5 @@
 <script lang="ts">
+import { onMount } from "svelte";
 import GamepadIcon from "@lucide/svelte/icons/gamepad-2";
 import SwordsIcon from "@lucide/svelte/icons/swords";
 import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
@@ -16,6 +17,11 @@ const meQuery = createMeQuery();
 const statsQuery = createMyStatsQuery();
 const matchesQuery = createMyMatchesQuery({ limit: 5 });
 const gameStore = getGameStore();
+
+// Clean up stale state from previous game (e.g. browser back button while in "finished" phase)
+onMount(() => {
+	gameStore.resetIfStale();
+});
 
 function handleQuickMatch() {
 	gameStore.joinQueue("ranked");

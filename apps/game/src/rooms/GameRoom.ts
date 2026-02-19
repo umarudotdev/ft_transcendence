@@ -39,6 +39,8 @@ const InputSchema = z.object({
 type InputState = z.infer<typeof InputSchema>;
 
 const COUNTDOWN_SECONDS = 3;
+const REPORT_MAX_ATTEMPTS = 3;
+const REPORT_BASE_DELAY_MS = 1000;
 
 const gameLogger = logger.child().withContext({ module: "game-room" });
 
@@ -53,6 +55,8 @@ export class GameRoom extends Room<{ state: GameState }> {
   private readyPlayers = new Set<string>();
   private gameStartTick = 0;
   private matchSessionId: string | null = null;
+  private matchReported = false;
+  private countdownStarted = false;
 
   messages = {
     input: (client: Client, data: unknown) => {
@@ -135,6 +139,7 @@ export class GameRoom extends Room<{ state: GameState }> {
     const auth = (await response.json()) as {
       id: number;
       displayName: string;
+      matchSessionId: string;
     };
 
     gameLogger
@@ -145,7 +150,11 @@ export class GameRoom extends Room<{ state: GameState }> {
   }
 
   onCreate(options: Record<string, unknown>) {
-    this.matchSessionId = (options.matchSessionId as string) ?? null;
+    // matchSessionId will be set authoritatively from join token in onJoin.
+    // Fall back to options only for dev-mode testing.
+    if (process.env.NODE_ENV === "development") {
+      this.matchSessionId = (options.matchSessionId as string) ?? null;
+    }
 
     this.setSimulationInterval(
       (deltaTime) => this.update(deltaTime),
@@ -168,8 +177,13 @@ export class GameRoom extends Room<{ state: GameState }> {
   onJoin(
     client: Client,
     _options: Record<string, unknown>,
-    auth: { id: number; displayName: string }
+    auth: { id: number; displayName: string; matchSessionId?: string }
   ) {
+    // Set matchSessionId from validated join token (not client options)
+    if (auth.matchSessionId && !this.matchSessionId) {
+      this.matchSessionId = auth.matchSessionId;
+    }
+
     const player = new PlayerSchema();
     const index = this.state.players.size;
 
@@ -198,7 +212,7 @@ export class GameRoom extends Room<{ state: GameState }> {
       })
       .info("Player joined");
 
-    // Auto-ready when both players join (for testing; real flow uses "ready" message)
+    // Auto-ready when both players join
     if (
       this.state.players.size >= MAX_PLAYERS &&
       this.state.phase === "waiting"
@@ -254,9 +268,13 @@ export class GameRoom extends Room<{ state: GameState }> {
     this.playerInputs.delete(client.sessionId);
     this.readyPlayers.delete(client.sessionId);
 
-    // If game is in progress and a player leaves permanently, the other wins
-    // Check before deleting so reportMatchResult can read both players
-    if (this.state.phase === "playing" && this.state.players.size === 2) {
+    // If game is in progress and a player leaves permanently, the other wins.
+    // Check before deleting so reportMatchResult can read both players.
+    // Handles both "playing" and "countdown" phases.
+    if (
+      (this.state.phase === "playing" || this.state.phase === "countdown") &&
+      this.state.players.size === 2
+    ) {
       for (const [otherId] of this.state.players) {
         if (otherId !== client.sessionId) {
           this.endGame(otherId);
@@ -278,8 +296,46 @@ export class GameRoom extends Room<{ state: GameState }> {
       .withMetadata({
         roomId: this.roomId,
         matchSessionId: this.matchSessionId,
+        phase: this.state.phase,
       })
       .info("Room disposed");
+
+    // If match was in progress at dispose time, mark session abandoned in DB
+    if (
+      this.matchSessionId &&
+      !this.matchReported &&
+      (this.state.phase === "playing" ||
+        this.state.phase === "countdown" ||
+        this.state.phase === "waiting" ||
+        this.state.phase === "abandoned")
+    ) {
+      try {
+        await fetch(
+          `${API_URL}/api/matchmaking/internal/sessions/${this.matchSessionId}/abandon`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${GAME_INTERNAL_SECRET}`,
+            },
+          }
+        );
+        gameLogger
+          .withMetadata({
+            roomId: this.roomId,
+            matchSessionId: this.matchSessionId,
+          })
+          .warn("Session marked abandoned on dispose");
+      } catch (error) {
+        gameLogger
+          .withMetadata({
+            roomId: this.roomId,
+            matchSessionId: this.matchSessionId,
+          })
+          .withError(error instanceof Error ? error : new Error(String(error)))
+          .error("Failed to mark session abandoned on dispose");
+      }
+    }
   }
 
   private update(deltaTime: number) {
@@ -288,6 +344,7 @@ export class GameRoom extends Room<{ state: GameState }> {
     if (this.state.phase === "countdown") {
       this.state.countdownTimer -= dt;
       if (this.state.countdownTimer <= 0) {
+        this.gameStartTick = this.state.tick;
         this.setPhase("playing");
       }
       return;
@@ -360,13 +417,18 @@ export class GameRoom extends Room<{ state: GameState }> {
   }
 
   private startCountdown() {
+    if (this.countdownStarted) return;
+    this.countdownStarted = true;
+
     this.state.countdownTimer = COUNTDOWN_SECONDS;
     this.setPhase("countdown");
     this.broadcast("countdown", { seconds: COUNTDOWN_SECONDS });
-    this.gameStartTick = this.state.tick + COUNTDOWN_SECONDS * TICK_RATE;
   }
 
   private endGame(winnerId: string) {
+    if (this.matchReported) return;
+    this.matchReported = true;
+
     this.state.winnerId = winnerId;
     this.setPhase("finished");
 
@@ -390,7 +452,7 @@ export class GameRoom extends Room<{ state: GameState }> {
       })
       .info("Game ended");
 
-    // Report match result to API
+    // Report match result to API (async, with retries)
     this.reportMatchResult(winnerId);
   }
 
@@ -407,34 +469,130 @@ export class GameRoom extends Room<{ state: GameState }> {
     const durationTicks = this.state.tick - this.gameStartTick;
     const durationSeconds = Math.max(1, Math.round(durationTicks / TICK_RATE));
 
-    try {
-      await fetch(`${API_URL}/api/matchmaking/internal/matches/complete`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${GAME_INTERNAL_SECRET}`,
-        },
-        body: JSON.stringify({
-          sessionId: this.matchSessionId,
-          player1Id: p1.userId,
-          player2Id: p2.userId,
-          player1Score: p1.score,
-          player2Score: p2.score,
-          winnerId: winnerPlayer?.userId ?? null,
-          duration: durationSeconds,
-          gameType: "bullet_hell",
-          isAiGame: false,
-        }),
-      });
-    } catch (error) {
-      gameLogger
-        .withMetadata({
-          roomId: this.roomId,
-          matchSessionId: this.matchSessionId,
-        })
-        .withError(error instanceof Error ? error : new Error(String(error)))
-        .error("Failed to report match result");
+    const payload = {
+      sessionId: this.matchSessionId,
+      player1Id: p1.userId,
+      player2Id: p2.userId,
+      player1Score: p1.score,
+      player2Score: p2.score,
+      winnerId: winnerPlayer?.userId ?? null,
+      duration: durationSeconds,
+      gameType: "bullet_hell",
+      isAiGame: false,
+    };
+
+    for (let attempt = 1; attempt <= REPORT_MAX_ATTEMPTS; attempt++) {
+      try {
+        const response = await fetch(
+          `${API_URL}/api/matchmaking/internal/matches/complete`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${GAME_INTERNAL_SECRET}`,
+            },
+            body: JSON.stringify(payload),
+          }
+        );
+
+        if (response.ok) {
+          const result = (await response.json()) as {
+            matchId: number;
+            player1Change: number;
+            player2Change: number;
+          };
+          // Broadcast rating changes to clients before room disposes
+          this.broadcastMatchResult(result, payload);
+          return;
+        }
+
+        // 409 = already completed (idempotency hit) — no retry needed
+        if (response.status === 409) {
+          gameLogger
+            .withMetadata({
+              roomId: this.roomId,
+              matchSessionId: this.matchSessionId,
+            })
+            .warn("Match already reported (idempotency hit)");
+          return;
+        }
+
+        // 4xx (not 409) = bad payload — retrying won't help
+        if (response.status >= 400 && response.status < 500) {
+          gameLogger
+            .withMetadata({
+              roomId: this.roomId,
+              matchSessionId: this.matchSessionId,
+              status: response.status,
+            })
+            .error("Match report rejected by API — not retrying");
+          return;
+        }
+
+        // 5xx: server error — retry
+        throw new Error(`API returned ${response.status}`);
+      } catch (error) {
+        if (attempt === REPORT_MAX_ATTEMPTS) {
+          gameLogger
+            .withMetadata({
+              roomId: this.roomId,
+              matchSessionId: this.matchSessionId,
+              payload,
+            })
+            .withError(
+              error instanceof Error ? error : new Error(String(error))
+            )
+            .error("Failed to report match result after all retries");
+          return;
+        }
+
+        const delayMs = REPORT_BASE_DELAY_MS * 2 ** (attempt - 1);
+        gameLogger
+          .withMetadata({ roomId: this.roomId, attempt, delayMs })
+          .warn("Match report failed — retrying");
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
     }
+  }
+
+  private broadcastMatchResult(
+    result: {
+      matchId: number;
+      player1Change: number;
+      player2Change: number;
+    },
+    payload: {
+      player1Id: number;
+      player2Id: number;
+      winnerId: number | null;
+      player1Score: number;
+      player2Score: number;
+      duration: number;
+    }
+  ) {
+    this.broadcast("matchResult", {
+      winnerId: payload.winnerId,
+      players: {
+        [payload.player1Id]: {
+          ratingChange: result.player1Change,
+          score: payload.player1Score,
+        },
+        [payload.player2Id]: {
+          ratingChange: result.player2Change,
+          score: payload.player2Score,
+        },
+      },
+      duration: payload.duration,
+    });
+
+    gameLogger
+      .withMetadata({
+        roomId: this.roomId,
+        matchSessionId: this.matchSessionId,
+        player1Change: result.player1Change,
+        player2Change: result.player2Change,
+      })
+      .info("Match result broadcast to clients");
   }
 
   private setPhase(phase: GamePhase) {

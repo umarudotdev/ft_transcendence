@@ -314,9 +314,13 @@ export function createGameStore() {
       }
 
       // Rebuild bullets array from state
+      // Note: Colyseus ArraySchema is not a native Array, so Array.isArray() returns false.
+      // Use Array.from() to convert any iterable schema collection.
       const stateBullets = state.bullets;
-      if (Array.isArray(stateBullets)) {
-        bullets = stateBullets.map((b: Record<string, unknown>) => ({
+      if (stateBullets) {
+        bullets = Array.from(
+          stateBullets as Iterable<Record<string, unknown>>
+        ).map((b) => ({
           x: (b.x as number) ?? 0,
           y: (b.y as number) ?? 0,
           ownerId: (b.ownerId as string) ?? "",
@@ -326,8 +330,10 @@ export function createGameStore() {
 
       // Rebuild effects array from state
       const stateEffects = state.effects;
-      if (Array.isArray(stateEffects)) {
-        effects = stateEffects.map((e: Record<string, unknown>) => ({
+      if (stateEffects) {
+        effects = Array.from(
+          stateEffects as Iterable<Record<string, unknown>>
+        ).map((e) => ({
           effectType: (e.effectType as string) ?? "",
           x: (e.x as number) ?? 0,
           y: (e.y as number) ?? 0,

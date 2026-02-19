@@ -12,6 +12,7 @@ COPY package.json bun.lock ./
 
 # Copy workspace package.json files
 COPY apps/game/package.json ./apps/game/
+COPY packages/logger/package.json ./packages/logger/
 
 # Install dependencies (skip prepare script - no git in container)
 RUN bun install --ignore-scripts
@@ -33,6 +34,8 @@ FROM base AS production
 COPY --from=install /usr/src/app/node_modules ./node_modules
 COPY --from=install /usr/src/app/apps/game/node_modules ./apps/game/node_modules
 COPY apps/game ./apps/game
+COPY packages/logger ./packages/logger
+COPY --from=install /usr/src/app/packages/logger/node_modules ./packages/logger/node_modules
 
 WORKDIR /usr/src/app/apps/game
 
@@ -46,6 +49,6 @@ EXPOSE 2567/tcp
 STOPSIGNAL SIGTERM
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:2567/health || exit 1
+  CMD curl -f http://localhost:2567/__healthcheck || exit 1
 
 CMD ["bun", "run", "src/app.config.ts"]

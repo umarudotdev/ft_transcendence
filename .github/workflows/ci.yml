@@ -87,7 +87,8 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: bunx playwright install chromium --with-deps
+        working-directory: apps/web
+        run: bunx playwright install --with-deps
 
       - name: Run tests
         run: bun run test:web

@@ -1,6 +1,12 @@
 #!/bin/bash
 # Deploy script for ft_transcendence on AWS
 # Automatically refreshes ECR token before deployment
+#
+# Usage:
+#   ./deploy.sh deploy                              # Deploy API (default config)
+#   ./deploy.sh deploy -c config/deploy.web.yml     # Deploy web
+#   ./deploy.sh deploy -c config/deploy.game.yml    # Deploy game server
+#   ./deploy.sh app logs -c config/deploy.game.yml  # View game server logs
 
 set -e
 

@@ -17,6 +17,7 @@ on:
           - all
           - api
           - web
+          - game
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -105,6 +106,8 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          GAME_URL: ${{ secrets.GAME_URL }}
+          GAME_INTERNAL_SECRET: ${{ secrets.GAME_INTERNAL_SECRET }}
           INTRA_CLIENT_ID: ${{ secrets.INTRA_CLIENT_ID }}
           INTRA_CLIENT_SECRET: ${{ secrets.INTRA_CLIENT_SECRET }}
           INTRA_REDIRECT_URI: ${{ secrets.INTRA_REDIRECT_URI }}
@@ -121,6 +124,8 @@ jobs:
           KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD
           DATABASE_URL=$DATABASE_URL
           FRONTEND_URL=$FRONTEND_URL
+          GAME_URL=$GAME_URL
+          GAME_INTERNAL_SECRET=$GAME_INTERNAL_SECRET
           INTRA_CLIENT_ID=$INTRA_CLIENT_ID
           INTRA_CLIENT_SECRET=$INTRA_CLIENT_SECRET
           INTRA_REDIRECT_URI=$INTRA_REDIRECT_URI
@@ -231,3 +236,69 @@ jobs:
 
       - name: Deploy Web
         run: kamal deploy -d web
+
+  deploy-game:
+    name: Deploy Game
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event.inputs.service == 'all' || github.event.inputs.service == 'game' || github.event.inputs.service == ''
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Prerequisites: ECR repo 'ft-transcendence-game' must exist.
+      # Create with: aws ecr create-repository --repository-name ft-transcendence-game --region us-east-1
+
+      - name: Set up Docker Buildx for cache
+        uses: docker/setup-buildx-action@v3
+
+      - name: Expose GitHub Runtime for cache
+        uses: crazy-max/ghaction-github-runtime@v3
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Install Kamal
+        run: gem install kamal
+
+      - name: Set up SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          EC2_HOST: ${{ vars.AWS_EC2_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/ft-transcendence.pem
+          chmod 600 ~/.ssh/ft-transcendence.pem
+          ssh-keyscan "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          EC2_IP=$(echo "$EC2_HOST" | sed 's/ec2-\([0-9]*-[0-9]*-[0-9]*-[0-9]*\).*/\1/' | tr '-' '.')
+          ssh-keyscan "$EC2_IP" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Create Kamal secrets file
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          GAME_INTERNAL_SECRET: ${{ secrets.GAME_INTERNAL_SECRET }}
+        run: |
+          mkdir -p .kamal
+          KAMAL_REGISTRY_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)
+          cat > .kamal/secrets.game << EOF
+          KAMAL_REGISTRY_PASSWORD=$KAMAL_REGISTRY_PASSWORD
+          API_URL=$API_URL
+          GAME_INTERNAL_SECRET=$GAME_INTERNAL_SECRET
+          EOF
+
+      - name: Deploy Game
+        run: kamal deploy -d game

@@ -13,9 +13,10 @@ COPY package.json bun.lock ./
 # Copy workspace package.json files
 COPY apps/web/package.json ./apps/web/
 COPY apps/api/package.json ./apps/api/
+COPY packages/logger/package.json ./packages/logger/
 
 # Install dependencies (skip prepare script - no git in container)
-RUN bun install --frozen-lockfile --ignore-scripts
+RUN bun install --ignore-scripts
 
 # Development stage - use Node.js for Vite 7 compatibility
 FROM node:22-alpine AS development
@@ -27,6 +28,7 @@ RUN npm install -g bun
 COPY --from=install /usr/src/app/node_modules ./node_modules
 COPY --from=install /usr/src/app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=install /usr/src/app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=install /usr/src/app/packages/logger/node_modules ./packages/logger/node_modules
 COPY . .
 
 WORKDIR /usr/src/app/apps/web
@@ -47,6 +49,7 @@ RUN npm install -g bun
 COPY --from=install /usr/src/app/node_modules ./node_modules
 COPY --from=install /usr/src/app/apps/web/node_modules ./apps/web/node_modules
 COPY --from=install /usr/src/app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=install /usr/src/app/packages/logger/node_modules ./packages/logger/node_modules
 COPY . .
 
 WORKDIR /usr/src/app/apps/web
@@ -54,6 +57,8 @@ WORKDIR /usr/src/app/apps/web
 # Generate SvelteKit types
 RUN bun run svelte-kit sync
 
+ARG VITE_GAME_URL
+ENV VITE_GAME_URL=$VITE_GAME_URL
 ENV NODE_ENV=production
 RUN bun run build
 

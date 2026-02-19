@@ -12,6 +12,7 @@ COPY package.json bun.lock ./
 
 # Copy workspace package.json files
 COPY apps/api/package.json ./apps/api/
+COPY packages/logger/package.json ./packages/logger/
 
 # Install dependencies (skip prepare script - no git in container)
 RUN bun install --ignore-scripts
@@ -36,6 +37,8 @@ FROM base AS production
 COPY --from=install /usr/src/app/node_modules ./node_modules
 COPY --from=install /usr/src/app/apps/api/node_modules ./apps/api/node_modules
 COPY apps/api ./apps/api
+COPY packages/logger ./packages/logger
+COPY --from=install /usr/src/app/packages/logger/node_modules ./packages/logger/node_modules
 
 WORKDIR /usr/src/app/apps/api
 

@@ -1,10 +1,10 @@
-# Kamal deployment configuration for ft_transcendence Web (AWS)
+# Kamal deployment configuration for ft_transcendence Game Server (AWS)
 # Documentation: https://kamal-deploy.org/docs/configuration/overview/
 
-service: ft-transcendence-web
+service: ft-transcendence-game
 
 # Docker image (AWS ECR)
-image: ft-transcendence-web
+image: ft-transcendence-game
 
 # SSH configuration
 ssh:
@@ -18,14 +18,14 @@ servers:
     hosts:
       - ec2-44-200-135-124.compute-1.amazonaws.com
 
-# Proxy (Traefik) configuration
+# Proxy configuration
 proxy:
   ssl: true
-  host: transcendence.umaru.dev
-  app_port: 3000
+  host: game.transcendence.umaru.dev
+  app_port: 2567
   healthcheck:
     interval: 3
-    path: /
+    path: /__healthcheck
     timeout: 3
 
 # AWS ECR registry
@@ -39,18 +39,17 @@ registry:
 env:
   clear:
     NODE_ENV: production
-    PORT: "3000"
+    LOG_FORMAT: json
+    LOG_LEVEL: info
   secret:
-    # API URL for server-side proxy (via kamal-proxy)
     - API_URL
+    - GAME_INTERNAL_SECRET
 
 # Build configuration
 builder:
   arch: amd64
-  dockerfile: apps/web/Dockerfile
+  dockerfile: apps/game/Dockerfile
   target: production
   context: .
-  args:
-    VITE_GAME_URL: wss://game.transcendence.umaru.dev
   cache:
     type: gha

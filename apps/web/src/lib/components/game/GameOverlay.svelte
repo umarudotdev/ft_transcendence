@@ -21,8 +21,11 @@ let won = $derived.by(() => {
 });
 
 async function handlePlayAgain() {
+	const mode = gameStore.queueMode ?? "ranked";
 	await gameStore.disconnect();
-	gameStore.joinQueue();
+	// joinQueue sets phase to "queuing" synchronously, so /play will show the overlay
+	gameStore.joinQueue(mode);
+	goto("/play");
 }
 
 async function handleBackToLobby() {

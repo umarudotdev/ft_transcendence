@@ -3,7 +3,6 @@ import GamepadIcon from "@lucide/svelte/icons/gamepad-2";
 import SwordsIcon from "@lucide/svelte/icons/swords";
 import TrendingUpIcon from "@lucide/svelte/icons/trending-up";
 import TrophyIcon from "@lucide/svelte/icons/trophy";
-import UserIcon from "@lucide/svelte/icons/user";
 import { Badge } from "$lib/components/ui/badge";
 import { Button } from "$lib/components/ui/button";
 import * as Card from "$lib/components/ui/card";
@@ -43,17 +42,13 @@ function formatWinRate(wins: number, total: number): string {
 				<div class="flex-1 space-y-2">
 					<h2 class="text-2xl font-bold">Ready to Play?</h2>
 					<p class="text-muted-foreground">
-						Jump into a quick match against another player or practice your skills against the AI.
+						Jump into a quick match against another player.
 					</p>
 				</div>
 				<div class="flex flex-col gap-2 sm:flex-row">
 					<Button size="lg" class="gap-2" href="/play">
 						<SwordsIcon class="size-5" />
 						Quick Match
-					</Button>
-					<Button size="lg" variant="outline" class="gap-2" href="/play">
-						<UserIcon class="size-5" />
-						Play vs AI
 					</Button>
 				</div>
 			</div>

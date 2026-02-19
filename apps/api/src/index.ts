@@ -114,13 +114,12 @@ if (app.server) {
 }
 shutdownManager.initialize();
 
-logger.info({
-  module: "server",
-  action: "started",
-  message: `Server running at ${app.server?.hostname}:${app.server?.port}`,
-  port: app.server?.port,
-  nodeEnv: env.NODE_ENV,
-  corsOrigins: ALLOWED_ORIGINS,
-});
+logger
+  .withMetadata({
+    port: app.server?.port,
+    nodeEnv: env.NODE_ENV,
+    corsOrigins: ALLOWED_ORIGINS,
+  })
+  .info(`Server running at ${app.server?.hostname}:${app.server?.port}`);
 
 export type App = typeof app;

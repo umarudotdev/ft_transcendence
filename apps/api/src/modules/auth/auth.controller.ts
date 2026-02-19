@@ -10,7 +10,7 @@ import { logger } from "../../common/logger";
 import { rateLimit } from "../../common/plugins/rate-limit";
 import { env } from "../../env";
 
-const authLogger = logger.child("auth");
+const authLogger = logger.child().withContext({ module: "auth" });
 import {
   AuthModel,
   mapChangeEmailError,
@@ -224,11 +224,13 @@ export const authController = new Elysia({ prefix: "/auth" })
         const result = await AuthService.requestPasswordReset(body.email);
 
         if (result.isOk() && result.value.resetToken && !isProduction) {
-          authLogger.debug({
-            action: "password_reset_token",
-            email: body.email,
-            token: result.value.resetToken,
-          });
+          authLogger
+            .withMetadata({
+              action: "password_reset_token",
+              email: body.email,
+              token: result.value.resetToken,
+            })
+            .debug("Password reset token generated");
         }
 
         return {

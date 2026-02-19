@@ -11,6 +11,7 @@
     "@colyseus/bun-websockets": "^0.17.0",
     "@colyseus/monitor": "^0.17.0",
     "@colyseus/schema": "^3.0.0",
+    "@ft/logger": "workspace:*",
     "colyseus": "^0.17.0",
     "zod": "^3.24.0"
   },

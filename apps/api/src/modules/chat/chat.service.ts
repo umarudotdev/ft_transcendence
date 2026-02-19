@@ -12,7 +12,7 @@ import { shutdownManager } from "../../common/shutdown";
 import { NotificationsService } from "../notifications/notifications.service";
 import { chatRepository } from "./chat.repository";
 
-const chatLogger = logger.child("chat");
+const chatLogger = logger.child().withContext({ module: "chat" });
 
 // WebSocket connection registry: Map<userId, Set<WebSocket>>
 const wsConnections = new Map<number, Set<WebSocket>>();
@@ -493,11 +493,13 @@ shutdownManager.register(
       0
     );
 
-    chatLogger.info({
-      action: "draining_connections",
-      connectionCount: totalConnections,
-      userCount: wsConnections.size,
-    });
+    chatLogger
+      .withMetadata({
+        action: "draining_connections",
+        connectionCount: totalConnections,
+        userCount: wsConnections.size,
+      })
+      .info("Draining WebSocket connections");
 
     // Send shutdown message to all connected clients
     const shutdownMessage = JSON.stringify({
@@ -530,7 +532,9 @@ shutdownManager.register(
     }
     typingUsers.clear();
 
-    chatLogger.info({ action: "connections_drained" });
+    chatLogger
+      .withMetadata({ action: "connections_drained" })
+      .info("WebSocket connections drained");
   },
   3000
 );

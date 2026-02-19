@@ -3,6 +3,8 @@ import { Elysia, t } from "elysia";
 import { authGuard } from "../../common/guards/auth.macro";
 import { logger } from "../../common/logger";
 import { AuthService } from "../auth/auth.service";
+
+const chatLogger = logger.child().withContext({ module: "chat" });
 import { ChatModel, mapChatError, type WSClientMessage } from "./chat.model";
 import { ChatService } from "./chat.service";
 
@@ -149,10 +151,9 @@ export const chatController = new Elysia({ prefix: "/chat" })
       const result = await AuthService.validateSession(sessionId);
 
       if (result.isErr()) {
-        logger.ws("open", {
-          action: "auth_failed",
-          error: "Invalid session",
-        });
+        chatLogger
+          .withMetadata({ wsEvent: "open", action: "auth_failed" })
+          .warn("WS auth failed: Invalid session");
         ws.send(JSON.stringify({ type: "error", error: "Invalid session" }));
         ws.close();
         return;
@@ -166,10 +167,9 @@ export const chatController = new Elysia({ prefix: "/chat" })
       // Register connection
       ChatService.registerConnection(user.id, ws.raw as unknown as WebSocket);
 
-      logger.ws("open", {
-        action: "connected",
-        userId: user.id,
-      });
+      chatLogger
+        .withMetadata({ wsEvent: "open", action: "connected", userId: user.id })
+        .info("WS connection opened");
     },
     async message(ws, message) {
       const userId = (ws.data as { userId?: number }).userId;
@@ -247,10 +247,9 @@ export const chatController = new Elysia({ prefix: "/chat" })
           ws.raw as unknown as WebSocket
         );
 
-        logger.ws("close", {
-          action: "disconnected",
-          userId,
-        });
+        chatLogger
+          .withMetadata({ wsEvent: "close", action: "disconnected", userId })
+          .info("WS connection closed");
       }
     },
   });

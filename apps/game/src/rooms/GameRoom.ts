@@ -10,6 +10,7 @@ import {
   RECONNECT_TIMEOUT_SECONDS,
   TICK_RATE,
 } from "../config";
+import { logger } from "../logger";
 import { type GamePhase, GameState } from "../schemas/GameState";
 import { PlayerSchema } from "../schemas/PlayerSchema";
 import {
@@ -39,6 +40,8 @@ type InputState = z.infer<typeof InputSchema>;
 
 const COUNTDOWN_SECONDS = 3;
 
+const gameLogger = logger.child().withContext({ module: "game-room" });
+
 export class GameRoom extends Room<{ state: GameState }> {
   maxClients = MAX_PLAYERS;
   autoDispose = true;
@@ -49,7 +52,7 @@ export class GameRoom extends Room<{ state: GameState }> {
   private playerInputs = new Map<string, InputState>();
   private readyPlayers = new Set<string>();
   private gameStartTick = 0;
-  private sessionId: string | null = null;
+  private matchSessionId: string | null = null;
 
   messages = {
     input: (client: Client, data: unknown) => {
@@ -108,6 +111,7 @@ export class GameRoom extends Room<{ state: GameState }> {
     }
 
     if (!joinToken) {
+      gameLogger.warn("Auth failed: Missing join token");
       throw new Error("Missing join token");
     }
 
@@ -124,17 +128,24 @@ export class GameRoom extends Room<{ state: GameState }> {
     });
 
     if (!response.ok) {
+      gameLogger.warn("Auth failed: Invalid join token");
       throw new Error("Invalid join token");
     }
 
-    return (await response.json()) as {
+    const auth = (await response.json()) as {
       id: number;
       displayName: string;
     };
+
+    gameLogger
+      .withMetadata({ userId: auth.id, displayName: auth.displayName })
+      .info("Player authenticated");
+
+    return auth;
   }
 
   onCreate(options: Record<string, unknown>) {
-    this.sessionId = (options.matchSessionId as string) ?? null;
+    this.matchSessionId = (options.matchSessionId as string) ?? null;
 
     this.setSimulationInterval(
       (deltaTime) => this.update(deltaTime),
@@ -144,6 +155,14 @@ export class GameRoom extends Room<{ state: GameState }> {
     this.setMetadata({
       mode: options.mode ?? "ranked",
     });
+
+    gameLogger
+      .withMetadata({
+        roomId: this.roomId,
+        matchSessionId: this.matchSessionId,
+        mode: options.mode ?? "ranked",
+      })
+      .info("Room created");
   }
 
   onJoin(
@@ -170,6 +189,15 @@ export class GameRoom extends Room<{ state: GameState }> {
       playerIndex: index,
     });
 
+    gameLogger
+      .withMetadata({
+        userId: auth.id,
+        displayName: auth.displayName,
+        playerIndex: index,
+        roomId: this.roomId,
+      })
+      .info("Player joined");
+
     // Auto-ready when both players join (for testing; real flow uses "ready" message)
     if (
       this.state.players.size >= MAX_PLAYERS &&
@@ -187,6 +215,13 @@ export class GameRoom extends Room<{ state: GameState }> {
     if (player) {
       player.connected = false;
     }
+    gameLogger
+      .withMetadata({
+        sessionId: client.sessionId,
+        userId: player?.userId,
+        roomId: this.roomId,
+      })
+      .info("Player dropped");
     this.allowReconnection(client, RECONNECT_TIMEOUT_SECONDS).catch(() => {});
   }
 
@@ -195,11 +230,26 @@ export class GameRoom extends Room<{ state: GameState }> {
     if (player) {
       player.connected = true;
     }
+    gameLogger
+      .withMetadata({
+        sessionId: client.sessionId,
+        userId: player?.userId,
+        roomId: this.roomId,
+      })
+      .info("Player reconnected");
   }
 
   onLeave(client: Client, _code: number) {
     const player = this.state.players.get(client.sessionId);
     if (!player) return;
+
+    gameLogger
+      .withMetadata({
+        sessionId: client.sessionId,
+        userId: player.userId,
+        roomId: this.roomId,
+      })
+      .info("Player left");
 
     this.playerInputs.delete(client.sessionId);
     this.readyPlayers.delete(client.sessionId);
@@ -224,7 +274,12 @@ export class GameRoom extends Room<{ state: GameState }> {
   }
 
   async onDispose() {
-    // Report results handled in endGame; nothing extra needed on dispose
+    gameLogger
+      .withMetadata({
+        roomId: this.roomId,
+        matchSessionId: this.matchSessionId,
+      })
+      .info("Room disposed");
   }
 
   private update(deltaTime: number) {
@@ -325,12 +380,22 @@ export class GameRoom extends Room<{ state: GameState }> {
       winnerName: winner?.displayName ?? "Unknown",
     });
 
+    const durationTicks = this.state.tick - this.gameStartTick;
+    gameLogger
+      .withMetadata({
+        roomId: this.roomId,
+        winnerId,
+        winnerName: winner?.displayName ?? "Unknown",
+        durationTicks,
+      })
+      .info("Game ended");
+
     // Report match result to API
     this.reportMatchResult(winnerId);
   }
 
   private async reportMatchResult(winnerId: string) {
-    if (!this.sessionId) return;
+    if (!this.matchSessionId) return;
 
     const players = [...this.state.players.entries()];
     if (players.length < 2) return;
@@ -350,7 +415,7 @@ export class GameRoom extends Room<{ state: GameState }> {
           Authorization: `Bearer ${GAME_INTERNAL_SECRET}`,
         },
         body: JSON.stringify({
-          sessionId: this.sessionId,
+          sessionId: this.matchSessionId,
           player1Id: p1.userId,
           player2Id: p2.userId,
           player1Score: p1.score,
@@ -361,8 +426,14 @@ export class GameRoom extends Room<{ state: GameState }> {
           isAiGame: false,
         }),
       });
-    } catch {
-      // Non-critical — match result will be lost if API is down
+    } catch (error) {
+      gameLogger
+        .withMetadata({
+          roomId: this.roomId,
+          matchSessionId: this.matchSessionId,
+        })
+        .withError(error instanceof Error ? error : new Error(String(error)))
+        .error("Failed to report match result");
     }
   }
 

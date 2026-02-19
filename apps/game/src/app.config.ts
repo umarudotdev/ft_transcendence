@@ -1,6 +1,7 @@
 import { defineRoom, defineServer } from "colyseus";
 
 import { NODE_ENV, PORT } from "./config";
+import { logger } from "./logger";
 import { GameRoom } from "./rooms/GameRoom";
 import { PatchedBunWebSockets } from "./transport";
 
@@ -15,9 +16,9 @@ const server = defineServer({
 });
 
 server.listen(PORT).then(() => {
-  process.stdout.write(
-    `[game] Colyseus server listening on ws://localhost:${PORT}\n`
-  );
+  logger
+    .withMetadata({ port: PORT, nodeEnv: NODE_ENV })
+    .info(`Colyseus server listening on ws://localhost:${PORT}`);
 });
 
 export type { GameRoom };

@@ -12,7 +12,7 @@ import { logger } from "../../common/logger";
 import { RankingsService } from "../rankings/rankings.service";
 import { matchmakingRepository } from "./matchmaking.repository";
 
-const matchmakingLogger = logger.child("matchmaking");
+const matchmakingLogger = logger.child().withContext({ module: "matchmaking" });
 
 const INITIAL_RATING_BAND = 200;
 const RATING_BAND_EXPANSION = 50;
@@ -53,10 +53,9 @@ abstract class MatchmakingService {
       PAIRING_INTERVAL_MS
     );
 
-    matchmakingLogger.info({
-      action: "initialized",
-      message: "Matchmaking service started",
-    });
+    matchmakingLogger
+      .withMetadata({ action: "initialized" })
+      .info("Matchmaking service started");
   }
 
   static shutdown() {
@@ -138,13 +137,9 @@ abstract class MatchmakingService {
     const position = MatchmakingService.queue.size;
     const estimatedWait = ESTIMATED_WAIT_BASE_S;
 
-    matchmakingLogger.info({
-      action: "queue_joined",
-      userId,
-      mode,
-      rating,
-      position,
-    });
+    matchmakingLogger
+      .withMetadata({ action: "queue_joined", userId, mode, rating, position })
+      .info("Player joined queue");
 
     return ok({ position, estimatedWait });
   }
@@ -158,7 +153,9 @@ abstract class MatchmakingService {
 
     matchmakingRepository.removeFromQueue(userId).catch(() => {});
 
-    matchmakingLogger.info({ action: "queue_left", userId });
+    matchmakingLogger
+      .withMetadata({ action: "queue_left", userId })
+      .info("Player left queue");
 
     return ok(undefined);
   }
@@ -220,13 +217,15 @@ abstract class MatchmakingService {
           () => ({ player1Change: 0, player2Change: 0 })
         );
 
-        matchmakingLogger.info({
-          action: "match_completed",
-          matchId: match.id,
-          winnerId: data.winnerId,
-          player1Change: ratingChanges.player1Change,
-          player2Change: ratingChanges.player2Change,
-        });
+        matchmakingLogger
+          .withMetadata({
+            action: "match_completed",
+            matchId: match.id,
+            winnerId: data.winnerId,
+            player1Change: ratingChanges.player1Change,
+            player2Change: ratingChanges.player2Change,
+          })
+          .info("Match completed");
 
         // Notify players via WS
         MatchmakingService.notifyMatchComplete(
@@ -406,18 +405,20 @@ abstract class MatchmakingService {
         },
       });
 
-      matchmakingLogger.info({
-        action: "match_created",
-        matchSessionId,
-        player1: player1.userId,
-        player2: player2.userId,
-        ratingDiff: Math.abs(player1.rating - player2.rating),
-      });
+      matchmakingLogger
+        .withMetadata({
+          action: "match_created",
+          matchSessionId,
+          player1: player1.userId,
+          player2: player2.userId,
+          ratingDiff: Math.abs(player1.rating - player2.rating),
+        })
+        .info("Match created");
     } catch (error) {
-      matchmakingLogger.error({
-        action: "pairing_error",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      matchmakingLogger
+        .withMetadata({ action: "pairing_error" })
+        .withError(error instanceof Error ? error : new Error(String(error)))
+        .error("Pairing error");
     }
   }
 }

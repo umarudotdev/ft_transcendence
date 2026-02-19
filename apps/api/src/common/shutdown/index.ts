@@ -15,7 +15,7 @@ interface StoppableServer {
   stop(): void;
 }
 
-const shutdownLogger = logger.child("shutdown");
+const shutdownLogger = logger.child().withContext({ module: "shutdown" });
 
 /**
  * Graceful shutdown manager.
@@ -32,7 +32,9 @@ class ShutdownManager {
    */
   register(name: string, handler: CleanupHandler, timeoutMs = 5000): void {
     this.handlers.push({ name, handler, timeoutMs });
-    shutdownLogger.debug({ action: "handler_registered", handlerName: name });
+    shutdownLogger
+      .withMetadata({ action: "handler_registered", handlerName: name })
+      .debug("Handler registered");
   }
 
   /**
@@ -42,10 +44,9 @@ class ShutdownManager {
     const index = this.handlers.findIndex((h) => h.name === name);
     if (index !== -1) {
       this.handlers.splice(index, 1);
-      shutdownLogger.debug({
-        action: "handler_unregistered",
-        handlerName: name,
-      });
+      shutdownLogger
+        .withMetadata({ action: "handler_unregistered", handlerName: name })
+        .debug("Handler unregistered");
     }
   }
 
@@ -62,21 +63,18 @@ class ShutdownManager {
    */
   initialize(): void {
     const handleSignal = (signal: string) => {
-      shutdownLogger.info({
-        action: "initiated",
-        signal,
-        message: `Received ${signal}, starting graceful shutdown`,
-      });
+      shutdownLogger
+        .withMetadata({ action: "initiated", signal })
+        .info(`Received ${signal}, starting graceful shutdown`);
       this.shutdown(signal);
     };
 
     process.on("SIGTERM", () => handleSignal("SIGTERM"));
     process.on("SIGINT", () => handleSignal("SIGINT"));
 
-    shutdownLogger.debug({
-      action: "initialized",
-      message: "Signal handlers registered",
-    });
+    shutdownLogger
+      .withMetadata({ action: "initialized" })
+      .debug("Signal handlers registered");
   }
 
   /**
@@ -85,7 +83,9 @@ class ShutdownManager {
    */
   async shutdown(signal?: string): Promise<void> {
     if (this.isShuttingDown) {
-      shutdownLogger.warn({ action: "already_shutting_down", signal });
+      shutdownLogger
+        .withMetadata({ action: "already_shutting_down", signal })
+        .warn("Already shutting down");
       return;
     }
 
@@ -96,10 +96,11 @@ class ShutdownManager {
 
     // Set a hard timeout for the entire shutdown process
     const forceExitTimer = setTimeout(() => {
-      shutdownLogger.error({
-        action: "force_exit",
-        message: `Shutdown timeout exceeded (${env.SHUTDOWN_TIMEOUT_MS}ms), forcing exit`,
-      });
+      shutdownLogger
+        .withMetadata({ action: "force_exit" })
+        .error(
+          `Shutdown timeout exceeded (${env.SHUTDOWN_TIMEOUT_MS}ms), forcing exit`
+        );
       process.exit(1);
     }, env.SHUTDOWN_TIMEOUT_MS);
 
@@ -107,17 +108,18 @@ class ShutdownManager {
       // Stop accepting new connections immediately
       if (this.server) {
         this.server.stop();
-        shutdownLogger.info({
-          action: "server_stopped",
-          message: "Server stopped accepting connections",
-        });
+        shutdownLogger
+          .withMetadata({ action: "server_stopped" })
+          .info("Server stopped accepting connections");
       }
 
       // Run cleanup handlers in reverse order (LIFO)
       const reversedHandlers = [...this.handlers].reverse();
 
       for (const { name, handler, timeoutMs } of reversedHandlers) {
-        shutdownLogger.info({ action: "handler_starting", handlerName: name });
+        shutdownLogger
+          .withMetadata({ action: "handler_starting", handlerName: name })
+          .info("Starting handler");
 
         try {
           await Promise.race([
@@ -133,36 +135,33 @@ class ShutdownManager {
             ),
           ]);
 
-          shutdownLogger.info({
-            action: "handler_completed",
-            handlerName: name,
-          });
+          shutdownLogger
+            .withMetadata({ action: "handler_completed", handlerName: name })
+            .info("Handler completed");
         } catch (error) {
-          shutdownLogger.error(
-            {
-              action: "handler_failed",
-              handlerName: name,
-            },
-            error instanceof Error ? error : new Error(String(error))
-          );
+          shutdownLogger
+            .withMetadata({ action: "handler_failed", handlerName: name })
+            .withError(
+              error instanceof Error ? error : new Error(String(error))
+            )
+            .error("Handler failed");
         }
       }
 
       clearTimeout(forceExitTimer);
 
-      shutdownLogger.info({
-        action: "complete",
-        message: "Graceful shutdown completed",
-      });
+      shutdownLogger
+        .withMetadata({ action: "complete" })
+        .info("Graceful shutdown completed");
 
       process.exit(0);
     } catch (error) {
       clearTimeout(forceExitTimer);
 
-      shutdownLogger.error(
-        { action: "error", message: "Error during shutdown" },
-        error instanceof Error ? error : new Error(String(error))
-      );
+      shutdownLogger
+        .withMetadata({ action: "error" })
+        .withError(error instanceof Error ? error : new Error(String(error)))
+        .error("Error during shutdown");
 
       process.exit(1);
     }

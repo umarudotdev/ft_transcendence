@@ -1,5 +1,6 @@
 import { env } from "$lib/env";
 import { paraglideMiddleware } from "$lib/paraglide/server";
+import { logger } from "$lib/server/logger";
 import { redirect, type Handle } from "@sveltejs/kit";
 import { sequence } from "@sveltejs/kit/hooks";
 
@@ -86,7 +87,10 @@ const handleApiProxy: Handle = async ({ event, resolve }) => {
       headers: responseHeaders,
     });
   } catch (error) {
-    console.error("API proxy error:", error);
+    logger
+      .withMetadata({ path: event.url.pathname })
+      .withError(error instanceof Error ? error : new Error(String(error)))
+      .error("API proxy error");
     return new Response(JSON.stringify({ error: "Proxy error" }), {
       status: 502,
       headers: { "content-type": "application/json" },

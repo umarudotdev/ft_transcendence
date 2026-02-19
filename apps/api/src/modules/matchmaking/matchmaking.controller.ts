@@ -13,7 +13,7 @@ import { RankingsService } from "../rankings/rankings.service";
 import { MatchmakingModel, type WSClientMessage } from "./matchmaking.model";
 import { MatchmakingService } from "./matchmaking.service";
 
-const matchmakingLogger = logger.child("matchmaking");
+const matchmakingLogger = logger.child().withContext({ module: "matchmaking" });
 
 function mapMatchmakingError(error: { type: string }) {
   switch (error.type) {
@@ -105,10 +105,9 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
       const userId = MatchmakingService.validateWsToken(token);
 
       if (userId === null) {
-        matchmakingLogger.info({
-          action: "ws_auth_failed",
-          error: "Invalid or expired token",
-        });
+        matchmakingLogger
+          .withMetadata({ action: "ws_auth_failed" })
+          .warn("WS auth failed: Invalid or expired token");
         ws.send(
           JSON.stringify({ type: "error", error: "Invalid or expired token" })
         );
@@ -123,10 +122,9 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
         ws.raw as unknown as WebSocket
       );
 
-      matchmakingLogger.info({
-        action: "ws_connected",
-        userId,
-      });
+      matchmakingLogger
+        .withMetadata({ action: "ws_connected", userId })
+        .info("WS connected");
     },
 
     message(ws, message) {
@@ -147,10 +145,9 @@ export const matchmakingController = new Elysia({ prefix: "/matchmaking" })
           userId,
           ws.raw as unknown as WebSocket
         );
-        matchmakingLogger.info({
-          action: "ws_disconnected",
-          userId,
-        });
+        matchmakingLogger
+          .withMetadata({ action: "ws_disconnected", userId })
+          .info("WS disconnected");
       }
     },
   })

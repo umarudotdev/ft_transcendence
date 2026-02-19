@@ -54,14 +54,10 @@ export const errorHandler = new Elysia({ name: "error-handler" }).onError(
     }
 
     if (code === "INTERNAL_SERVER_ERROR" || code === "UNKNOWN") {
-      logger.error({
-        module: "error-handler",
-        action: "unhandled_error",
-        error: error.message,
-        errorType: error.name,
-        errorStack: error.stack,
-        path: instance,
-      });
+      logger
+        .withMetadata({ action: "unhandled_error", path: instance })
+        .withError(error)
+        .error("Unhandled error");
       set.status = HttpStatus.INTERNAL_SERVER_ERROR;
       set.headers["Content-Type"] = PROBLEM_JSON_CONTENT_TYPE;
 

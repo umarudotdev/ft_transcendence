@@ -4,24 +4,29 @@ import postgres from "postgres";
 import { logger } from "../common/logger";
 import { shutdownManager } from "../common/shutdown";
 import { env } from "../env";
+import { StructuredDrizzleLogger } from "./drizzle-logger";
 import * as schema from "./schema";
 
-const dbLogger = logger.child("database");
+const dbLogger = logger.child().withContext({ module: "database" });
 
 const client = postgres(env.DATABASE_URL);
 
-export const db = drizzle(client, { schema });
+export const db = drizzle(client, {
+  schema,
+  logger: env.LOG_LEVEL === "debug" ? new StructuredDrizzleLogger() : false,
+});
 
 // Register database shutdown handler
 shutdownManager.register(
   "database",
   async () => {
-    dbLogger.info({
-      action: "closing",
-      message: "Closing database connections",
-    });
+    dbLogger
+      .withMetadata({ action: "closing" })
+      .info("Closing database connections");
     await client.end({ timeout: 5 });
-    dbLogger.info({ action: "closed", message: "Database connections closed" });
+    dbLogger
+      .withMetadata({ action: "closed" })
+      .info("Database connections closed");
   },
   5000
 );

@@ -3,7 +3,7 @@ import { Resend } from "resend";
 import { logger } from "../../common/logger";
 import { env } from "../../env";
 
-const emailLogger = logger.child("email");
+const emailLogger = logger.child().withContext({ module: "email" });
 
 const resend = env.RESEND_API_KEY ? new Resend(env.RESEND_API_KEY) : null;
 
@@ -19,12 +19,13 @@ interface SendEmailOptions {
 export const EmailService = {
   async send(options: SendEmailOptions): Promise<boolean> {
     if (!resend) {
-      emailLogger.warn({
-        action: "skip_send",
-        message: "Email service not configured (RESEND_API_KEY missing)",
-        subject: options.subject,
-        to: options.to,
-      });
+      emailLogger
+        .withMetadata({
+          action: "skip_send",
+          subject: options.subject,
+          to: options.to,
+        })
+        .warn("Email service not configured (RESEND_API_KEY missing)");
       return false;
     }
 
@@ -37,30 +38,34 @@ export const EmailService = {
       });
 
       if (error) {
-        emailLogger.error({
-          action: "send_failed",
-          error: error.message,
-          to: options.to,
-          subject: options.subject,
-        });
+        emailLogger
+          .withMetadata({
+            action: "send_failed",
+            to: options.to,
+            subject: options.subject,
+          })
+          .withError(new Error(error.message))
+          .error("Email send failed");
         return false;
       }
 
-      emailLogger.info({
-        action: "sent",
-        to: options.to,
-        subject: options.subject,
-      });
+      emailLogger
+        .withMetadata({
+          action: "sent",
+          to: options.to,
+          subject: options.subject,
+        })
+        .info("Email sent");
       return true;
     } catch (error) {
-      emailLogger.error(
-        {
+      emailLogger
+        .withMetadata({
           action: "send_error",
           to: options.to,
           subject: options.subject,
-        },
-        error instanceof Error ? error : new Error(String(error))
-      );
+        })
+        .withError(error instanceof Error ? error : new Error(String(error)))
+        .error("Email send error");
       return false;
     }
   },

@@ -53,8 +53,6 @@ const EnvSchema = Type.Object({
   // Logging configuration
   LOG_LEVEL: LogLevelSchema,
   LOG_FORMAT: LogFormatSchema,
-  LOG_SAMPLE_RATE: Type.Number({ default: 0.1, minimum: 0, maximum: 1 }),
-
   // Graceful shutdown
   SHUTDOWN_TIMEOUT_MS: Type.Number({ default: 30000, minimum: 1000 }),
 });
@@ -86,9 +84,6 @@ function parseEnv(): Env {
     EMAIL_FROM: process.env.EMAIL_FROM,
     LOG_LEVEL: process.env.LOG_LEVEL,
     LOG_FORMAT: process.env.LOG_FORMAT,
-    LOG_SAMPLE_RATE: process.env.LOG_SAMPLE_RATE
-      ? Number(process.env.LOG_SAMPLE_RATE)
-      : undefined,
     SHUTDOWN_TIMEOUT_MS: process.env.SHUTDOWN_TIMEOUT_MS
       ? Number(process.env.SHUTDOWN_TIMEOUT_MS)
       : undefined,

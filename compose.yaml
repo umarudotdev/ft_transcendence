@@ -66,6 +66,8 @@ services:
       API_URL: http://api:3000
       NODE_ENV: development
       GAME_INTERNAL_SECRET: dev-game-secret
+      LOG_LEVEL: debug
+      LOG_FORMAT: pretty
     depends_on:
       - api
     healthcheck:

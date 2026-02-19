@@ -19,7 +19,7 @@ import type {
 import { logger } from "../../common/logger";
 import { EmailService } from "../email/email.service";
 
-const authLogger = logger.child("auth");
+const authLogger = logger.child().withContext({ module: "auth" });
 import { moderationRepository } from "../moderation/moderation.repository";
 import { authRepository } from "./auth.repository";
 import { fortyTwo, type IntraProfile, OAUTH_SCOPES } from "./oauth";
@@ -126,10 +126,15 @@ abstract class AuthService {
           token.id,
           user.displayName
         ).catch((error) =>
-          authLogger.error(
-            { action: "verification_email_failed", email: user.email },
-            error instanceof Error ? error : new Error(String(error))
-          )
+          authLogger
+            .withMetadata({
+              action: "verification_email_failed",
+              email: user.email,
+            })
+            .withError(
+              error instanceof Error ? error : new Error(String(error))
+            )
+            .error("Verification email failed")
         );
 
         return ok({
@@ -313,10 +318,15 @@ abstract class AuthService {
           token.id,
           user.displayName
         ).catch((error) =>
-          authLogger.error(
-            { action: "verification_email_failed", email: user.email },
-            error instanceof Error ? error : new Error(String(error))
-          )
+          authLogger
+            .withMetadata({
+              action: "verification_email_failed",
+              email: user.email,
+            })
+            .withError(
+              error instanceof Error ? error : new Error(String(error))
+            )
+            .error("Verification email failed")
         );
 
         return { verificationToken: token.id };
@@ -522,10 +532,15 @@ abstract class AuthService {
           token.id,
           user.displayName
         ).catch((error) =>
-          authLogger.error(
-            { action: "email_change_verification_failed", newEmail },
-            error instanceof Error ? error : new Error(String(error))
-          )
+          authLogger
+            .withMetadata({
+              action: "email_change_verification_failed",
+              newEmail,
+            })
+            .withError(
+              error instanceof Error ? error : new Error(String(error))
+            )
+            .error("Email change verification failed")
         );
 
         return ok({ token: token.id });

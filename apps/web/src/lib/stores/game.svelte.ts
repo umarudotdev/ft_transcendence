@@ -98,12 +98,23 @@ export function createGameStore() {
 
   // --- Matchmaking ---
 
-  async function joinQueue(mode: "ranked" | "casual" = "ranked") {
+  async function joinQueue(
+    mode: "ranked" | "casual" = "ranked",
+    retried = false
+  ) {
     phase = "queuing";
     queueMode = mode;
 
     try {
-      const { data, error } = await api.api.matchmaking.queue.post({ mode });
+      const { data, error, status } = await api.api.matchmaking.queue.post({
+        mode,
+      });
+
+      // Already in queue (stale server state) — leave and retry once
+      if (status === 409 && !retried) {
+        await api.api.matchmaking.queue.delete();
+        return joinQueue(mode, true);
+      }
 
       if (error || !data) {
         phase = "idle";

@@ -2,11 +2,11 @@ import type { AsteroidState } from "../types";
 
 import { GAME_CONST } from "../constants";
 import {
-  normalizeVec3,
   randomTangentVec3,
   randomUnitVec3,
   stepSurfaceMotionState,
 } from "./movement";
+import type { Vec3Like } from "gl-matrix";
 
 function clampAsteroidSize(size: number): AsteroidState["size"] {
   if (size <= 1) return 1;
@@ -18,10 +18,10 @@ export function createRandomAsteroidState(
   id: number,
   size: number
 ): AsteroidState {
-  const position = randomUnitVec3();
-  const direction = randomTangentVec3(position);
+  const position: Vec3Like = randomUnitVec3();
+  const direction: Vec3Like = randomTangentVec3(position);
   const asteroidSize = clampAsteroidSize(size);
-  const moveSpeed =
+  const moveSpeed: number =
     GAME_CONST.ASTEROID_SPEED_MIN +
     Math.random() *
       (GAME_CONST.ASTEROID_SPEED_MAX - GAME_CONST.ASTEROID_SPEED_MIN);
@@ -66,8 +66,8 @@ export function stepAsteroids(
 
     stepped.push({
       ...asteroid,
-      position: normalizeVec3(motion.position),
-      direction: normalizeVec3(motion.direction),
+      position: motion.position,
+      direction: motion.direction,
     });
   }
 

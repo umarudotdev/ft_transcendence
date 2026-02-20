@@ -12,55 +12,56 @@ import type { InputState } from "../types";
 // Uses gl-matrix v4 math (works on both server and client)
 // ============================================================================
 
-const EPS = 1e-8;
+const EPS: number = 1e-8;
 const WORLD_X_AXIS: Vec3Like = [1, 0, 0];
 const WORLD_Y_AXIS: Vec3Like = [0, 1, 0];
 const WORLD_Z_AXIS: Vec3Like = [0, 0, 1];
 
 // Scratch buffers to avoid per-call allocations
-const _v1 = GlVec3.create();
-const _v2 = GlVec3.create();
-const _v3 = GlVec3.create();
-const _q1 = GlQuat.create();
+const _POS: GlVec3  = GlVec3.create();   // position scratch
+const _DIR: GlVec3  = GlVec3.create();   // direction scratch
+const _QUAT: GlQuat = GlQuat.create();  // quaternion scratch
+const _TAN: GlVec3  = GlVec3.create();   // tangent / forward direction scratch
+const _AXIS: GlVec3  = GlVec3.create();  // rotation axis scratch
+const _PROJ: GlVec3  = GlVec3.create();  // projection / orthogonalization scratch
 
 export function normalizeVec3(
+  out: Vec3Like,
   value: Vec3Like,
-  fallback: Vec3Like = [0, 0, 1]
+  fallback: Vec3Like = WORLD_Z_AXIS
 ): Vec3Like {
   if (GlVec3.squaredLength(value) <= EPS) {
-    return [fallback[0], fallback[1], fallback[2]];
+    GlVec3.copy(out, fallback);
+    return out;
   }
-  GlVec3.normalize(_v1, value);
-  return [_v1[0], _v1[1], _v1[2]];
+  GlVec3.normalize(out, value);
+  return out;
 }
 
 export function randomUnitVec3(): Vec3Like {
-  // Uniformly distributed unit vector via spherical coordinates
-  const theta = Math.random() * Math.PI * 2;
-  const z = Math.random() * 2 - 1;
-  const r = Math.sqrt(1 - z * z);
-  return [r * Math.cos(theta), r * Math.sin(theta), z];
+  const theta: number = Math.random() * Math.PI * 2;
+  const zAxis: number = Math.random() * 2 - 1;
+  const radius: number = Math.sqrt(1 - zAxis * zAxis);
+  return [radius * Math.cos(theta), radius * Math.sin(theta), zAxis];
 }
 
 export function randomTangentVec3(position: Vec3Like): Vec3Like {
-  const p = normalizeVec3(position);
-
-  // Random direction, then project onto tangent plane of p
-  const random = randomUnitVec3();
+  normalizeVec3(_PROJ, position);
+  const random: Vec3Like = randomUnitVec3();
   // tangent = random - dot(random, p) * p
-  const d = GlVec3.dot(random, p);
-  GlVec3.scale(_v1, p, d);
-  GlVec3.sub(_v1, random, _v1);
+  const vDotP: number = GlVec3.dot(random, _PROJ);
+  GlVec3.scale(_TAN, _PROJ, vDotP);
+  GlVec3.sub(_TAN, random, _TAN);
 
-  if (GlVec3.squaredLength(_v1) <= EPS) {
+  if (GlVec3.squaredLength(_TAN) <= EPS) {
     // Degenerate: random was parallel to p, use cross product fallback
     const fallbackAxis: Vec3Like =
-      Math.abs(p[1]) < 0.99 ? [0, 1, 0] : [1, 0, 0];
-    GlVec3.cross(_v1, p, fallbackAxis);
+      Math.abs(_PROJ[1]) < 0.99 ? WORLD_Y_AXIS : WORLD_X_AXIS;
+    GlVec3.cross(_TAN, _PROJ, fallbackAxis);
   }
 
-  GlVec3.normalize(_v1, _v1);
-  return [_v1[0], _v1[1], _v1[2]];
+  GlVec3.normalize(_TAN, _TAN);
+  return [_TAN[0], _TAN[1], _TAN[2]];
 }
 
 // ============================================================================
@@ -84,31 +85,29 @@ export function moveOnSphere(
 
   // Reproject velocity onto tangent plane to prevent radial drift
   // tangentVelocity = velocity - dot(velocity, position) * position
-  const vDotP = GlVec3.dot(velocity, position);
-  GlVec3.scale(_v1, position, vDotP);
-  GlVec3.sub(_v1, velocity, _v1); // _v1 = tangentVelocity
+  const vDotP: number = GlVec3.dot(velocity, position);
+  GlVec3.scale(_TAN, position, vDotP);
+  GlVec3.sub(_TAN, velocity, _TAN); // _TAN = tangentVelocity
 
-  if (GlVec3.squaredLength(_v1) < EPS) return;
-  GlVec3.normalize(_v1, _v1);
+  if (GlVec3.squaredLength(_TAN) < EPS) return;
+  GlVec3.normalize(_TAN, _TAN);
 
   // Rotation axis = perpendicular to position and velocity (great-circle motion)
-  GlVec3.cross(_v2, position, _v1); // _v2 = axis
-  if (GlVec3.squaredLength(_v2) < EPS) return;
-  GlVec3.normalize(_v2, _v2);
+  GlVec3.cross(_AXIS, position, _TAN); // _AXIS = axis
+  if (GlVec3.squaredLength(_AXIS) < EPS) return;
+  GlVec3.normalize(_AXIS, _AXIS);
 
   // Create rotation quaternion and apply
-  GlQuat.setAxisAngle(_q1, _v2, angle);
+  GlQuat.setAxisAngle(_QUAT, _AXIS, angle);
 
   // Rotate position
-  GlVec3.transformQuat(position, position, _q1);
+  GlVec3.transformQuat(position, position, _QUAT);
   GlVec3.normalize(position, position);
 
   // Rotate velocity to stay tangent after movement
-  GlVec3.transformQuat(_v1, _v1, _q1);
-  GlVec3.normalize(_v1, _v1);
-  velocity[0] = _v1[0];
-  velocity[1] = _v1[1];
-  velocity[2] = _v1[2];
+  GlVec3.transformQuat(_TAN, _TAN, _QUAT);
+  GlVec3.normalize(_TAN, _TAN);
+  GlVec3.copy(velocity, _TAN);
 }
 
 export interface ReferenceBasis {
@@ -128,30 +127,31 @@ export function resolveReferenceBasis(
   referencePosition: Vec3Like,
   referenceDirection: Vec3Like
 ): ReferenceBasis {
-  const normal = normalizeVec3(referencePosition);
+  normalizeVec3(_PROJ, referencePosition);
+  const normal: Vec3Like = [_PROJ[0], _PROJ[1], _PROJ[2]];
 
-  const forwardRaw = normalizeVec3(referenceDirection, WORLD_Y_AXIS);
-  const forwardDotNormal = GlVec3.dot(forwardRaw, normal);
-  GlVec3.scale(_v1, normal, forwardDotNormal);
-  GlVec3.sub(_v1, forwardRaw, _v1);
+  normalizeVec3(_TAN, referenceDirection, WORLD_Y_AXIS);
+  const forwardDotNormal: number = GlVec3.dot(_TAN, _PROJ);
+  GlVec3.scale(_AXIS, _PROJ, forwardDotNormal);
+  GlVec3.sub(_TAN, _TAN, _AXIS);
 
-  if (GlVec3.squaredLength(_v1) <= EPS) {
-    const fallbackAxis = Math.abs(normal[1]) < 0.99 ? WORLD_Y_AXIS : WORLD_X_AXIS;
-    GlVec3.cross(_v1, fallbackAxis, normal);
-    if (GlVec3.squaredLength(_v1) <= EPS) {
-      GlVec3.cross(_v1, WORLD_Z_AXIS, normal);
+  if (GlVec3.squaredLength(_TAN) <= EPS) {
+    const fallbackAxis: Vec3Like = Math.abs(_PROJ[1]) < 0.99 ? WORLD_Y_AXIS : WORLD_X_AXIS;
+    GlVec3.cross(_TAN, fallbackAxis, _PROJ);
+    if (GlVec3.squaredLength(_TAN) <= EPS) {
+      GlVec3.cross(_TAN, WORLD_Z_AXIS, _PROJ);
     }
   }
-  GlVec3.normalize(_v1, _v1);
-  const forward: Vec3Like = [_v1[0], _v1[1], _v1[2]];
+  GlVec3.normalize(_TAN, _TAN);
+  const forward: Vec3Like = [_TAN[0], _TAN[1], _TAN[2]];
 
-  GlVec3.cross(_v2, forward, normal);
-  if (GlVec3.squaredLength(_v2) <= EPS) {
-    const fallbackAxis = Math.abs(normal[1]) < 0.99 ? WORLD_Y_AXIS : WORLD_X_AXIS;
-    GlVec3.cross(_v2, fallbackAxis, normal);
+  GlVec3.cross(_AXIS, forward, _PROJ);
+  if (GlVec3.squaredLength(_AXIS) <= EPS) {
+    const fallbackAxis = Math.abs(_PROJ[1]) < 0.99 ? WORLD_Y_AXIS : WORLD_X_AXIS;
+    GlVec3.cross(_AXIS, fallbackAxis, _PROJ);
   }
-  GlVec3.normalize(_v2, _v2);
-  const right: Vec3Like = [_v2[0], _v2[1], _v2[2]];
+  GlVec3.normalize(_AXIS, _AXIS);
+  const right: Vec3Like = [_AXIS[0], _AXIS[1], _AXIS[2]];
 
   return {
     normal,
@@ -167,46 +167,46 @@ export function computeShipInputDelta(
   referencePosition: Vec3Like,
   referenceDirection: Vec3Like
 ): ShipInputDelta {
-  const inputForward = (keys.forward ? 1 : 0) - (keys.backward ? 1 : 0);
-  const inputRight = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
-  const stepAngle = speedRadPerTick * deltaTicks;
+  const inputForward: number = (keys.forward ? 1 : 0) - (keys.backward ? 1 : 0);
+  const inputRight: number = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  const stepAngle: number = speedRadPerTick * deltaTicks;
 
   const basis = resolveReferenceBasis(referencePosition, referenceDirection);
   if ((inputForward === 0 && inputRight === 0) || Math.abs(stepAngle) <= EPS) {
     return {
       moved: false,
-      axis: [1, 0, 0],
+      axis: WORLD_X_AXIS,
       angle: 0,
       fallbackForward: basis.forward,
     };
   }
 
-  GlVec3.scale(_v1, basis.forward, inputForward);
-  GlVec3.scaleAndAdd(_v1, _v1, basis.right, inputRight);
-  if (GlVec3.squaredLength(_v1) <= EPS) {
+  GlVec3.scale(_TAN, basis.forward, inputForward);
+  GlVec3.scaleAndAdd(_TAN, _TAN, basis.right, inputRight);
+  if (GlVec3.squaredLength(_TAN) <= EPS) {
     return {
       moved: false,
-      axis: [1, 0, 0],
+      axis: WORLD_X_AXIS,
       angle: 0,
       fallbackForward: basis.forward,
     };
   }
-  GlVec3.normalize(_v1, _v1); // move direction on tangent plane
+  GlVec3.normalize(_TAN, _TAN); // move direction on tangent plane
 
-  GlVec3.cross(_v2, basis.normal, _v1);
-  if (GlVec3.squaredLength(_v2) <= EPS) {
+  GlVec3.cross(_AXIS, basis.normal, _TAN);
+  if (GlVec3.squaredLength(_AXIS) <= EPS) {
     return {
       moved: false,
-      axis: [1, 0, 0],
+      axis: WORLD_X_AXIS,
       angle: 0,
       fallbackForward: basis.forward,
     };
   }
-  GlVec3.normalize(_v2, _v2);
+  GlVec3.normalize(_AXIS, _AXIS);
 
   return {
     moved: true,
-    axis: [_v2[0], _v2[1], _v2[2]],
+    axis: [_AXIS[0], _AXIS[1], _AXIS[2]],
     angle: stepAngle,
     fallbackForward: basis.forward,
   };
@@ -217,29 +217,31 @@ export function applyShipInputDelta(
   direction: Vec3Like,
   delta: ShipInputDelta
 ): { moved: boolean; position: Vec3Like; direction: Vec3Like } {
-  const pos: Vec3Like = [position[0], position[1], position[2]];
-  const dir: Vec3Like = [direction[0], direction[1], direction[2]];
+  GlVec3.copy(_POS, position);
+  GlVec3.copy(_DIR, direction);
 
   if (delta.moved) {
-    GlQuat.setAxisAngle(_q1, delta.axis, delta.angle);
-    GlVec3.transformQuat(pos, pos, _q1);
-    GlVec3.transformQuat(dir, dir, _q1);
+    GlQuat.setAxisAngle(_QUAT, delta.axis, delta.angle);
+    GlVec3.transformQuat(_POS, _POS, _QUAT);
+    GlVec3.transformQuat(_DIR, _DIR, _QUAT);
   }
 
-  const posNorm = normalizeVec3(pos);
-  const dirNorm = normalizeVec3(dir, delta.fallbackForward);
-  const dirDotPos = GlVec3.dot(dirNorm, posNorm);
-  GlVec3.scale(_v3, posNorm, dirDotPos);
-  GlVec3.sub(_v3, dirNorm, _v3);
-  if (GlVec3.squaredLength(_v3) <= EPS) {
-    GlVec3.copy(_v3, delta.fallbackForward);
+  normalizeVec3(_POS, _POS);
+  normalizeVec3(_DIR, _DIR, delta.fallbackForward);
+
+  // Project direction onto tangent plane of position
+  const dirDotPos = GlVec3.dot(_DIR, _POS);
+  GlVec3.scale(_PROJ, _POS, dirDotPos);
+  GlVec3.sub(_PROJ, _DIR, _PROJ);
+  if (GlVec3.squaredLength(_PROJ) <= EPS) {
+    GlVec3.copy(_PROJ, delta.fallbackForward);
   }
-  GlVec3.normalize(_v3, _v3);
+  GlVec3.normalize(_PROJ, _PROJ);
 
   return {
     moved: delta.moved,
-    position: posNorm,
-    direction: [_v3[0], _v3[1], _v3[2]],
+    position: [_POS[0], _POS[1], _POS[2]],
+    direction: [_PROJ[0], _PROJ[1], _PROJ[2]],
   };
 }
 
@@ -252,13 +254,16 @@ export function stepSurfaceMotionState(
   direction: Vec3Like,
   angle: number
 ): { position: Vec3Like; direction: Vec3Like } {
-  const p: Vec3Like = [position[0], position[1], position[2]];
-  const d: Vec3Like = [direction[0], direction[1], direction[2]];
+  GlVec3.copy(_POS, position);
+  GlVec3.copy(_DIR, direction);
 
-  moveOnSphere(p, d, angle);
+  moveOnSphere(_POS, _DIR, angle);
+
+  normalizeVec3(_POS, _POS);
+  normalizeVec3(_DIR, _DIR);
 
   return {
-    position: normalizeVec3(p),
-    direction: normalizeVec3(d),
+    position: [_POS[0], _POS[1], _POS[2]],
+    direction: [_DIR[0], _DIR[1], _DIR[2]],
   };
 }

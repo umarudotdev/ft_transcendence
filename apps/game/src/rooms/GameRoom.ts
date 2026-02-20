@@ -13,27 +13,9 @@ import {
 import { logger } from "../logger";
 import { type GamePhase, GameState } from "../schemas/GameState";
 import { PlayerSchema } from "../schemas/PlayerSchema";
-import {
-  type AbilitySlot,
-  activateAbility,
-  chargeUltimate,
-  cleanupExpiredEffects,
-  updateDashFlags,
-  updateEffectWaves,
-} from "../systems/abilities";
-import { checkCollisions } from "../systems/collision";
-import {
-  applyDamage,
-  checkGameOver,
-  processDeathbombExpiry,
-  processFireInput,
-} from "../systems/combat";
-import { applyMovement } from "../systems/movement";
-import {
-  checkSpellCardResolution,
-  isSpellCardActive,
-  processSpellCardFire,
-} from "../systems/spellcard";
+import { type AbilitySlot, activateAbility } from "../systems/abilities";
+import { runGameTick } from "../systems/gameLoop";
+import { isSpellCardActive } from "../systems/spellcard";
 
 const InputSchema = z.object({
   up: z.boolean(),
@@ -366,7 +348,7 @@ export class GameRoom extends Room<{ state: GameState }> {
   }
 
   private update(deltaTime: number) {
-    const dt = deltaTime / 1000; // Convert ms to seconds
+    const dt = deltaTime / 1000;
 
     if (this.state.phase === "countdown") {
       this.state.countdownTimer -= dt;
@@ -379,85 +361,46 @@ export class GameRoom extends Room<{ state: GameState }> {
 
     if (this.state.phase !== "playing") return;
 
-    this.state.tick++;
+    const result = runGameTick(this.state, dt);
 
-    // 1. Process fire input → spawn bullets
-    processFireInput(this.state);
-
-    // 1b. Spell card fire (if active)
-    processSpellCardFire(this.state);
-
-    // 2. Move players and bullets
-    applyMovement(this.state, dt);
-
-    // 3. Check bullet-player collisions and grazes
-    const { hits, grazes } = checkCollisions(this.state);
-
-    // 4. Apply damage from hits and charge ultimate
-    if (hits.length > 0) {
-      applyDamage(this.state, hits);
-
-      for (const hit of hits) {
-        const victim = this.state.players.get(hit.playerId);
-        if (victim) {
-          this.broadcast("hit", {
-            playerId: hit.playerId,
-            damage: hit.damage,
-            hp: victim.hp,
-            lives: victim.lives,
-          });
-
-          // Notify client of deathbomb window
-          if (victim.deathbombWindowUntil > this.state.tick) {
-            this.broadcast("deathbombWindow", {
-              playerId: hit.playerId,
-            });
-          }
-        }
-
-        // Charge the shooter's ultimate
-        const shooter = [...this.state.players.entries()].find(
-          ([id]) => id !== hit.playerId
-        );
-        if (shooter) {
-          chargeUltimate(shooter[1], hit.damage);
-        }
-      }
-    }
-
-    // 4b. Process grazes — charge the grazer's ultimate (anti-snowball)
-    for (const graze of grazes) {
-      const grazer = this.state.players.get(graze.playerId);
-      if (grazer) {
-        chargeUltimate(grazer, 2);
-        this.broadcast("graze", {
-          playerId: graze.playerId,
-          x: graze.bulletX,
-          y: graze.bulletY,
+    // Broadcast hits
+    for (const hit of result.hits) {
+      const victim = this.state.players.get(hit.playerId);
+      if (victim) {
+        this.broadcast("hit", {
+          playerId: hit.playerId,
+          damage: hit.damage,
+          hp: victim.hp,
+          lives: victim.lives,
         });
+
+        if (victim.deathbombWindowUntil > this.state.tick) {
+          this.broadcast("deathbombWindow", {
+            playerId: hit.playerId,
+          });
+        }
       }
     }
 
-    // 5. Process deathbomb window expirations
-    processDeathbombExpiry(this.state);
-
-    // 6. Progressive bomb/ultimate expansion
-    updateEffectWaves(this.state);
-
-    // 7. Cleanup expired effects and dash flags
-    cleanupExpiredEffects(this.state);
-    updateDashFlags(this.state);
-
-    // 8. Check spell card resolution
-    const spellResult = checkSpellCardResolution(this.state);
-    if (spellResult) {
-      this.broadcast("spellCardResolution", { result: spellResult });
+    // Broadcast grazes
+    for (const graze of result.grazes) {
+      this.broadcast("graze", {
+        playerId: graze.playerId,
+        x: graze.bulletX,
+        y: graze.bulletY,
+      });
     }
 
-    // 9. Check for game over
-    const winnerId = checkGameOver(this.state);
-    if (winnerId) {
-      this.endGame(winnerId);
+    // Broadcast spell card resolution
+    if (result.spellCardResolution) {
+      this.broadcast("spellCardResolution", {
+        result: result.spellCardResolution,
+      });
+    }
+
+    // Game over
+    if (result.winnerId) {
+      this.endGame(result.winnerId);
     }
   }
 

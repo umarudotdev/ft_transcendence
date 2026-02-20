@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import GamepadIcon from '@lucide/svelte/icons/gamepad-2';
 	import SwordsIcon from '@lucide/svelte/icons/swords';
+	import TargetIcon from '@lucide/svelte/icons/target';
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import TrophyIcon from '@lucide/svelte/icons/trophy';
 	import MatchmakingOverlay from '$lib/components/game/MatchmakingOverlay.svelte';
@@ -29,6 +31,15 @@
 
 	function handleCasualMatch() {
 		gameStore.joinQueue('casual');
+	}
+
+	async function handlePlayground() {
+		const me = meQuery.data;
+		if (!me) return;
+		await gameStore.joinPlayground(me.id, me.displayName);
+		if (gameStore.phase !== 'idle') {
+			goto('/play/playground');
+		}
 	}
 
 	function formatWinRate(wins: number, total: number): string {
@@ -71,6 +82,16 @@
 						<Button size="lg" variant="outline" class="gap-2" onclick={handleCasualMatch}>
 							<GamepadIcon class="size-5" />
 							Casual Match
+						</Button>
+						<Button
+							size="lg"
+							variant="secondary"
+							class="gap-2"
+							onclick={handlePlayground}
+							disabled={!meQuery.data}
+						>
+							<TargetIcon class="size-5" />
+							Practice
 						</Button>
 					</div>
 				</div>

@@ -112,7 +112,7 @@ db.reset: ## Reset database (drop and recreate)
 
 .PHONY: db.seed
 db.seed: ## Seed database with test data
-	DATABASE_URL=postgres://postgres:postgres@localhost:5432/ft_transcendence bun run --filter '@ft/api' seed
+	set -a && . ./.env && set +a && DATABASE_URL=postgres://postgres:postgres@localhost:5432/ft_transcendence bun run --filter '@ft/api' seed
 
 .PHONY: db.studio
 db.studio: ## Open Drizzle Studio (database GUI)

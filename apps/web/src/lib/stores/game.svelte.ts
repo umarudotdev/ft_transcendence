@@ -141,6 +141,8 @@ export function createGameStore() {
   let mySessionId: string | null = $state(null);
   let spellCardDeclarer = $state("");
   let spellCardEndsAtTick = $state(0);
+  let isPlayground = $state(false);
+  let dummyResetCount = $state(0);
 
   // --- Internal guards (non-reactive) ---
   let _joiningLock = false;
@@ -167,6 +169,8 @@ export function createGameStore() {
     joinToken = null;
     opponent = null;
     queueMode = null;
+    isPlayground = false;
+    dummyResetCount = 0;
     _readySent = false;
     interpolator.clear();
   }
@@ -401,6 +405,40 @@ export function createGameStore() {
     }
   }
 
+  async function joinPlayground(userId: number, displayName: string) {
+    if (phase !== "idle" || _joiningLock) return;
+    _joiningLock = true;
+
+    isPlayground = true;
+    phase = "connecting";
+
+    try {
+      const client = new Client(getGameServerUrl());
+
+      const joinedRoom = await client.joinOrCreate("playground", {
+        userId,
+        displayName,
+      });
+
+      if (phase !== "connecting") {
+        joinedRoom.leave().catch(() => {});
+        return;
+      }
+
+      _currentRoom = joinedRoom;
+      mySessionId = joinedRoom.sessionId;
+      _readySent = false;
+
+      phase = "waiting";
+      setupRoomCallbacks(joinedRoom);
+    } catch {
+      phase = "idle";
+      resetGameState();
+    } finally {
+      _joiningLock = false;
+    }
+  }
+
   function setupRoomCallbacks(joinedRoom: Room) {
     // Use type assertion for callbacks since we work with untyped room state.
     // Colyseus SDK's strict generics require the schema type, but we sync
@@ -542,6 +580,10 @@ export function createGameStore() {
     joinedRoom.onMessage("deathbombWindow", () => {});
     joinedRoom.onMessage("spellCardDeclared", () => {});
     joinedRoom.onMessage("spellCardResolution", () => {});
+    joinedRoom.onMessage("dummyReset", () => {
+      if (_currentRoom !== joinedRoom) return;
+      dummyResetCount++;
+    });
 
     // Match result from Colyseus broadcast (replaces broken matchmaking WS path).
     // The message may arrive before the "finished" state patch, so buffer it.
@@ -753,10 +795,17 @@ export function createGameStore() {
     get spellCardEndsAtTick() {
       return spellCardEndsAtTick;
     },
+    get isPlayground() {
+      return isPlayground;
+    },
+    get dummyResetCount() {
+      return dummyResetCount;
+    },
     // Methods
     joinQueue,
     leaveQueue,
     joinGame,
+    joinPlayground,
     reconnectToGame,
     sendInput,
     sendAbility,

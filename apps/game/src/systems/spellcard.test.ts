@@ -152,4 +152,20 @@ describe("checkSpellCardResolution", () => {
 
     expect(result).toBeNull();
   });
+
+  test("clears declarer bullets on resolution", () => {
+    const { state } = createTwoPlayerState();
+    declareSpellCard(state, "p1");
+
+    // Fire some spell card bullets
+    state.tick = 1002;
+    processSpellCardFire(state);
+    expect(state.bullets.length).toBe(14);
+
+    // Advance past end
+    state.tick = state.spellCardEndsAtTick;
+    checkSpellCardResolution(state);
+
+    expect(state.bullets.length).toBe(0);
+  });
 });

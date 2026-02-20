@@ -129,6 +129,15 @@ export function checkSpellCardResolution(
 }
 
 function clearSpellCard(state: GameState) {
+  // Remove all bullets owned by the declarer (spell card pattern bullets spiral
+  // endlessly and would never leave the canvas on their own)
+  const declarerId = state.spellCardDeclarer;
+  for (let i = state.bullets.length - 1; i >= 0; i--) {
+    if (state.bullets[i].ownerId === declarerId) {
+      state.bullets.splice(i, 1);
+    }
+  }
+
   state.spellCardDeclarer = "";
   state.spellCardEndsAtTick = 0;
   state.spellCardDefenderId = "";

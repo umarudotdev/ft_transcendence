@@ -10,11 +10,14 @@
 		renderFrame,
 		startDashTrail
 	} from '$lib/game/renderer';
+	import { getDebugStore } from '$lib/stores/debug.svelte';
 	import { getGameStore } from '$lib/stores/game.svelte';
 
 	const MAX_ROTATION_SPEED = 8;
+	const FPS_BUFFER_SIZE = 60;
 
 	const gameStore = getGameStore();
+	const debugStore = getDebugStore();
 
 	// oxlint-disable-next-line no-unassigned-vars -- assigned via bind:this
 	let canvas: HTMLCanvasElement;
@@ -23,6 +26,10 @@
 	let lastTime = 0;
 
 	const particles = createParticleSystem();
+
+	// Rolling FPS buffer
+	const fpsBuffer: number[] = [];
+	let fpsBufferIndex = 0;
 
 	// Lifted to component scope for access in gameLoop
 	let inputHandler: ReturnType<typeof createInputHandler> | null = null;
@@ -126,6 +133,26 @@
 
 		emitParticlesFromStateChanges(state);
 		renderFrame(ctx, state, particles, dt);
+
+		// Update debug stats (rolling FPS average)
+		if (fpsBuffer.length < FPS_BUFFER_SIZE) {
+			fpsBuffer.push(dt);
+		} else {
+			fpsBuffer[fpsBufferIndex] = dt;
+		}
+		fpsBufferIndex = (fpsBufferIndex + 1) % FPS_BUFFER_SIZE;
+
+		let dtSum = 0;
+		for (const t of fpsBuffer) dtSum += t;
+		const avgFps = fpsBuffer.length / dtSum;
+
+		debugStore.update({
+			fps: avgFps,
+			frameTime: dt * 1000,
+			bulletCount: state.bullets.length,
+			particleCount: particles.activeCount,
+			effectCount: state.effects.length
+		});
 
 		animationId = requestAnimationFrame(gameLoop);
 	}

@@ -1,4 +1,7 @@
+import { Encoder } from "@colyseus/schema";
 import { defineRoom, defineServer } from "colyseus";
+
+Encoder.BUFFER_SIZE = 48 * 1024;
 
 import { NODE_ENV, PORT } from "./config";
 import { logger } from "./logger";

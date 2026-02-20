@@ -7,6 +7,7 @@ import type {
 
 import { api } from "$lib/api";
 import { createInterpolator } from "$lib/game/interpolation";
+import { getDebugStore } from "$lib/stores/debug.svelte";
 import { Callbacks, Client, type Room } from "@colyseus/sdk";
 
 // Matchmaking WS message types (mirrors API types)
@@ -510,6 +511,8 @@ export function createGameStore() {
 
       const state = rawState as Record<string, unknown>;
       gameTick = (state.tick as number) ?? 0;
+
+      getDebugStore().recordPatch(gameTick);
       countdownTimer = (state.countdownTimer as number) ?? 0;
       winnerId = (state.winnerId as string) ?? "";
       spellCardDeclarer = (state.spellCardDeclarer as string) ?? "";

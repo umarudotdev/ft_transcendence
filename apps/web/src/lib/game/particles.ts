@@ -46,6 +46,7 @@ export interface ParticleSystem {
   emitBomb(x: number, y: number): void;
   emitUltimate(x: number, y: number): void;
   emitGraze(x: number, y: number, r: number, g: number, b: number): void;
+  readonly activeCount: number;
 }
 
 export function createParticleSystem(): ParticleSystem {
@@ -266,5 +267,12 @@ export function createParticleSystem(): ParticleSystem {
     emitBomb,
     emitUltimate,
     emitGraze,
+    get activeCount() {
+      let count = 0;
+      for (const p of pool) {
+        if (p.alive) count++;
+      }
+      return count;
+    },
   };
 }

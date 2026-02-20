@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import GameCanvas from '$lib/components/game/GameCanvas.svelte';
+	import GameDebugPanel from '$lib/components/game/GameDebugPanel.svelte';
 	import GameHUD from '$lib/components/game/GameHUD.svelte';
 	import PlaygroundOverlay from '$lib/components/game/PlaygroundOverlay.svelte';
 	import { createMeQuery } from '$lib/queries/auth';
@@ -66,5 +67,6 @@
 <div class="relative">
 	<GameCanvas />
 	<GameHUD />
+	<GameDebugPanel />
 	<PlaygroundOverlay />
 </div>

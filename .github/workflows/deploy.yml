@@ -142,8 +142,16 @@ jobs:
           EC2_HOST: ${{ vars.AWS_EC2_HOST }}
         run: |
           echo "=== Cleaning Docker storage on EC2 host ==="
-          ssh -i ~/.ssh/ft-transcendence.pem ubuntu@$EC2_HOST \
-            "docker system prune -af" || true
+          ssh -i ~/.ssh/ft-transcendence.pem ubuntu@"$EC2_HOST" bash -s << 'SCRIPT'
+            set -e
+            docker system prune -af --volumes
+            sudo rm -rf /var/lib/containerd/io.containerd.content.v1.content/ingest/*
+            sudo systemctl restart docker
+            sleep 10
+            echo "Docker restarted, waiting for kamal-proxy..."
+            timeout 30 bash -c 'until docker ps --filter name=kamal-proxy --format "{{.Status}}" | grep -q "Up"; do sleep 2; done'
+            echo "kamal-proxy is back up"
+          SCRIPT
 
       - name: Deploy API
         run: kamal deploy

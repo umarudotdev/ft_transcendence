@@ -47,8 +47,8 @@ describe("processFireInput", () => {
 
     processFireInput(state);
 
-    // Normal mode = 3-way spread (3 bullets)
-    expect(state.bullets.length).toBe(3);
+    // Normal mode = 5-way spread (5 bullets)
+    expect(state.bullets.length).toBe(5);
     // All bullets owned by p1
     for (const b of state.bullets) {
       expect(b.ownerId).toBe("p1");

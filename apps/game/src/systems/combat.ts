@@ -17,7 +17,9 @@ const FIRE_COOLDOWN_TICKS = Math.round(TICK_RATE * 0.1); // 100ms = 6 ticks at 6
 const SPREAD_COOLDOWN_TICKS = Math.round(TICK_RATE * 0.3); // 300ms between spread volleys
 
 const SPREAD_ANGLE = Math.PI / 12; // 15 degrees
-const SPREAD_ANGULAR_VELOCITY = 1.2; // radians/sec — how fast spread bullets curve
+const SPREAD_ANGULAR_VELOCITY = 1.2; // radians/sec — how fast outer spread bullets curve
+const INNER_SPREAD_ANGLE = Math.PI / 24; // ~7.5 degrees
+const INNER_ANGULAR_VELOCITY = 0.6; // radians/sec — gentler curve for inner pair
 
 function spawnBullet(
   state: GameState,
@@ -71,7 +73,7 @@ export function processFireInput(state: GameState) {
         "focus"
       );
     } else {
-      // Normal mode: 3-way spread shot with curving outer bullets
+      // Normal mode: 5-way spread shot with curving bullets
       if (state.tick - player.lastFireTick < SPREAD_COOLDOWN_TICKS) continue;
       player.lastFireTick = state.tick;
 
@@ -83,12 +85,40 @@ export function processFireInput(state: GameState) {
         aimX * BULLET_SPEED,
         aimY * BULLET_SPEED,
         sessionId,
-        8,
+        6,
         0,
         "spread"
       );
 
-      // Left spread (curves outward — negative angular velocity)
+      // Inner left spread (gentle curve)
+      const innerLeftAngle = player.aimAngle - INNER_SPREAD_ANGLE;
+      spawnBullet(
+        state,
+        player.x,
+        player.y,
+        Math.sin(innerLeftAngle) * BULLET_SPEED,
+        -Math.cos(innerLeftAngle) * BULLET_SPEED,
+        sessionId,
+        6,
+        -INNER_ANGULAR_VELOCITY,
+        "spread"
+      );
+
+      // Inner right spread (gentle curve)
+      const innerRightAngle = player.aimAngle + INNER_SPREAD_ANGLE;
+      spawnBullet(
+        state,
+        player.x,
+        player.y,
+        Math.sin(innerRightAngle) * BULLET_SPEED,
+        -Math.cos(innerRightAngle) * BULLET_SPEED,
+        sessionId,
+        6,
+        INNER_ANGULAR_VELOCITY,
+        "spread"
+      );
+
+      // Outer left spread (wide curve)
       const leftAngle = player.aimAngle - SPREAD_ANGLE;
       spawnBullet(
         state,
@@ -97,12 +127,12 @@ export function processFireInput(state: GameState) {
         Math.sin(leftAngle) * BULLET_SPEED,
         -Math.cos(leftAngle) * BULLET_SPEED,
         sessionId,
-        8,
+        6,
         -SPREAD_ANGULAR_VELOCITY,
         "spread"
       );
 
-      // Right spread (curves outward — positive angular velocity)
+      // Outer right spread (wide curve)
       const rightAngle = player.aimAngle + SPREAD_ANGLE;
       spawnBullet(
         state,
@@ -111,7 +141,7 @@ export function processFireInput(state: GameState) {
         Math.sin(rightAngle) * BULLET_SPEED,
         -Math.cos(rightAngle) * BULLET_SPEED,
         sessionId,
-        8,
+        6,
         SPREAD_ANGULAR_VELOCITY,
         "spread"
       );

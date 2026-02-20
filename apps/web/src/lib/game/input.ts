@@ -73,7 +73,7 @@ export function createInputHandler(
     }
   }
 
-  function handleMouseMove(e: MouseEvent) {
+  function updateAimAngle(clientX: number, clientY: number) {
     const pos = getMyPosition();
     if (!pos) return;
 
@@ -81,8 +81,8 @@ export function createInputHandler(
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
 
-    const cursorX = (e.clientX - rect.left) * scaleX;
-    const cursorY = (e.clientY - rect.top) * scaleY;
+    const cursorX = (clientX - rect.left) * scaleX;
+    const cursorY = (clientY - rect.top) * scaleY;
 
     const dx = cursorX - pos.x;
     const dy = cursorY - pos.y;
@@ -94,16 +94,53 @@ export function createInputHandler(
     }
   }
 
+  function handleMouseMove(e: MouseEvent) {
+    updateAimAngle(e.clientX, e.clientY);
+  }
+
+  function handleMouseDown(e: MouseEvent) {
+    if (e.button === 0) {
+      // Left-click: fire
+      if (!state.fire) {
+        state.fire = true;
+        onInputChange({ ...state });
+      }
+      e.preventDefault();
+    } else if (e.button === 2) {
+      // Right-click: dash
+      onAbility(1);
+      e.preventDefault();
+    }
+  }
+
+  function handleMouseUp(e: MouseEvent) {
+    if (e.button === 0 && state.fire) {
+      state.fire = false;
+      onInputChange({ ...state });
+      e.preventDefault();
+    }
+  }
+
+  function handleContextMenu(e: Event) {
+    e.preventDefault();
+  }
+
   function attach() {
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     canvas.addEventListener("mousemove", handleMouseMove);
+    canvas.addEventListener("mousedown", handleMouseDown);
+    canvas.addEventListener("mouseup", handleMouseUp);
+    canvas.addEventListener("contextmenu", handleContextMenu);
   }
 
   function detach() {
     window.removeEventListener("keydown", handleKeyDown);
     window.removeEventListener("keyup", handleKeyUp);
     canvas.removeEventListener("mousemove", handleMouseMove);
+    canvas.removeEventListener("mousedown", handleMouseDown);
+    canvas.removeEventListener("mouseup", handleMouseUp);
+    canvas.removeEventListener("contextmenu", handleContextMenu);
     state.up = false;
     state.down = false;
     state.left = false;

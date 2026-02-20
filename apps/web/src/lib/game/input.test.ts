@@ -125,4 +125,37 @@ describe("createInputHandler", () => {
       expect.objectContaining({ focus: true })
     );
   });
+
+  it("left-click sets fire: true, release sets fire: false", () => {
+    mockCanvas.dispatchEvent(
+      new MouseEvent("mousedown", { button: 0, bubbles: true })
+    );
+    expect(onInputChange).toHaveBeenCalledWith(
+      expect.objectContaining({ fire: true })
+    );
+
+    onInputChange.mockClear();
+    mockCanvas.dispatchEvent(
+      new MouseEvent("mouseup", { button: 0, bubbles: true })
+    );
+    expect(onInputChange).toHaveBeenCalledWith(
+      expect.objectContaining({ fire: false })
+    );
+  });
+
+  it("right-click triggers dash (ability slot 1)", () => {
+    mockCanvas.dispatchEvent(
+      new MouseEvent("mousedown", { button: 2, bubbles: true })
+    );
+    expect(onAbility).toHaveBeenCalledWith(1);
+  });
+
+  it("suppresses context menu on canvas", () => {
+    const event = new Event("contextmenu", {
+      bubbles: true,
+      cancelable: true,
+    });
+    mockCanvas.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+  });
 });

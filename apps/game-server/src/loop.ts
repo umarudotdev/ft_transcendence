@@ -5,6 +5,7 @@ import {
   computeShipInputDelta,
   createAsteroidWave,
   createInitialShipState,
+  getShipSpawnPosition,
   createWaveArray,
   DEFAULT_GAMEPLAY,
   findShipAsteroidHit,
@@ -66,13 +67,17 @@ const toNetVec3 = (vector: readonly number[]): NetVec3 => [
 function createInitialGameState(): GameState {
   return {
     tick: 0,
-    ship: createInitialShipState(),
+    ships: [createInitialShipState("player-1", getShipSpawnPosition(0))],
     projectiles: [],
     asteroids: [],
     score: 0,
     wave: 1,
     gameStatus: "waiting",
   };
+}
+
+function getPrimaryShip(): GameState["ships"][number] | null {
+  return state.ships.length > 0 ? state.ships[0] : null;
 }
 
 // ============================================================================
@@ -145,7 +150,10 @@ export function handleMessage(
     case "aim":
       session.aimAngle = normalizeAimAngle(message.angle);
       if (controllingClient === ws) {
-        state.ship.aimAngle = session.aimAngle;
+        const primaryShip = getPrimaryShip();
+        if (primaryShip) {
+          primaryShip.aimAngle = session.aimAngle;
+        }
       }
       break;
 
@@ -167,19 +175,22 @@ function tick(): void {
   if (state.gameStatus !== "playing") return;
 
   const controller = controllingClient;
+  const primaryShip = getPrimaryShip();
+  if (!primaryShip) return;
+
   const activeKeys = controller
     ? (sessions.get(controller)?.keys ?? { ...DEFAULT_KEYS })
     : { ...DEFAULT_KEYS };
 
   const referenceShipPosition: NetVec3 = [
-    state.ship.position[0],
-    state.ship.position[1],
-    state.ship.position[2],
+    primaryShip.position[0],
+    primaryShip.position[1],
+    primaryShip.position[2],
   ];
   const referenceShipDirection: NetVec3 = [
-    state.ship.direction[0],
-    state.ship.direction[1],
-    state.ship.direction[2],
+    primaryShip.direction[0],
+    primaryShip.direction[1],
+    primaryShip.direction[2],
   ];
   const shipDelta = computeShipInputDelta(
     activeKeys,
@@ -193,23 +204,29 @@ function tick(): void {
     const controllingSession = sessions.get(controller);
     if (controllingSession) {
       const stepped = stepShipPositionFromDelta(
-        state.ship.position,
-        state.ship.direction,
+        primaryShip.position,
+        primaryShip.direction,
         shipDelta
       );
-      state.ship.position = stepped.position;
-      state.ship.direction = stepped.direction;
+      state.ships[0] = {
+        ...primaryShip,
+        position: stepped.position,
+        direction: stepped.direction,
+      };
 
       if (shootCooldownTicks > 0) {
         shootCooldownTicks -= 1;
       }
 
       if (controllingSession.firePressed && shootCooldownTicks <= 0) {
+        const shootingShip = state.ships[0];
+        if (!shootingShip) return;
         const spawned = spawnProjectilesFromAim(
           nextProjectileId,
-          state.ship.position,
-          state.ship.direction,
-          state.ship.aimAngle,
+          shootingShip.playerId,
+          shootingShip.position,
+          shootingShip.direction,
+          shootingShip.aimAngle,
           DEFAULT_GAMEPLAY.projectileRayCount
         );
         nextProjectileId = spawned.nextProjectileId;
@@ -219,16 +236,15 @@ function tick(): void {
     }
   }
 
-  state.projectiles = stepProjectiles(
-    state.projectiles,
-    1,
-    shipDelta
-  );
+  state.projectiles = stepProjectiles(state.projectiles, 1);
   state.asteroids = stepAsteroids(state.asteroids, 1);
   resolveCollisions();
   resolveAsteroidHitLifecycle();
   resolveShipCollision();
-  state.ship = stepShipInvincibilityState(state.ship);
+  const shipAfterDamage = getPrimaryShip();
+  if (shipAfterDamage) {
+    state.ships[0] = stepShipInvincibilityState(shipAfterDamage);
+  }
 
   state.tick += 1;
   broadcastState();
@@ -264,18 +280,24 @@ function resolveAsteroidHitLifecycle(): void {
 }
 
 function resolveShipCollision(): void {
-  const hitDetected = findShipAsteroidHit(state.ship, state.asteroids) !== null;
+  const primaryShip = getPrimaryShip();
+  if (!primaryShip) return;
+
+  const hitDetected = findShipAsteroidHit(primaryShip, state.asteroids) !== null;
   const damageResult = applyShipCollisionDamage(
-    state.ship,
+    primaryShip,
     hitDetected,
     Math.round(DEFAULT_GAMEPLAY.invincibleTimer * GAME_CONST.TICK_RATE)
   );
-  state.ship = damageResult.ship;
+  state.ships[0] = damageResult.ship;
   if (damageResult.event === "none") return;
+
+  const shipAfterDamage = getPrimaryShip();
+  if (!shipAfterDamage) return;
 
   broadcastMessage({
     type: "damage",
-    lives: state.ship.lives,
+    lives: shipAfterDamage.lives,
   });
 
   if (damageResult.event === "ship_destroyed") {
@@ -296,11 +318,11 @@ function toMessage(): ServerMessage {
     type: "state",
     state: {
       ...state,
-      ship: {
-        ...state.ship,
-        position: toNetVec3(state.ship.position),
-        direction: toNetVec3(state.ship.direction),
-      },
+      ships: state.ships.map((ship) => ({
+        ...ship,
+        position: toNetVec3(ship.position),
+        direction: toNetVec3(ship.direction),
+      })),
       projectiles: state.projectiles.map((projectile) => ({
         ...projectile,
         position: toNetVec3(projectile.position),

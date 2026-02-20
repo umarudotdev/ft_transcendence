@@ -7,8 +7,6 @@ import {
   normalizeVec3,
   resolveReferenceBasis,
   stepSurfaceMotionState,
-  applyShipInputDelta,
-  type ShipInputDelta,
 } from "./movement";
 
 const EPS = 1e-8;
@@ -33,6 +31,7 @@ function aimAngleToWorldDirection(
 
 export function spawnProjectilesFromAim(
   nextProjectileId: number,
+  ownerPlayerId: string,
   shipPosition: Vec3Like,
   shipDirection: Vec3Like,
   aimAngle: number,
@@ -48,6 +47,7 @@ export function spawnProjectilesFromAim(
   if (count === 1) {
     projectiles.push({
       id: nextProjectileId++,
+      ownerPlayerId,
       position: [spawnPos[0], spawnPos[1], spawnPos[2]],
       direction: aimAngleToWorldDirection(spawnPos, shipDirection, aimAngle),
       ageTicks: 0,
@@ -58,6 +58,7 @@ export function spawnProjectilesFromAim(
       const offset: number = -halfSpread + i * spread;
       projectiles.push({
         id: nextProjectileId++,
+        ownerPlayerId,
         position: [spawnPos[0], spawnPos[1], spawnPos[2]],
         direction: aimAngleToWorldDirection(
           spawnPos,
@@ -74,8 +75,7 @@ export function spawnProjectilesFromAim(
 
 export function stepProjectiles(
   projectiles: readonly ProjectileState[],
-  deltaTicks: number,
-  shipDelta: ShipInputDelta
+  deltaTicks: number
 ): ProjectileState[] {
   if (projectiles.length === 0) return [];
   const stepAngle: number = GAME_CONST.PROJECTILE_SPEED * deltaTicks;
@@ -90,16 +90,10 @@ export function stepProjectiles(
       projectile.direction,
       stepAngle
     );
-    const worldMotion = applyShipInputDelta(
-      steppedMotion.position,
-      steppedMotion.direction,
-      shipDelta
-    );
-
     stepped.push({
       ...projectile,
-      position: worldMotion.position,
-      direction: worldMotion.direction,
+      position: steppedMotion.position,
+      direction: steppedMotion.direction,
       ageTicks,
     });
   }

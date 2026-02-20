@@ -346,14 +346,14 @@
 	<canvas bind:this={canvas} class="supercluster-canvas"></canvas>
 
 	{#if debug}
-		<div class="debug-overlay">
-			<p>Connected: {connected}</p>
-			{#if gameState}
-				<p>Score: {gameState.score}</p>
-				<p>Lives: {gameState.ship.lives}</p>
-				<p>Wave: {gameState.wave}</p>
-				<p>Status: {gameState.gameStatus}</p>
-			{:else}
+			<div class="debug-overlay">
+				<p>Connected: {connected}</p>
+				{#if gameState}
+					<p>Score: {gameState.score}</p>
+					<p>Lives: {gameState.ships[0]?.lives ?? 0}</p>
+					<p>Wave: {gameState.wave}</p>
+					<p>Status: {gameState.gameStatus}</p>
+				{:else}
 				<p>Status: no-state</p>
 			{/if}
 		</div>

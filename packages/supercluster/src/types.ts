@@ -19,6 +19,7 @@ export type NetVec3 = [number, number, number];
  * World-centric mode: position and direction are authoritative for movement.
  */
 export interface ShipState {
+  playerId: string; // Stable player identity (maps to room/session id)
   position: NetVec3; // Unit vector position in world frame
   direction: NetVec3; // Tangent unit vector in world frame
   aimAngle: number; // Canonical aim angle in ship-local tangent frame (radians)
@@ -35,6 +36,7 @@ export interface ShipState {
  */
 export interface ProjectileState {
   id: number;
+  ownerPlayerId: string; // Shooter player id (for future PvP/friendly-fire rules)
   position: NetVec3;
   direction: NetVec3; // Movement direction unit vector in world frame
   ageTicks: number; // Ticks since spawn
@@ -64,7 +66,7 @@ export type AsteroidPhase = "incoming" | "active" | "breaking";
 // ============================================================================
 export interface GameState {
   tick: number; // Authoritative server simulation tick
-  ship: ShipState;
+  ships: ShipState[];
   projectiles: ProjectileState[];
   asteroids: AsteroidState[];
   score: number;

@@ -1,6 +1,4 @@
-import type { ShipState } from "./types";
-
-import { GAME_CONST } from "./constants";
+import type { NetVec3, ShipState } from "./types";
 
 // ============================================================================
 // Gameplay Defaults (DEFAULT_GAMEPLAY)
@@ -69,14 +67,57 @@ export const POWER_UP_PROGRESSION = Object.freeze({
 // ========================================================================
 // Shared Initial Entity State
 // ========================================================================
-export function createInitialShipState(): ShipState {
+const SHIP_SPAWN_POSITIONS: readonly NetVec3[] = Object.freeze([
+  [0, 0, 1], // north pole front
+  [0, 0, -1], // south pole back
+  [0, 1, 0], // top equator
+  [0, -1, 0], // bottom equator
+  [1, 0, 0], // right equator
+  [-1, 0, 0], // left equator
+]);
+
+function normalizeVec3(v: NetVec3): NetVec3 {
+  const len = Math.hypot(v[0], v[1], v[2]);
+  if (len <= 1e-8) return [0, 0, 1];
+  return [v[0] / len, v[1] / len, v[2] / len];
+}
+
+function crossVec3(a: NetVec3, b: NetVec3): NetVec3 {
+  return [
+    a[1] * b[2] - a[2] * b[1],
+    a[2] * b[0] - a[0] * b[2],
+    a[0] * b[1] - a[1] * b[0],
+  ];
+}
+
+function createSpawnDirection(position: NetVec3): NetVec3 {
+  const normalizedPos = normalizeVec3(position);
+  const worldUp: NetVec3 = [0, 1, 0];
+  const worldRight: NetVec3 = [1, 0, 0];
+
+  let tangent = crossVec3(worldUp, normalizedPos);
+  if (Math.hypot(tangent[0], tangent[1], tangent[2]) <= 1e-8) {
+    tangent = crossVec3(worldRight, normalizedPos);
+  }
+
+  return normalizeVec3(tangent);
+}
+
+export function getShipSpawnPosition(playerIndex: number): NetVec3 {
+  const index = Math.abs(playerIndex) % SHIP_SPAWN_POSITIONS.length;
+  const spawn = SHIP_SPAWN_POSITIONS[index];
+  return [spawn[0], spawn[1], spawn[2]];
+}
+
+export function createInitialShipState(
+  playerId = "player-1",
+  spawnPosition: NetVec3 = getShipSpawnPosition(0)
+): ShipState {
+  const position = normalizeVec3(spawnPosition);
   return {
-    position: [
-      GAME_CONST.SHIP_INITIAL_POS[0],
-      GAME_CONST.SHIP_INITIAL_POS[1],
-      GAME_CONST.SHIP_INITIAL_POS[2],
-    ],
-    direction: [0, 1, 0],
+    playerId,
+    position,
+    direction: createSpawnDirection(position),
     aimAngle: 0,
     lives: DEFAULT_GAMEPLAY.shipLives,
     invincible: DEFAULT_GAMEPLAY.shipInvincible,

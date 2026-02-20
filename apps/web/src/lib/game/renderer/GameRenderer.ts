@@ -181,23 +181,29 @@ export class GameRenderer {
   // Game State Updates (from server)
   // ========================================================================
   updateState(state: GameState): void {
+    const localShip = state.ships[0];
+
     // Update internal state from server
-    copyVec3ToThree(this.shipPosition, state.ship.position).normalize();
-    copyVec3ToThree(this.shipDirection, state.ship.direction).normalize();
-    this.input.setAimAngle(state.ship.aimAngle);
+    if (localShip) {
+      copyVec3ToThree(this.shipPosition, localShip.position).normalize();
+      copyVec3ToThree(this.shipDirection, localShip.direction).normalize();
+      this.input.setAimAngle(localShip.aimAngle);
+    }
 
     // Apply to visuals
-    // this.stage.world.group.quaternion.identity();
-    this.updateCameraFollow(this.shipPosition, this.shipDirection);
-    const shipDirectionAngle = this.stage.ship.lerpDirection(
-      this.targetHeadingAngle,
-      this.fixedSimulationStep
-    );
-    this.stage.ship.updateFromState(
-      state.ship,
-      shipDirectionAngle,
-      this.input.aimAngle
-    );
+    if (localShip) {
+      // this.stage.world.group.quaternion.identity();
+      this.updateCameraFollow(this.shipPosition, this.shipDirection);
+      const shipDirectionAngle = this.stage.ship.lerpDirection(
+        this.targetHeadingAngle,
+        this.fixedSimulationStep
+      );
+      this.stage.ship.updateFromState(
+        localShip,
+        shipDirectionAngle,
+        this.input.aimAngle
+      );
+    }
 
     this.stage.projectiles.syncFromStates(state.projectiles);
     this.stage.asteroids.syncFromStates(state.asteroids);

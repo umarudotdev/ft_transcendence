@@ -76,16 +76,9 @@ const handleApiProxy: Handle = async ({ event, resolve }) => {
 
     const responseHeaders = new Headers();
     for (const [key, value] of response.headers.entries()) {
-      if (
-        key.toLowerCase() === "set-cookie" ||
-        excludedResponseHeaders.has(key.toLowerCase())
-      ) {
-        continue;
+      if (!excludedResponseHeaders.has(key.toLowerCase())) {
+        responseHeaders.set(key, value);
       }
-      responseHeaders.set(key, value);
-    }
-    for (const cookie of response.headers.getSetCookie()) {
-      responseHeaders.append("set-cookie", cookie);
     }
 
     return new Response(response.body, {

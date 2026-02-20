@@ -47,10 +47,10 @@ function tickEffects(state: GameState, n: number) {
 }
 
 describe("activateAbility - Dash (slot 1)", () => {
-  test("dash teleports player toward cursor (aimAngle)", () => {
+  test("dash in movement direction when moving", () => {
     const { state, p1 } = createTwoPlayerState();
-    // aimAngle = PI/2 means aiming right (sin=1, -cos=0)
-    p1.aimAngle = Math.PI / 2;
+    p1.velocityX = 1;
+    p1.velocityY = 0;
     const startX = p1.x;
 
     const result = activateAbility(state, "p1", p1, 1);
@@ -59,15 +59,17 @@ describe("activateAbility - Dash (slot 1)", () => {
     expect(p1.x).toBeGreaterThan(startX);
   });
 
-  test("dash toward cursor at aimAngle=0 moves up", () => {
+  test("dash toward cursor when stationary", () => {
     const { state, p1 } = createTwoPlayerState();
-    p1.aimAngle = 0; // 0 = up (sin=0, -cos=-1)
-    const startY = p1.y;
+    p1.velocityX = 0;
+    p1.velocityY = 0;
+    p1.aimAngle = Math.PI / 2; // aiming right
+    const startX = p1.x;
 
     const result = activateAbility(state, "p1", p1, 1);
 
     expect(result).toBe(true);
-    expect(p1.y).toBeLessThan(startY);
+    expect(p1.x).toBeGreaterThan(startX);
   });
 
   test("dash grants invincibility", () => {

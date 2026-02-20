@@ -53,9 +53,18 @@ function activateDash(
   player.ability1CooldownUntil = state.tick + DASH_COOLDOWN_TICKS;
   player.isDashing = true;
 
-  // Dash toward cursor (aimAngle: 0 = up, uses sin/−cos convention)
-  const dx = Math.sin(player.aimAngle);
-  const dy = -Math.cos(player.aimAngle);
+  // Dash in movement direction if moving, otherwise toward cursor
+  let dx = player.velocityX;
+  let dy = player.velocityY;
+
+  if (dx === 0 && dy === 0) {
+    dx = Math.sin(player.aimAngle);
+    dy = -Math.cos(player.aimAngle);
+  } else {
+    const len = Math.sqrt(dx * dx + dy * dy);
+    dx /= len;
+    dy /= len;
+  }
 
   player.x = Math.max(
     16,

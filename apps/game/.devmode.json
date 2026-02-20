@@ -2,7 +2,9 @@
   "data": {},
   "hash": {
     "roomcount": {},
-    "roomhistory": {}
+    "roomhistory": {
+      "uYCXEmo82": "{\"clientOptions\":{\"userId\":1,\"displayName\":\"Admin User\"},\"roomName\":\"playground\",\"processId\":\"EhbAxcIpn\",\"state\":\"{\\\"players\\\":{\\\"YSoi6Byww\\\":{\\\"x\\\":433.9202489423206,\\\"y\\\":443.7910716563298,\\\"velocityX\\\":0,\\\"velocityY\\\":0,\\\"aimAngle\\\":-0.5300000037284899,\\\"hp\\\":100,\\\"lives\\\":3,\\\"connected\\\":true,\\\"isFiring\\\":false,\\\"isFocusing\\\":false,\\\"isDashing\\\":false,\\\"isShielded\\\":false,\\\"playerIndex\\\":0,\\\"userId\\\":1,\\\"displayName\\\":\\\"Admin User\\\",\\\"invincibleUntil\\\":10930,\\\"score\\\":0,\\\"ultimateCharge\\\":39,\\\"ability1CooldownUntil\\\":11398,\\\"ability2CooldownUntil\\\":11329},\\\"__dummy__\\\":{\\\"x\\\":400,\\\"y\\\":60,\\\"velocityX\\\":0,\\\"velocityY\\\":0,\\\"aimAngle\\\":0,\\\"hp\\\":61,\\\"lives\\\":1,\\\"connected\\\":true,\\\"isFiring\\\":false,\\\"isFocusing\\\":false,\\\"isDashing\\\":false,\\\"isShielded\\\":false,\\\"playerIndex\\\":1,\\\"userId\\\":0,\\\"displayName\\\":\\\"Target Dummy\\\",\\\"invincibleUntil\\\":21205,\\\"score\\\":0,\\\"ultimateCharge\\\":100,\\\"ability1CooldownUntil\\\":0,\\\"ability2CooldownUntil\\\":0}},\\\"bullets\\\":[],\\\"effects\\\":[],\\\"tick\\\":23279,\\\"phase\\\":\\\"playing\\\",\\\"countdownTimer\\\":-0.011999999999998776,\\\"winnerId\\\":\\\"\\\",\\\"spellCardDeclarer\\\":\\\"\\\",\\\"spellCardEndsAtTick\\\":0}\",\"clients\":[{\"sessionId\":\"YSoi6Byww\",\"reconnectionToken\":\"DGttRCp0O\"}]}"
+    }
   },
   "keys": {}
 }

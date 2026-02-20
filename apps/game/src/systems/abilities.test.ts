@@ -47,10 +47,10 @@ function tickEffects(state: GameState, n: number) {
 }
 
 describe("activateAbility - Dash (slot 1)", () => {
-  test("dash teleports player in movement direction", () => {
+  test("dash teleports player toward cursor (aimAngle)", () => {
     const { state, p1 } = createTwoPlayerState();
-    p1.velocityX = 1;
-    p1.velocityY = 0;
+    // aimAngle = PI/2 means aiming right (sin=1, -cos=0)
+    p1.aimAngle = Math.PI / 2;
     const startX = p1.x;
 
     const result = activateAbility(state, "p1", p1, 1);
@@ -59,9 +59,9 @@ describe("activateAbility - Dash (slot 1)", () => {
     expect(p1.x).toBeGreaterThan(startX);
   });
 
-  test("dash defaults to forward when stationary", () => {
+  test("dash toward cursor at aimAngle=0 moves up", () => {
     const { state, p1 } = createTwoPlayerState();
-    // Player 0 dashes upward by default
+    p1.aimAngle = 0; // 0 = up (sin=0, -cos=-1)
     const startY = p1.y;
 
     const result = activateAbility(state, "p1", p1, 1);

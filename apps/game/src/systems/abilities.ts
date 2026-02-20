@@ -53,21 +53,9 @@ function activateDash(
   player.ability1CooldownUntil = state.tick + DASH_COOLDOWN_TICKS;
   player.isDashing = true;
 
-  // Teleport in movement direction (or forward if stationary)
-  let dx = player.velocityX;
-  let dy = player.velocityY;
-
-  if (dx === 0 && dy === 0) {
-    // Default: dash forward (up for player 1, down for player 2)
-    dy = player.playerIndex === 0 ? -1 : 1;
-  }
-
-  // Normalize
-  const len = Math.sqrt(dx * dx + dy * dy);
-  if (len > 0) {
-    dx /= len;
-    dy /= len;
-  }
+  // Dash toward cursor (aimAngle: 0 = up, uses sin/−cos convention)
+  const dx = Math.sin(player.aimAngle);
+  const dy = -Math.cos(player.aimAngle);
 
   player.x = Math.max(
     16,

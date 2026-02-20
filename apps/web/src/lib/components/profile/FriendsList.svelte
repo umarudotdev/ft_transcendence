@@ -5,6 +5,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime';
 	import { getInitials } from '$lib/utils';
 	import type { Friend, FriendRequest } from '$lib/queries/users';
 
@@ -29,7 +31,7 @@
 	}: Props = $props();
 
 	function formatDate(date: Date): string {
-		return new Intl.DateTimeFormat('en-US', {
+		return new Intl.DateTimeFormat(getLocale(), {
 			month: 'short',
 			day: 'numeric',
 			year: 'numeric'
@@ -40,7 +42,7 @@
 <Card>
 	<CardHeader class="pb-2">
 		<CardTitle class="text-lg">
-			Friends
+			{m.friends_title()}
 			{#if friends.length > 0}
 				<Badge variant="secondary" class="ml-2">{friends.length}</Badge>
 			{/if}
@@ -63,7 +65,7 @@
 			{#if showPending && pendingRequests.length > 0}
 				<div class="mb-4">
 					<h4 class="mb-2 text-sm font-medium text-muted-foreground">
-						Pending Requests ({pendingRequests.length})
+						{m.friends_pending({ count: pendingRequests.length })}
 					</h4>
 					<div class="space-y-2">
 						{#each pendingRequests as request}
@@ -80,20 +82,20 @@
 									<div>
 										<span class="font-medium">{request.from.displayName}</span>
 										<div class="text-xs text-muted-foreground">
-											Sent {formatDate(request.createdAt)}
+											{m.friends_sent({ date: formatDate(request.createdAt) })}
 										</div>
 									</div>
 								</div>
 								<div class="flex gap-2">
 									<Button size="sm" onclick={() => onAcceptRequest?.(request.requestId)}>
-										Accept
+										{m.friends_accept()}
 									</Button>
 									<Button
 										size="sm"
 										variant="outline"
 										onclick={() => onRejectRequest?.(request.requestId)}
 									>
-										Decline
+										{m.friends_decline()}
 									</Button>
 								</div>
 							</div>
@@ -104,8 +106,8 @@
 
 			{#if friends.length === 0}
 				<div class="py-8 text-center text-muted-foreground">
-					<p>No friends yet.</p>
-					<p class="mt-1 text-sm">Add friends to see them here!</p>
+					<p>{m.friends_no_friends()}</p>
+					<p class="mt-1 text-sm">{m.friends_no_friends_hint()}</p>
 				</div>
 			{:else}
 				<div class="space-y-2">
@@ -129,7 +131,7 @@
 								<div>
 									<span class="font-medium">{friend.displayName}</span>
 									<div class="text-xs text-muted-foreground">
-										Friends since {formatDate(friend.since)}
+										{m.friends_since({ date: formatDate(friend.since) })}
 									</div>
 								</div>
 							</button>
@@ -140,7 +142,7 @@
 									class="text-muted-foreground hover:text-destructive"
 									onclick={() => onRemoveFriend?.(friend.id)}
 								>
-									Remove
+									{m.friends_remove()}
 								</Button>
 							{/if}
 						</div>

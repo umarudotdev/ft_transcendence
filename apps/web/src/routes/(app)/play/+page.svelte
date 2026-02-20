@@ -158,7 +158,7 @@
 					{:else if !meQuery.data}
 						<div class="py-8 text-center">
 							<p class="text-muted-foreground">
-								<a href="/auth/login" class="text-primary underline">Sign in</a>
+								<a href="/auth/login" class="text-primary underline">{m.common_sign_in()}</a>
 								{m.dashboard_sign_in_stats()}
 							</p>
 						</div>
@@ -217,7 +217,7 @@
 					{:else if !meQuery.data}
 						<div class="py-8 text-center">
 							<p class="text-muted-foreground">
-								<a href="/auth/login" class="text-primary underline">Sign in</a>
+								<a href="/auth/login" class="text-primary underline">{m.common_sign_in()}</a>
 								{m.dashboard_sign_in_matches()}
 							</p>
 						</div>

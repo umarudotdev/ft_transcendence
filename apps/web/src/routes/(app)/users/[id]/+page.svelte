@@ -66,9 +66,9 @@
 	async function handleAddFriend() {
 		try {
 			await sendRequestMutation.mutateAsync(userId);
-			toast.success('Friend request sent!');
+			toast.success(m.user_friend_request_sent());
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to send request';
+			const message = error instanceof Error ? error.message : m.user_friend_request_failed();
 			toast.error(message);
 		}
 	}
@@ -76,9 +76,9 @@
 	async function handleRemoveFriend() {
 		try {
 			await removeFriendMutation.mutateAsync(userId);
-			toast.success('Friend removed');
+			toast.success(m.user_friend_removed());
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to remove friend';
+			const message = error instanceof Error ? error.message : m.user_friend_remove_failed();
 			toast.error(message);
 		}
 	}
@@ -86,9 +86,9 @@
 	async function handleBlock() {
 		try {
 			await blockUserMutation.mutateAsync(userId);
-			toast.success('User blocked');
+			toast.success(m.user_blocked_toast());
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to block user';
+			const message = error instanceof Error ? error.message : m.user_block_failed();
 			toast.error(message);
 		}
 	}
@@ -98,7 +98,7 @@
 			const result = await dmMutation.mutateAsync(userId);
 			goto(`/chat/${result.channelId}`);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to start conversation';
+			const message = error instanceof Error ? error.message : m.user_conversation_failed();
 			toast.error(message);
 		}
 	}
@@ -306,7 +306,7 @@
 								{#each matchesQuery.data.matches.slice(0, 5) as match}
 									<div class="flex items-center justify-between rounded-lg border p-3">
 										<div class="flex items-center gap-3">
-											<span>vs {match.opponent.displayName}</span>
+											<span>{m.user_vs()} {match.opponent.displayName}</span>
 										</div>
 										<div class="flex items-center gap-3">
 											<span class="font-mono">
@@ -321,7 +321,7 @@
 															: 'bg-muted text-muted-foreground'
 												}`}
 											>
-												{match.result.charAt(0).toUpperCase() + match.result.slice(1)}
+												{match.result === 'win' ? m.match_result_win() : match.result === 'loss' ? m.match_result_loss() : m.match_result_draw()}
 											</span>
 										</div>
 									</div>

@@ -33,7 +33,7 @@
 			status = response.data?.status ?? null;
 			lastChecked = new Date();
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Network error';
+			error = e instanceof Error ? e.message : m.status_network_error();
 		} finally {
 			loading = false;
 		}

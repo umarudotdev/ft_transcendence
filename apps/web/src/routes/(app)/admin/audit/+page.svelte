@@ -51,6 +51,8 @@
 	}
 
 	function formatAction(action: string): string {
+		const match = actionOptions.find((o) => o.value === action);
+		if (match) return match.label;
 		return action
 			.split('_')
 			.map((word) => word.charAt(0).toUpperCase() + word.slice(1))

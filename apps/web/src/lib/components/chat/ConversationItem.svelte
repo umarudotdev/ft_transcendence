@@ -2,6 +2,7 @@
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { getInitials } from '$lib/utils';
 	import type { Conversation } from '$lib/queries/chat';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		conversation: Conversation;
@@ -18,7 +19,7 @@
 		const hours = Math.floor(diff / 3600000);
 		const days = Math.floor(diff / 86400000);
 
-		if (minutes < 1) return 'Just now';
+		if (minutes < 1) return m.chat_just_now();
 		if (minutes < 60) return `${minutes}m`;
 		if (hours < 24) return `${hours}h`;
 		if (days < 7) return `${days}d`;
@@ -30,7 +31,7 @@
 		if (conversation.type === 'dm' && conversation.participant) {
 			return conversation.participant.displayName;
 		}
-		return conversation.name ?? 'Unnamed Channel';
+		return conversation.name ?? m.chat_unnamed_channel();
 	}
 </script>
 
@@ -60,7 +61,7 @@
 				{conversation.lastMessage.senderName}: {conversation.lastMessage.content}
 			</p>
 		{:else}
-			<p class="text-sm text-muted-foreground italic">No messages yet</p>
+			<p class="text-sm text-muted-foreground italic">{m.chat_no_messages_yet()}</p>
 		{/if}
 	</div>
 

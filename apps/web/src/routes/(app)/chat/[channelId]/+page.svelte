@@ -23,7 +23,7 @@
 		if (channelQuery.data.type === 'dm' && channelQuery.data.participant) {
 			return channelQuery.data.participant.displayName;
 		}
-		return channelQuery.data.name ?? 'Channel';
+		return channelQuery.data.name ?? m.chat_channel_fallback();
 	}
 
 	function handleBack() {

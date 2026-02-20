@@ -3,6 +3,7 @@
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import { buttonVariants } from '$lib/components/ui/button/index.js';
 	import { cn } from '$lib/utils.js';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let {
 		ref = $bindable(null),
@@ -14,12 +15,12 @@
 
 {#snippet Fallback()}
 	<ChevronLeftIcon class="size-4" />
-	<span>Previous</span>
+	<span>{m.common_previous()}</span>
 {/snippet}
 
 <PaginationPrimitive.PrevButton
 	bind:ref
-	aria-label="Go to previous page"
+	aria-label={m.ui_go_previous_page()}
 	class={cn(
 		buttonVariants({
 			size: 'default',

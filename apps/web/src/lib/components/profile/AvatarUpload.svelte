@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { Button } from '$lib/components/ui/button';
+	import { m } from '$lib/paraglide/messages.js';
 	import { toast } from 'svelte-sonner';
 	import { getInitials } from '$lib/utils';
 
@@ -42,14 +43,14 @@
 		// Validate file type
 		const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 		if (!allowedTypes.includes(file.type)) {
-			toast.error('Invalid file type. Please upload a JPEG, PNG, or WebP image.');
+			toast.error(m.avatar_invalid_type());
 			return;
 		}
 
 		// Validate file size (2MB)
 		const maxSize = 2 * 1024 * 1024;
 		if (file.size > maxSize) {
-			toast.error('File too large. Maximum size is 2MB.');
+			toast.error(m.avatar_too_large());
 			return;
 		}
 
@@ -58,9 +59,9 @@
 
 		try {
 			await onUpload(file);
-			toast.success('Avatar updated successfully!');
+			toast.success(m.avatar_updated());
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to upload avatar';
+			const message = error instanceof Error ? error.message : m.avatar_upload_failed();
 			toast.error(message);
 			previewUrl = null;
 		} finally {
@@ -77,9 +78,9 @@
 		try {
 			await onRemove();
 			previewUrl = null;
-			toast.success('Avatar removed successfully!');
+			toast.success(m.avatar_removed());
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to remove avatar';
+			const message = error instanceof Error ? error.message : m.avatar_remove_failed();
 			toast.error(message);
 		} finally {
 			isRemoving = false;
@@ -102,7 +103,7 @@
 		onclick={handleClick}
 		disabled={loading || isRemoving || !editable}
 		class="group relative cursor-pointer disabled:cursor-default"
-		aria-label={editable ? 'Change avatar' : 'User avatar'}
+		aria-label={editable ? m.avatar_change_label() : m.avatar_user_label()}
 	>
 		<Avatar class="h-24 w-24 sm:h-32 sm:w-32">
 			{#if previewUrl || avatarUrl}
@@ -148,7 +149,7 @@
 			type="button"
 			onclick={handleRemove}
 			class="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-md transition-transform hover:scale-110"
-			aria-label="Remove avatar"
+			aria-label={m.avatar_remove_label()}
 		>
 			<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 				<path
@@ -171,5 +172,5 @@
 </div>
 
 {#if editable}
-	<p class="mt-2 text-xs text-muted-foreground">Click to upload (max 2MB)</p>
+	<p class="mt-2 text-xs text-muted-foreground">{m.avatar_upload_hint()}</p>
 {/if}

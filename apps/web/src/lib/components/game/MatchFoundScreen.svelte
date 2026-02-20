@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { OpponentInfo } from '$lib/stores/game.svelte';
 	import { getTierColor } from '$lib/game/matchmaking-utils';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		playerName: string;
@@ -67,7 +68,7 @@
 	</div>
 
 	<!-- Connecting text -->
-	<p class="animate-pulse text-sm text-white/50">Connecting to game...</p>
+	<p class="animate-pulse text-sm text-white/50">{m.game_connecting_to_game()}</p>
 </div>
 
 <style>

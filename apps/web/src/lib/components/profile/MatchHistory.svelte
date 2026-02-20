@@ -13,6 +13,8 @@
 		TableHeader,
 		TableRow
 	} from '$lib/components/ui/table';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime';
 	import { getInitials } from '$lib/utils';
 	import type { MatchHistoryItem } from '$lib/queries/users';
 
@@ -43,7 +45,7 @@
 	}
 
 	function formatDate(date: Date): string {
-		return new Intl.DateTimeFormat('en-US', {
+		return new Intl.DateTimeFormat(getLocale(), {
 			month: 'short',
 			day: 'numeric',
 			hour: 'numeric',
@@ -65,7 +67,7 @@
 
 <Card>
 	<CardHeader class="flex flex-row items-center justify-between pb-2">
-		<CardTitle class="text-lg">Match History</CardTitle>
+		<CardTitle class="text-lg">{m.match_history_title()}</CardTitle>
 		<div class="flex items-center gap-2">
 			<Select
 				type="single"
@@ -73,12 +75,12 @@
 				onValueChange={(value) => onFilterChange?.(value ?? 'all')}
 			>
 				<SelectTrigger class="w-32">
-					{currentFilter === 'all' ? 'All' : currentFilter === 'win' ? 'Wins' : 'Losses'}
+					{currentFilter === 'all' ? m.match_history_all() : currentFilter === 'win' ? m.match_history_wins() : m.match_history_losses()}
 				</SelectTrigger>
 				<SelectContent>
-					<SelectItem value="all">All</SelectItem>
-					<SelectItem value="win">Wins</SelectItem>
-					<SelectItem value="loss">Losses</SelectItem>
+					<SelectItem value="all">{m.match_history_all()}</SelectItem>
+					<SelectItem value="win">{m.match_history_wins()}</SelectItem>
+					<SelectItem value="loss">{m.match_history_losses()}</SelectItem>
 				</SelectContent>
 			</Select>
 		</div>
@@ -99,19 +101,19 @@
 			</div>
 		{:else if matches.length === 0}
 			<div class="py-8 text-center text-muted-foreground">
-				<p>No matches yet.</p>
-				<p class="mt-1 text-sm">Start playing to see your match history!</p>
+				<p>{m.match_history_no_matches()}</p>
+				<p class="mt-1 text-sm">{m.match_history_no_matches_hint()}</p>
 			</div>
 		{:else}
 			<div class="hidden md:block">
 				<Table>
 					<TableHeader>
 						<TableRow>
-							<TableHead>Opponent</TableHead>
-							<TableHead class="text-center">Score</TableHead>
-							<TableHead class="text-center">Result</TableHead>
-							<TableHead class="text-center">Duration</TableHead>
-							<TableHead class="text-right">Date</TableHead>
+							<TableHead>{m.match_history_opponent()}</TableHead>
+							<TableHead class="text-center">{m.match_history_score()}</TableHead>
+							<TableHead class="text-center">{m.match_history_result()}</TableHead>
+							<TableHead class="text-center">{m.match_history_duration()}</TableHead>
+							<TableHead class="text-right">{m.match_history_date()}</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
@@ -145,7 +147,7 @@
 								</TableCell>
 								<TableCell class="text-center">
 									<Badge variant={getResultBadgeVariant(match.result)}>
-										{match.result.charAt(0).toUpperCase() + match.result.slice(1)}
+										{match.result === 'win' ? m.match_result_win() : match.result === 'loss' ? m.match_result_loss() : m.match_result_draw()}
 									</Badge>
 								</TableCell>
 								<TableCell class="text-center">
@@ -189,7 +191,7 @@
 								{match.playerScore} - {match.opponentScore}
 							</div>
 							<Badge variant={getResultBadgeVariant(match.result)} class="mt-1">
-								{match.result.charAt(0).toUpperCase() + match.result.slice(1)}
+								{match.result === 'win' ? m.match_result_win() : match.result === 'loss' ? m.match_result_loss() : m.match_result_draw()}
 							</Badge>
 						</div>
 					</div>
@@ -200,16 +202,16 @@
 				<div class="mt-4 flex justify-center">
 					<Button variant="outline" onclick={() => onLoadMore?.()} disabled={loading}>
 						{#if loading}
-							Loading...
+							{m.match_history_loading()}
 						{:else}
-							Load More
+							{m.match_history_load_more()}
 						{/if}
 					</Button>
 				</div>
 			{/if}
 
 			<div class="mt-3 text-center text-sm text-muted-foreground">
-				Showing {matches.length} of {total} matches
+				{m.match_history_showing({ count: matches.length, total })}
 			</div>
 		{/if}
 	</CardContent>

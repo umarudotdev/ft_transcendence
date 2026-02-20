@@ -58,7 +58,7 @@
 
 				<div class="mt-2 flex items-center justify-between">
 					<span class="text-sm font-medium text-yellow-600">
-						+{achievement.points} pts
+						{m.gamification_pts({ count: `+${achievement.points}` })}
 					</span>
 					{#if unlocked && unlockedAt}
 						<span class="text-xs text-muted-foreground">

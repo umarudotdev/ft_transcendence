@@ -63,7 +63,7 @@
 		try {
 			await markAsReadMutation.mutateAsync(notification.id);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to mark as read';
+			const message = error instanceof Error ? error.message : m.notifications_mark_read_failed();
 			toast.error(message);
 		}
 	}
@@ -73,7 +73,7 @@
 			await markAllAsReadMutation.mutateAsync();
 			toast.success(m.notifications_all_marked_read());
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to mark all as read';
+			const message = error instanceof Error ? error.message : m.notifications_mark_all_failed();
 			toast.error(message);
 		}
 	}
@@ -83,7 +83,7 @@
 			await deleteMutation.mutateAsync(notificationId);
 			toast.success(m.notifications_deleted());
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to delete notification';
+			const message = error instanceof Error ? error.message : m.notifications_delete_failed();
 			toast.error(message);
 		}
 	}

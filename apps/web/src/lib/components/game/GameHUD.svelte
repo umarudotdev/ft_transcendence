@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
 	import { getGameStore } from '$lib/stores/game.svelte';
 
 	const gameStore = getGameStore();
@@ -31,7 +32,7 @@
 			<div class="pointer-events-auto space-y-2 rounded-lg bg-black/60 p-3 backdrop-blur-sm">
 				<!-- HP Bar -->
 				<div class="flex items-center gap-2">
-					<span class="text-xs font-medium text-white/70">HP</span>
+					<span class="text-xs font-medium text-white/70">{m.game_hp()}</span>
 					<div class="h-3 w-32 overflow-hidden rounded-full bg-white/10">
 						<div
 							class="h-full rounded-full transition-all duration-150 {myPlayer.hp > 50
@@ -47,7 +48,7 @@
 
 				<!-- Lives -->
 				<div class="flex items-center gap-1">
-					<span class="text-xs font-medium text-white/70">Lives</span>
+					<span class="text-xs font-medium text-white/70">{m.game_lives()}</span>
 					<div class="flex gap-1">
 						{#each Array(3) as _, i}
 							<div
@@ -126,7 +127,7 @@
 			<div class="absolute top-3 left-3">
 				<div class="rounded-lg bg-black/60 p-2 backdrop-blur-sm">
 					<div class="flex items-center gap-2">
-						<span class="text-xs text-white/70">Opponent HP</span>
+						<span class="text-xs text-white/70">{m.game_opponent_hp()}</span>
 						<div class="h-2 w-24 overflow-hidden rounded-full bg-white/10">
 							<div
 								class="h-full rounded-full bg-red-400 transition-all duration-150"
@@ -180,7 +181,7 @@
 		{#if myPlayer.isFocusing}
 			<div class="absolute top-3 right-3">
 				<div class="rounded bg-white/20 px-2 py-1 text-xs font-bold text-white backdrop-blur-sm">
-					FOCUS
+					{m.game_focus()}
 				</div>
 			</div>
 		{/if}

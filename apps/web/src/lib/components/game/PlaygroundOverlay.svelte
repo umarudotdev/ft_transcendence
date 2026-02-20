@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages.js';
 	import { type GamePhase, getGameStore } from '$lib/stores/game.svelte';
 
 	const gameStore = getGameStore();
@@ -24,7 +25,7 @@
 {#if phase === 'waiting'}
 	<div class="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm">
 		<div class="text-center">
-			<div class="mb-4 text-lg text-white/70">Starting practice...</div>
+			<div class="mb-4 text-lg text-white/70">{m.game_starting_practice()}</div>
 			<div
 				class="mx-auto size-8 animate-spin rounded-full border-2 border-white/30 border-t-white"
 			></div>
@@ -37,7 +38,7 @@
 		<div
 			class="animate-pulse text-8xl font-black text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.5)]"
 		>
-			{countdown > 0 ? countdown : 'GO!'}
+			{countdown > 0 ? countdown : m.game_go()}
 		</div>
 	</div>
 {/if}
@@ -47,7 +48,7 @@
 		<div
 			class="animate-pulse text-4xl font-black text-amber-400 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]"
 		>
-			Dummy Defeated!
+			{m.game_dummy_defeated()}
 		</div>
 	</div>
 {/if}

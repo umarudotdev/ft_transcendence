@@ -18,6 +18,7 @@
 	} from '$lib/queries/moderation';
 	import { toast } from 'svelte-sonner';
 	import FlagIcon from '@lucide/svelte/icons/flag';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		open: boolean;
@@ -38,7 +39,7 @@
 
 	async function handleSubmit() {
 		if (!selectedReason) {
-			toast.error('Please select a reason for the report');
+			toast.error(m.report_select_reason());
 			return;
 		}
 
@@ -49,10 +50,10 @@
 				description: description.trim() || undefined,
 				matchId
 			});
-			toast.success('Report submitted successfully');
+			toast.success(m.report_submitted());
 			handleClose();
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to submit report';
+			const message = error instanceof Error ? error.message : m.report_submit_failed();
 			toast.error(message);
 		}
 	}
@@ -69,22 +70,22 @@
 		<DialogHeader>
 			<DialogTitle class="flex items-center gap-2">
 				<FlagIcon class="size-5" />
-				Report Player
+				{m.report_title()}
 			</DialogTitle>
 			<DialogDescription>
-				Report <strong>{userName}</strong> for inappropriate behavior. Reports are reviewed by moderators.
+				{m.report_description({ name: userName })}
 			</DialogDescription>
 		</DialogHeader>
 
 		<div class="space-y-4 py-4">
 			<div class="space-y-2">
-				<Label for="reason">Reason *</Label>
+				<Label for="reason">{m.report_reason_label()}</Label>
 				<Select.Root type="single" bind:value={selectedReason}>
 					<Select.Trigger id="reason">
 						{#if selectedReason}
 							{getReasonText(selectedReason as ReportReason)}
 						{:else}
-							<span class="text-muted-foreground">Select a reason</span>
+							<span class="text-muted-foreground">{m.report_reason_placeholder()}</span>
 						{/if}
 					</Select.Trigger>
 					<Select.Content>
@@ -98,27 +99,27 @@
 			</div>
 
 			<div class="space-y-2">
-				<Label for="description">Description (optional)</Label>
+				<Label for="description">{m.report_details_label()}</Label>
 				<Textarea
 					id="description"
 					bind:value={description}
-					placeholder="Provide additional details about the incident..."
+					placeholder={m.report_details_placeholder()}
 					rows={4}
 					maxlength={500}
 				/>
 				<p class="text-xs text-muted-foreground">
-					{description.length}/500 characters
+					{m.report_characters({ count: description.length })}
 				</p>
 			</div>
 		</div>
 
 		<DialogFooter>
-			<Button variant="outline" onclick={handleClose}>Cancel</Button>
+			<Button variant="outline" onclick={handleClose}>{m.common_cancel()}</Button>
 			<Button onclick={handleSubmit} disabled={reportMutation.isPending || !selectedReason}>
 				{#if reportMutation.isPending}
-					Submitting...
+					{m.report_submitting()}
 				{:else}
-					Submit Report
+					{m.report_submit()}
 				{/if}
 			</Button>
 		</DialogFooter>

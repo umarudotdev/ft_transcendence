@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { m } from '$lib/paraglide/messages.js';
 
 	import GameCanvas from '$lib/components/game/GameCanvas.svelte';
 	import GameHUD from '$lib/components/game/GameHUD.svelte';
@@ -48,7 +49,7 @@
 </script>
 
 <svelte:head>
-	<title>Game | ft_transcendence</title>
+	<title>{m.game_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="relative">

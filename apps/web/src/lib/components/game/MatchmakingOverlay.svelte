@@ -3,6 +3,7 @@
 	import MatchFoundScreen from '$lib/components/game/MatchFoundScreen.svelte';
 	import QueueScreen from '$lib/components/game/QueueScreen.svelte';
 	import { getTierForRating } from '$lib/game/matchmaking-utils';
+	import { m } from '$lib/paraglide/messages.js';
 	import { createMeQuery } from '$lib/queries/auth';
 	import { createMyRankingQuery } from '$lib/queries/rankings';
 	import { type GamePhase, getGameStore } from '$lib/stores/game.svelte';
@@ -53,7 +54,7 @@
 		gameStore.leaveQueue();
 	}
 
-	let playerName = $derived(meQuery.data?.displayName ?? 'Player');
+	let playerName = $derived(meQuery.data?.displayName ?? m.game_player_fallback());
 	let playerRating = $derived(rankingQuery.data?.rating ?? 1000);
 	let playerTier = $derived(rankingQuery.data?.tier ?? getTierForRating(playerRating));
 </script>
@@ -71,6 +72,6 @@
 {:else if phase === 'connecting'}
 	<div class="flex flex-col items-center gap-4 py-16">
 		<div class="size-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary"></div>
-		<p class="text-muted-foreground">Connecting to game server...</p>
+		<p class="text-muted-foreground">{m.game_connecting()}</p>
 	</div>
 {/if}

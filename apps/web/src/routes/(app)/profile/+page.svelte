@@ -103,7 +103,7 @@
 			showEditDialog = false;
 			toast.success(m.profile_updated_toast());
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to update';
+			const message = error instanceof Error ? error.message : m.profile_update_failed();
 			toast.error(message);
 		}
 	}
@@ -128,9 +128,9 @@
 	async function handleRemoveFriend(userId: number) {
 		try {
 			await removeFriendMutation.mutateAsync(userId);
-			toast.success('Friend removed');
+			toast.success(m.profile_friend_removed());
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to remove friend';
+			const message = error instanceof Error ? error.message : m.profile_friend_remove_failed();
 			toast.error(message);
 		}
 	}
@@ -138,9 +138,9 @@
 	async function handleAcceptRequest(requestId: number) {
 		try {
 			await acceptRequestMutation.mutateAsync(requestId);
-			toast.success('Friend request accepted!');
+			toast.success(m.profile_friend_accepted());
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to accept request';
+			const message = error instanceof Error ? error.message : m.profile_friend_accept_failed();
 			toast.error(message);
 		}
 	}
@@ -148,9 +148,9 @@
 	async function handleRejectRequest(requestId: number) {
 		try {
 			await rejectRequestMutation.mutateAsync(requestId);
-			toast.success('Friend request declined');
+			toast.success(m.profile_friend_declined());
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to reject request';
+			const message = error instanceof Error ? error.message : m.profile_friend_decline_failed();
 			toast.error(message);
 		}
 	}
@@ -296,7 +296,7 @@
 															: 'bg-muted text-muted-foreground'
 												}`}
 											>
-												{match.result.charAt(0).toUpperCase() + match.result.slice(1)}
+												{match.result === 'win' ? m.match_result_win() : match.result === 'loss' ? m.match_result_loss() : m.match_result_draw()}
 											</span>
 										</div>
 									</div>
@@ -357,7 +357,7 @@
 				<Input
 					id="username"
 					bind:value={newUsername}
-					placeholder="your_username"
+					placeholder={m.profile_username_placeholder()}
 					minlength={3}
 					maxlength={20}
 					pattern="^[a-z0-9_]+$"

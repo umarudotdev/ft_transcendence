@@ -6,6 +6,7 @@
 	import { getChatStore } from '$lib/stores/chat.svelte';
 	import { getInitials } from '$lib/utils';
 	import { onMount } from 'svelte';
+	import { m } from '$lib/paraglide/messages.js';
 	import TypingIndicator from './TypingIndicator.svelte';
 
 	interface Props {
@@ -79,13 +80,13 @@
 		const messageDate = new Date(date);
 
 		if (messageDate.toDateString() === today.toDateString()) {
-			return 'Today';
+			return m.chat_today();
 		}
 
 		const yesterday = new Date(today);
 		yesterday.setDate(yesterday.getDate() - 1);
 		if (messageDate.toDateString() === yesterday.toDateString()) {
-			return 'Yesterday';
+			return m.chat_yesterday();
 		}
 
 		return messageDate.toLocaleDateString(undefined, {
@@ -125,12 +126,12 @@
 			</div>
 		{:else if messagesQuery.isError}
 			<div class="flex h-full items-center justify-center">
-				<p class="text-muted-foreground">Failed to load messages</p>
+				<p class="text-muted-foreground">{m.chat_failed_load_messages()}</p>
 			</div>
 		{:else if messagesQuery.data?.length === 0}
 			<div class="flex h-full flex-col items-center justify-center text-center">
-				<p class="text-muted-foreground">No messages yet</p>
-				<p class="text-sm text-muted-foreground">Be the first to send a message!</p>
+				<p class="text-muted-foreground">{m.chat_no_messages_yet()}</p>
+				<p class="text-sm text-muted-foreground">{m.chat_be_first()}</p>
 			</div>
 		{:else if messagesQuery.data}
 			<div class="space-y-4 p-4">
@@ -179,7 +180,7 @@
 							<span class="block text-xs text-muted-foreground {isOwn ? 'text-right' : ''}">
 								{formatTime(message.createdAt)}
 								{#if message.editedAt}
-									<span class="italic">(edited)</span>
+									<span class="italic">{m.chat_edited()}</span>
 								{/if}
 							</span>
 						</div>

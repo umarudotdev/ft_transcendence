@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
+	import { m } from '$lib/paraglide/messages.js';
 	import type { MatchResult } from '$lib/stores/game.svelte';
 
 	interface Props {
@@ -21,7 +22,7 @@
 		class:text-red-400={!won}
 		style="text-shadow: 0 0 30px {won ? 'rgba(74, 222, 128, 0.4)' : 'rgba(248, 113, 113, 0.4)'};"
 	>
-		{won ? 'VICTORY' : 'DEFEAT'}
+		{won ? m.game_victory() : m.game_defeat()}
 	</div>
 
 	<!-- Score -->
@@ -34,7 +35,7 @@
 	{#if matchResult}
 		<div class="w-64 space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
 			<div class="flex items-center justify-between">
-				<span class="text-sm text-white/50">Rating Change</span>
+				<span class="text-sm text-white/50">{m.game_rating_change()}</span>
 				<span
 					class="font-bold"
 					class:text-green-400={matchResult.ratingChange > 0}
@@ -44,7 +45,7 @@
 				</span>
 			</div>
 			<div class="flex items-center justify-between">
-				<span class="text-sm text-white/50">New Rating</span>
+				<span class="text-sm text-white/50">{m.game_new_rating()}</span>
 				<span class="font-bold text-white">{matchResult.newRating}</span>
 			</div>
 		</div>
@@ -52,7 +53,7 @@
 
 	<!-- Actions -->
 	<div class="flex gap-3">
-		<Button onclick={onBackToLobby}>Back to Lobby</Button>
+		<Button onclick={onBackToLobby}>{m.game_back_to_lobby()}</Button>
 	</div>
 </div>
 

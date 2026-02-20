@@ -4,6 +4,7 @@
 	import { createUnreadCountQuery } from '$lib/queries/notifications';
 	import BellIcon from '@lucide/svelte/icons/bell';
 	import NotificationDropdown from './NotificationDropdown.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let open = $state(false);
 
@@ -17,7 +18,7 @@
 				variant="ghost"
 				size="icon"
 				class="relative size-10"
-				aria-label="Notifications"
+				aria-label={m.notifications_bell_aria()}
 				{...props}
 			>
 				<BellIcon class="size-5" />

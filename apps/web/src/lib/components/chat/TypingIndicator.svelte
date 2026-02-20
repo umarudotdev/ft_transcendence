@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getChatStore } from '$lib/stores/chat.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		channelId: number;
@@ -21,9 +22,9 @@
 		</div>
 		<span>
 			{#if typingUsers.length === 1}
-				Someone is typing
+				{m.chat_typing_one()}
 			{:else}
-				{typingUsers.length} people are typing
+				{m.chat_typing_many({ count: typingUsers.length })}
 			{/if}
 		</span>
 	</div>

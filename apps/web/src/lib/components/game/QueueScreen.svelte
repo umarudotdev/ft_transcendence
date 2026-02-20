@@ -2,6 +2,7 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import { Button } from '$lib/components/ui/button';
 	import { formatTime } from '$lib/game/matchmaking-utils';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		elapsedSeconds: number;
@@ -46,7 +47,7 @@
 						? 'bg-primary/20 text-primary'
 						: 'bg-secondary/20 text-secondary'}"
 				>
-					{mode === 'ranked' ? 'RANKED' : 'CASUAL'}
+					{mode === 'ranked' ? m.game_ranked() : m.game_casual()}
 				</span>
 			{/if}
 		</div>
@@ -54,17 +55,17 @@
 
 	<!-- Info -->
 	<div class="flex flex-col items-center gap-2 text-sm text-white/50">
-		<p>Searching for an opponent near your skill level</p>
+		<p>{m.game_queue_searching()}</p>
 		{#if queuePosition > 0}
-			<p>Position in queue: {queuePosition}</p>
+			<p>{m.game_queue_position({ position: queuePosition })}</p>
 		{/if}
-		<p>Estimated wait: ~{estimatedWait}s</p>
+		<p>{m.game_queue_wait({ seconds: estimatedWait })}</p>
 	</div>
 
 	<!-- Cancel -->
 	<Button variant="outline" onclick={onCancel} class="gap-2">
 		<XIcon class="size-4" />
-		Cancel
+		{m.game_queue_cancel()}
 	</Button>
 </div>
 

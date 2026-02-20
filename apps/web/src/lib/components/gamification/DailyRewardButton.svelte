@@ -35,10 +35,10 @@
 	async function handleClaim() {
 		try {
 			const result = await claimMutation.mutateAsync();
-			toast.success(`Claimed ${result.points} points!`);
+			toast.success(m.gamification_claimed_points({ count: result.points }));
 			showDialog = false;
 		} catch (error) {
-			const message = error instanceof Error ? error.message : 'Failed to claim reward';
+			const message = error instanceof Error ? error.message : m.gamification_claim_failed();
 			toast.error(message);
 		}
 	}
@@ -91,12 +91,12 @@
 					<CardContent class="p-4">
 						<div class="flex items-center justify-between">
 							<span class="text-muted-foreground">{m.gamification_base_reward()}</span>
-							<span class="font-mono">{baseReward} pts</span>
+							<span class="font-mono">{m.gamification_pts({ count: baseReward })}</span>
 						</div>
 						{#if streakQuery.data.currentStreak > 0}
 							<div class="flex items-center justify-between">
 								<span class="text-muted-foreground">{m.gamification_streak_bonus()}</span>
-								<span class="font-mono text-green-600">+{streakBonus} pts</span>
+								<span class="font-mono text-green-600">{m.gamification_pts({ count: `+${streakBonus}` })}</span>
 							</div>
 						{/if}
 						<div class="mt-2 flex items-center justify-between border-t pt-2">

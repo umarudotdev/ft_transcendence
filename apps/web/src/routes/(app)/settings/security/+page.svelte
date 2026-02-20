@@ -112,7 +112,7 @@
 					newPassword = '';
 					confirmPassword = '';
 					setTimeout(() => {
-						goto('/auth/login?message=Password changed. Please log in again.');
+						goto(`/auth/login?message=${encodeURIComponent(m.security_password_changed_redirect())}`);
 					}, 2000);
 				}
 			}
@@ -196,7 +196,7 @@
 			{ password: deletePassword },
 			{
 				onSuccess: () => {
-					goto('/auth/login?message=Your account has been deleted.');
+					goto(`/auth/login?message=${encodeURIComponent(m.security_account_deleted_redirect())}`);
 				}
 			}
 		);
@@ -640,7 +640,7 @@
 													type="password"
 													id="unlink-password"
 													bind:value={unlinkPassword}
-													placeholder="Enter your password"
+													placeholder={m.security_enter_password_placeholder()}
 													required
 													autocomplete="current-password"
 												/>
@@ -791,7 +791,7 @@
 											type="password"
 											id="delete-password"
 											bind:value={deletePassword}
-											placeholder="Enter your password"
+											placeholder={m.security_enter_password_placeholder()}
 											required
 											autocomplete="current-password"
 										/>
@@ -803,7 +803,7 @@
 											type="text"
 											id="delete-confirm"
 											bind:value={deleteConfirmText}
-											placeholder="DELETE"
+											placeholder={m.security_delete_type_text()}
 											required
 											autocomplete="off"
 										/>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let { children } = $props();
 	let showControls = $state(true);
@@ -32,7 +33,7 @@
 		class:pointer-events-none={!showControls}
 	>
 		<ArrowLeftIcon class="size-4" />
-		<span>Back</span>
+		<span>{m.game_back()}</span>
 	</a>
 
 	<!-- Content -->

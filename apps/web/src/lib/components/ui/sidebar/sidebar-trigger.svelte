@@ -4,6 +4,7 @@
 	import PanelLeftIcon from '@lucide/svelte/icons/panel-left';
 	import type { ComponentProps } from 'svelte';
 	import { useSidebar } from './context.svelte.js';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let {
 		ref = $bindable(null),
@@ -31,5 +32,5 @@
 	{...restProps}
 >
 	<PanelLeftIcon class="size-4" />
-	<span class="sr-only">Toggle Sidebar</span>
+	<span class="sr-only">{m.ui_toggle_sidebar()}</span>
 </Button>

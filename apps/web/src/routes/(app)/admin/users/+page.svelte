@@ -28,7 +28,7 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import UserCogIcon from '@lucide/svelte/icons/user-cog';
 	import TrashIcon from '@lucide/svelte/icons/trash-2';
-	import CheckIcon from '@lucide/svelte/icons/check';
+
 
 	const meQuery = createMeQuery();
 	const updateRoleMutation = createUpdateRoleMutation();
@@ -338,16 +338,7 @@
 					</Select.Trigger>
 					<Select.Content>
 						{#each roleOptions as option}
-							<Select.Item value={option.value}>
-								<div class="flex items-center gap-2">
-									{#if option.value === newRole}
-										<CheckIcon class="size-4" />
-									{:else}
-										<span class="size-4"></span>
-									{/if}
-									{option.label}
-								</div>
-							</Select.Item>
+							<Select.Item value={option.value}>{option.label}</Select.Item>
 						{/each}
 					</Select.Content>
 				</Select.Root>

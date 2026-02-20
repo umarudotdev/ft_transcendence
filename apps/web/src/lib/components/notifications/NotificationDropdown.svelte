@@ -17,6 +17,7 @@
 	import TrendingUpIcon from '@lucide/svelte/icons/trending-up';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import CheckCheckIcon from '@lucide/svelte/icons/check-check';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		onClose?: () => void;
@@ -52,10 +53,10 @@
 		const hours = Math.floor(diff / 3600000);
 		const days = Math.floor(diff / 86400000);
 
-		if (minutes < 1) return 'Just now';
-		if (minutes < 60) return `${minutes}m ago`;
-		if (hours < 24) return `${hours}h ago`;
-		if (days < 7) return `${days}d ago`;
+		if (minutes < 1) return m.notifications_time_just_now();
+		if (minutes < 60) return m.notifications_time_minutes_ago({ count: minutes });
+		if (hours < 24) return m.notifications_time_hours_ago({ count: hours });
+		if (days < 7) return m.notifications_time_days_ago({ count: days });
 
 		return new Date(date).toLocaleDateString();
 	}
@@ -79,7 +80,7 @@
 
 <div class="flex flex-col">
 	<div class="flex items-center justify-between border-b p-3">
-		<h3 class="font-semibold">Notifications</h3>
+		<h3 class="font-semibold">{m.notifications_title()}</h3>
 		{#if notificationsQuery.data?.notifications.some((n) => !n.isRead)}
 			<Button
 				variant="ghost"
@@ -88,7 +89,7 @@
 				disabled={markAllAsReadMutation.isPending}
 			>
 				<CheckCheckIcon class="mr-1 size-4" />
-				Mark all read
+				{m.notifications_mark_all_short()}
 			</Button>
 		{/if}
 	</div>
@@ -109,7 +110,7 @@
 		{:else if notificationsQuery.data?.notifications.length === 0}
 			<div class="flex flex-col items-center justify-center p-8 text-center">
 				<BellIcon class="mb-2 size-10 text-muted-foreground" />
-				<p class="text-sm text-muted-foreground">No notifications yet</p>
+				<p class="text-sm text-muted-foreground">{m.notifications_none()}</p>
 			</div>
 		{:else if notificationsQuery.data}
 			<div class="divide-y">
@@ -147,6 +148,6 @@
 	</ScrollArea>
 
 	<div class="border-t p-2">
-		<Button variant="ghost" class="w-full" onclick={handleViewAll}>View all notifications</Button>
+		<Button variant="ghost" class="w-full" onclick={handleViewAll}>{m.notifications_view_all()}</Button>
 	</div>
 </div>

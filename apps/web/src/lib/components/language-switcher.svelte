@@ -4,6 +4,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import { m } from '$lib/paraglide/messages.js';
 
 	const languages = [
 		{ code: 'en', label: 'English' },
@@ -22,7 +23,7 @@
 				variant="ghost"
 				size="icon"
 				class="relative size-10"
-				aria-label="Change language"
+				aria-label={m.language_change_aria()}
 			>
 				<GlobeIcon class="size-5" />
 			</Button>

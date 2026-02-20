@@ -4,7 +4,7 @@ import {
   type Vec3Like,
 } from "gl-matrix";
 
-import type { InputState } from "../types";
+import type { InputState, NetVec3 } from "../types";
 
 // ============================================================================
 // Movement Module
@@ -13,9 +13,9 @@ import type { InputState } from "../types";
 // ============================================================================
 
 const EPS: number = 1e-8;
-const WORLD_X_AXIS: Vec3Like = [1, 0, 0];
-const WORLD_Y_AXIS: Vec3Like = [0, 1, 0];
-const WORLD_Z_AXIS: Vec3Like = [0, 0, 1];
+const WORLD_X_AXIS: NetVec3 = [1, 0, 0];
+const WORLD_Y_AXIS: NetVec3 = [0, 1, 0];
+const WORLD_Z_AXIS: NetVec3 = [0, 0, 1];
 
 // Scratch buffers to avoid per-call allocations
 const _POS: GlVec3  = GlVec3.create();   // position scratch
@@ -38,14 +38,14 @@ export function normalizeVec3(
   return out;
 }
 
-export function randomUnitVec3(): Vec3Like {
+export function randomUnitVec3(): NetVec3 {
   const theta: number = Math.random() * Math.PI * 2;
   const zAxis: number = Math.random() * 2 - 1;
   const radius: number = Math.sqrt(1 - zAxis * zAxis);
   return [radius * Math.cos(theta), radius * Math.sin(theta), zAxis];
 }
 
-export function randomTangentVec3(position: Vec3Like): Vec3Like {
+export function randomTangentVec3(position: Vec3Like): NetVec3 {
   normalizeVec3(_PROJ, position);
   const random: Vec3Like = randomUnitVec3();
   // tangent = random - dot(random, p) * p
@@ -111,16 +111,16 @@ export function moveOnSphere(
 }
 
 export interface ReferenceBasis {
-  normal: Vec3Like;
-  forward: Vec3Like;
-  right: Vec3Like;
+  normal: NetVec3;
+  forward: NetVec3;
+  right: NetVec3;
 }
 
 export interface ShipInputDelta {
   moved: boolean;
-  axis: Vec3Like;
+  axis: NetVec3;
   angle: number;
-  fallbackForward: Vec3Like;
+  fallbackForward: NetVec3;
 }
 
 export function resolveReferenceBasis(
@@ -128,7 +128,7 @@ export function resolveReferenceBasis(
   referenceDirection: Vec3Like
 ): ReferenceBasis {
   normalizeVec3(_PROJ, referencePosition);
-  const normal: Vec3Like = [_PROJ[0], _PROJ[1], _PROJ[2]];
+  const normal: NetVec3 = [_PROJ[0], _PROJ[1], _PROJ[2]];
 
   normalizeVec3(_TAN, referenceDirection, WORLD_Y_AXIS);
   const forwardDotNormal: number = GlVec3.dot(_TAN, _PROJ);
@@ -143,7 +143,7 @@ export function resolveReferenceBasis(
     }
   }
   GlVec3.normalize(_TAN, _TAN);
-  const forward: Vec3Like = [_TAN[0], _TAN[1], _TAN[2]];
+  const forward: NetVec3 = [_TAN[0], _TAN[1], _TAN[2]];
 
   GlVec3.cross(_AXIS, forward, _PROJ);
   if (GlVec3.squaredLength(_AXIS) <= EPS) {
@@ -151,7 +151,7 @@ export function resolveReferenceBasis(
     GlVec3.cross(_AXIS, fallbackAxis, _PROJ);
   }
   GlVec3.normalize(_AXIS, _AXIS);
-  const right: Vec3Like = [_AXIS[0], _AXIS[1], _AXIS[2]];
+  const right: NetVec3 = [_AXIS[0], _AXIS[1], _AXIS[2]];
 
   return {
     normal,
@@ -216,7 +216,7 @@ export function applyShipInputDelta(
   position: Vec3Like,
   direction: Vec3Like,
   delta: ShipInputDelta
-): { moved: boolean; position: Vec3Like; direction: Vec3Like } {
+): { moved: boolean; position: NetVec3; direction: NetVec3 } {
   GlVec3.copy(_POS, position);
   GlVec3.copy(_DIR, direction);
 
@@ -253,7 +253,7 @@ export function stepSurfaceMotionState(
   position: Vec3Like,
   direction: Vec3Like,
   angle: number
-): { position: Vec3Like; direction: Vec3Like } {
+): { position: NetVec3; direction: NetVec3 } {
   GlVec3.copy(_POS, position);
   GlVec3.copy(_DIR, direction);
 

@@ -7,7 +7,7 @@
 // - Collision checks compare entities directly in that same frame.
 // ============================================================================
 
-import type { Vec3Like } from "gl-matrix";
+export type NetVec3 = [number, number, number];
 
 // ============================================================================
 // Game Entities
@@ -19,8 +19,8 @@ import type { Vec3Like } from "gl-matrix";
  * World-centric mode: position and direction are authoritative for movement.
  */
 export interface ShipState {
-  position: Vec3Like; // Unit vector position in world frame
-  direction: Vec3Like; // Tangent unit vector in world frame
+  position: NetVec3; // Unit vector position in world frame
+  direction: NetVec3; // Tangent unit vector in world frame
   aimAngle: number; // Canonical aim angle in ship-local tangent frame (radians)
   lives: number;
   invincible: boolean; // After taking damage
@@ -35,8 +35,8 @@ export interface ShipState {
  */
 export interface ProjectileState {
   id: number;
-  position: Vec3Like;
-  direction: Vec3Like; // Movement direction unit vector in world frame
+  position: NetVec3;
+  direction: NetVec3; // Movement direction unit vector in world frame
   ageTicks: number; // Ticks since spawn
 }
 
@@ -47,15 +47,17 @@ export interface ProjectileState {
  */
 export interface AsteroidState {
   id: number;
-  position: Vec3Like;
-  direction: Vec3Like; // Movement direction unit vector in world frame
+  position: NetVec3;
+  direction: NetVec3; // Movement direction unit vector in world frame
   moveSpeed: number; // Movement speed scalar in world frame (rad/tick)
   size: 1 | 2 | 3 | 4; // 1=smallest, 4=largest
-  health: number; // Hits remaining (usually 1)
-  canTakeDamage: boolean; // Damage gate while asteroid is in break transition
-  isHit: boolean; // Has been hit, waiting to break
-  hitTimer: number; // Time remaining until break (in ticks)
+  health: number; // Remaining hit points
+  phase: AsteroidPhase; // Lifecycle/mechanics phase
+  phaseTimer: number; // Countdown for current phase transition
+  hitFlashTicks: number; // Remaining visual hit-flash ticks while active
 }
+
+export type AsteroidPhase = "incoming" | "active" | "breaking";
 
 // ============================================================================
 // Game State

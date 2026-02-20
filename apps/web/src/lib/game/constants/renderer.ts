@@ -50,7 +50,8 @@ export const RENDERER_CONST = Object.freeze({
 
   // Asteroids
   ASTEROID_COLOR: 0x8b7355, // Brownish-gray rock
-  ASTEROID_HIT_COLOR: 0xff0000, // Red when hit
+  ASTEROID_HIT_COLOR: 0xff6666, // Light red flash when damaged
+  ASTEROID_BREAK_COLOR: 0x8b0000, // Dark red while waiting to break/destroy
   ASTEROID_ROUGHNESS: 0.9, // Very rough
   ASTEROID_METALNESS: 0.1, // Slightly metallic
   ASTEROID_ROT_SPEED: 2, // Self-rotation speed (rad/s)

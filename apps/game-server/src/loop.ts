@@ -1,5 +1,4 @@
 import type { ServerWebSocket } from "bun";
-import type { Vec3Like } from "gl-matrix";
 
 import {
   applyShipCollisionDamage,
@@ -21,6 +20,7 @@ import {
   stepShipInvincibilityState,
   type GameState,
   type InputState,
+  type NetVec3,
 } from "@ft/supercluster";
 
 import type { ServerMessage } from "./types";
@@ -56,6 +56,12 @@ const DEFAULT_KEYS: InputState = {
   left: false,
   right: false,
 };
+
+const toNetVec3 = (vector: readonly number[]): NetVec3 => [
+  vector[0],
+  vector[1],
+  vector[2],
+];
 
 function createInitialGameState(): GameState {
   return {
@@ -165,12 +171,12 @@ function tick(): void {
     ? (sessions.get(controller)?.keys ?? { ...DEFAULT_KEYS })
     : { ...DEFAULT_KEYS };
 
-  const referenceShipPosition: Vec3Like = [
+  const referenceShipPosition: NetVec3 = [
     state.ship.position[0],
     state.ship.position[1],
     state.ship.position[2],
   ];
-  const referenceShipDirection: Vec3Like = [
+  const referenceShipDirection: NetVec3 = [
     state.ship.direction[0],
     state.ship.direction[1],
     state.ship.direction[2],
@@ -292,9 +298,19 @@ function toMessage(): ServerMessage {
       ...state,
       ship: {
         ...state.ship,
-        position: [...state.ship.position] as Vec3Like,
-        direction: [...state.ship.direction] as Vec3Like,
+        position: toNetVec3(state.ship.position),
+        direction: toNetVec3(state.ship.direction),
       },
+      projectiles: state.projectiles.map((projectile) => ({
+        ...projectile,
+        position: toNetVec3(projectile.position),
+        direction: toNetVec3(projectile.direction),
+      })),
+      asteroids: state.asteroids.map((asteroid) => ({
+        ...asteroid,
+        position: toNetVec3(asteroid.position),
+        direction: toNetVec3(asteroid.direction),
+      })),
     },
     lastInputSeq: lastProcessedInputSeq,
   };

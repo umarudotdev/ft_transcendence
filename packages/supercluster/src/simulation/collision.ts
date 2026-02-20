@@ -77,7 +77,8 @@ export function findProjectileAsteroidHits(
 /**
  * Resolve projectile-vs-asteroid collisions as a pure state transition.
  * - consumes projectile hits
- * - applies asteroid damage gates/timers
+ * - aggregates same-tick hits per asteroid
+ * - updates asteroid phase + visual hit flash timers
  * - returns typed gameplay events for runtime side effects
  */
 export function resolveProjectileAsteroidCollisions(
@@ -99,10 +100,11 @@ export function resolveProjectileAsteroidCollisions(
   }
 
   const consumedProjectileIds = new Set<number>();
-  const asteroidHitIds = new Set<number>();
+  const asteroidHitCounts = new Map<number, number>();
   for (const hit of hits) {
     consumedProjectileIds.add(hit.projectileId);
-    asteroidHitIds.add(hit.asteroidId);
+    const count = asteroidHitCounts.get(hit.asteroidId) ?? 0;
+    asteroidHitCounts.set(hit.asteroidId, count + 1);
   }
 
   const events: ProjectileAsteroidCollisionEvent[] = [];
@@ -118,22 +120,40 @@ export function resolveProjectileAsteroidCollisions(
   );
 
   const nextAsteroids: AsteroidState[] = asteroids.map((asteroid) => {
-    if (!asteroidHitIds.has(asteroid.id)) return asteroid;
-    if (!asteroid.canTakeDamage) return asteroid;
+    const hitCount = asteroidHitCounts.get(asteroid.id) ?? 0;
+    if (hitCount <= 0) return asteroid;
+    if (asteroid.phase !== "active") return asteroid;
 
-    const nextHealth = Math.max(asteroid.health - 1, 0);
+    // Aggregate all same-tick ray hits on this asteroid into one damage event.
+    const appliedDamage = Math.min(hitCount, asteroid.health);
+    if (appliedDamage <= 0) return asteroid;
+
+    const nextHealth = Math.max(asteroid.health - appliedDamage, 0);
     events.push({
       type: "asteroid_damaged",
       asteroidId: asteroid.id,
-      points: pointsPerDamage,
+      points: appliedDamage * pointsPerDamage,
     });
+
+    const statusTicks = Math.max(1, hitDelayTicks);
+    // Alive asteroids stay active and only flash.
+    // Dead asteroids switch to breaking phase (dark red, then split/remove).
+    const nextPhase = nextHealth > 0 ? "active" : "breaking";
+    const nextPhaseTimer =
+      nextPhase === "breaking"
+        ? Math.max(asteroid.phaseTimer, statusTicks)
+        : 0;
+    const nextHitFlashTicks =
+      nextPhase === "active"
+        ? Math.max(asteroid.hitFlashTicks, statusTicks)
+        : 0;
 
     return {
       ...asteroid,
       health: nextHealth,
-      canTakeDamage: false,
-      isHit: true,
-      hitTimer: Math.max(1, hitDelayTicks),
+      phase: nextPhase,
+      phaseTimer: nextPhaseTimer,
+      hitFlashTicks: nextHitFlashTicks,
     };
   });
 

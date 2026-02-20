@@ -1,4 +1,4 @@
-import type { AsteroidState } from "@ft/supercluster";
+import type { AsteroidPhase, AsteroidState } from "@ft/supercluster";
 
 import { GAME_CONST, GAMEPLAY_CONST } from "@ft/supercluster";
 import * as THREE from "three";
@@ -29,7 +29,8 @@ function resolveRotationAngle(
 export interface AsteroidData {
   id: number;
   size: AsteroidSize;
-  isHit: boolean;
+  phase: AsteroidPhase;
+  hitFlashTicks: number;
   position: THREE.Vector3;
   direction: THREE.Vector3;
   rotationSpeedX: number;
@@ -88,7 +89,8 @@ export class AsteroidRenderer {
       return {
         id: state.id,
         size: state.size,
-        isHit: state.isHit,
+        phase: state.phase,
+        hitFlashTicks: state.hitFlashTicks,
         position: vec3ToThree(state.position).normalize(),
         direction: vec3ToThree(state.direction).normalize(),
         rotationSpeedX,
@@ -160,7 +162,14 @@ export class AsteroidRenderer {
     this._matrix.compose(this._position, this._quaternion, this._scale);
     this.instancedMesh.setMatrixAt(index, this._matrix);
 
-    if (asteroid.isHit) {
+    // Breaking asteroids keep a darker red while waiting for server split/remove.
+    if (asteroid.phase === "breaking") {
+      this.instancedMesh.setColorAt(
+        index,
+        new THREE.Color(RENDERER_CONST.ASTEROID_BREAK_COLOR)
+      );
+    } else if (asteroid.hitFlashTicks > 0) {
+      // Alive asteroid damage flash.
       this.instancedMesh.setColorAt(
         index,
         new THREE.Color(RENDERER_CONST.ASTEROID_HIT_COLOR)

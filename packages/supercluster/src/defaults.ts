@@ -43,7 +43,7 @@ export const DEFAULT_GAMEPLAY: GameplayDefaults = {
 
   // Projectile (power-ups modify these)
   projectileCooldown: 18, // Ticks = 0.3 sec at 60 ticks/sec
-  projectileRayCount: 1, // Single shot, power-ups increase
+  projectileRayCount: 2, // Single shot, power-ups increase
 
   // Initial asteroid wave
   asteroidWave: {

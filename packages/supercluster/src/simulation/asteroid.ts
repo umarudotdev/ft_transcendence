@@ -1,4 +1,4 @@
-import type { AsteroidState } from "../types";
+import type { AsteroidState, NetVec3 } from "../types";
 
 import { GAME_CONST } from "../constants";
 import {
@@ -6,7 +6,6 @@ import {
   randomUnitVec3,
   stepSurfaceMotionState,
 } from "./movement";
-import type { Vec3Like } from "gl-matrix";
 
 function clampAsteroidSize(size: number): AsteroidState["size"] {
   if (size <= 1) return 1;
@@ -18,8 +17,8 @@ export function createRandomAsteroidState(
   id: number,
   size: number
 ): AsteroidState {
-  const position: Vec3Like = randomUnitVec3();
-  const direction: Vec3Like = randomTangentVec3(position);
+  const position: NetVec3 = randomUnitVec3();
+  const direction: NetVec3 = randomTangentVec3(position);
   const asteroidSize = clampAsteroidSize(size);
   const moveSpeed: number =
     GAME_CONST.ASTEROID_SPEED_MIN +
@@ -33,9 +32,9 @@ export function createRandomAsteroidState(
     moveSpeed,
     size: asteroidSize,
     health: 2 * asteroidSize,
-    canTakeDamage: true,
-    isHit: false,
-    hitTimer: 0,
+    phase: "active",
+    phaseTimer: 0,
+    hitFlashTicks: 0,
   };
 }
 
@@ -98,9 +97,9 @@ export function createAsteroidFragments(
       moveSpeed: fragmentSpeed,
       size: fragmentSize,
       health: 2 * fragmentSize,
-      canTakeDamage: true,
-      isHit: false,
-      hitTimer: 0,
+      phase: "active",
+      phaseTimer: 0,
+      hitFlashTicks: 0,
     });
   }
 
@@ -108,7 +107,10 @@ export function createAsteroidFragments(
 }
 
 /**
- * Resolve asteroid hit timers, recover damage gate, and spawn fragments for destroyed asteroids.
+ * Resolve asteroid phase transitions and visual hit flash timers.
+ * - incoming: countdown to active
+ * - active: fully damageable
+ * - breaking: countdown to split/remove
  * Pure state transition for asteroid lifecycle.
  */
 export function stepAsteroidHitLifecycle(
@@ -126,39 +128,79 @@ export function stepAsteroidHitLifecycle(
   let currentNextId = nextAsteroidId;
 
   for (const asteroid of asteroids) {
-    if (!asteroid.isHit) {
-      survivors.push(asteroid);
-      continue;
-    }
+    const nextHitFlashTicks = Math.max(0, asteroid.hitFlashTicks - 1);
 
-    const nextTimer = asteroid.hitTimer - 1;
-    if (nextTimer > 0) {
-      survivors.push({
-        ...asteroid,
-        hitTimer: nextTimer,
-      });
-      continue;
-    }
-
-    if (asteroid.health <= 0) {
-      if (asteroid.size > 1) {
-        const fragmentCount = 2 + Math.floor(Math.random() * 2);
-        const fragments = createAsteroidFragments(
-          asteroid,
-          currentNextId,
-          fragmentCount
-        );
-        currentNextId = fragments.nextAsteroidId;
-        survivors.push(...fragments.asteroids);
+    if (asteroid.phase === "incoming") {
+      const nextPhaseTimer = asteroid.phaseTimer - 1;
+      if (nextPhaseTimer > 0) {
+        survivors.push({
+          ...asteroid,
+          phaseTimer: nextPhaseTimer,
+          hitFlashTicks: nextHitFlashTicks,
+        });
+      } else {
+        // Spawn grace is over: asteroid becomes active.
+        survivors.push({
+          ...asteroid,
+          phase: "active",
+          phaseTimer: 0,
+          hitFlashTicks: nextHitFlashTicks,
+        });
       }
       continue;
     }
 
+    if (asteroid.phase === "active") {
+      survivors.push({
+        ...asteroid,
+        phaseTimer: 0,
+        hitFlashTicks: nextHitFlashTicks,
+      });
+      continue;
+    }
+
+    if (asteroid.phase === "breaking") {
+      const nextPhaseTimer = asteroid.phaseTimer - 1;
+      if (nextPhaseTimer > 0) {
+        survivors.push({
+          ...asteroid,
+          phaseTimer: nextPhaseTimer,
+          hitFlashTicks: 0,
+        });
+        continue;
+      }
+
+      // Break phase complete: remove asteroid or split into fragments.
+      if (asteroid.health <= 0) {
+        if (asteroid.size > 1) {
+          const fragmentCount = 2 + Math.floor(Math.random() * 2);
+          const fragments = createAsteroidFragments(
+            asteroid,
+            currentNextId,
+            fragmentCount
+          );
+          currentNextId = fragments.nextAsteroidId;
+          survivors.push(...fragments.asteroids);
+        }
+        continue;
+      }
+
+      // Safety fallback: if a breaking asteroid still has health, return to active.
+      survivors.push({
+        ...asteroid,
+        phase: "active",
+        phaseTimer: 0,
+        hitFlashTicks: 0,
+      });
+      continue;
+    }
+
+    // Unknown phase fallback.
     survivors.push({
       ...asteroid,
-      canTakeDamage: true,
-      isHit: false,
-      hitTimer: 0,
+      phase: "active",
+      phaseTimer: 0,
+      hitFlashTicks: nextHitFlashTicks,
     });
   }
 

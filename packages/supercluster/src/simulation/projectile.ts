@@ -1,6 +1,6 @@
 import { Vec3 as GlVec3, type Vec3Like } from "gl-matrix";
 
-import type { ProjectileState } from "../types";
+import type { NetVec3, ProjectileState } from "../types";
 
 import { GAME_CONST } from "../constants";
 import {
@@ -20,7 +20,7 @@ function aimAngleToWorldDirection(
   shipPosition: Vec3Like,
   shipDirection: Vec3Like,
   aimAngle: number
-): Vec3Like {
+): NetVec3 {
   const basis = resolveReferenceBasis(shipPosition, shipDirection);
   GlVec3.scale(_AIM, basis.forward, Math.cos(aimAngle));
   GlVec3.scaleAndAdd(_AIM, _AIM, basis.right, Math.sin(aimAngle));
@@ -40,7 +40,7 @@ export function spawnProjectilesFromAim(
 ): { projectiles: ProjectileState[]; nextProjectileId: number } {
   const count: number = Math.max(1, rayCount);
   const spread: number = GAME_CONST.PROJECTILE_SPREAD_ANGLE;
-  const spawnPos: Vec3Like = [shipPosition[0], shipPosition[1], shipPosition[2]];
+  const spawnPos: NetVec3 = [shipPosition[0], shipPosition[1], shipPosition[2]];
   normalizeVec3(spawnPos, spawnPos);
 
   const projectiles: ProjectileState[] = [];

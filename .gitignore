@@ -34,6 +34,9 @@ docs/.vitepress/cache
 # IntelliJ based IDEs
 .idea
 
+# Colyseus dev mode state
+.devmode.json
+
 # Finder (MacOS) folder config
 .DS_Store
 

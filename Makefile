@@ -92,11 +92,11 @@ logs.game: ## Follow game server logs
 
 .PHONY: migrate
 migrate: ## Apply database migrations
-	DATABASE_URL=postgres://postgres:postgres@localhost:5432/ft_transcendence bun run db:migrate
+	bun run db:migrate
 
 .PHONY: generate
 generate: ## Generate migration from schema changes
-	DATABASE_URL=postgres://postgres:postgres@localhost:5432/ft_transcendence bun run db:generate
+	bun run db:generate
 
 .PHONY: db.shell
 db.shell: ## Open PostgreSQL shell
@@ -112,11 +112,11 @@ db.reset: ## Reset database (drop and recreate)
 
 .PHONY: db.seed
 db.seed: ## Seed database with test data
-	set -a && . ./.env && set +a && DATABASE_URL=postgres://postgres:postgres@localhost:5432/ft_transcendence bun run --filter '@ft/api' seed
+	bun run --filter '@ft/api' seed
 
 .PHONY: db.studio
 db.studio: ## Open Drizzle Studio (database GUI)
-	cd apps/api && DATABASE_URL=postgres://postgres:postgres@localhost:5432/ft_transcendence bun run drizzle-kit studio
+	bun run --filter '@ft/api' drizzle-kit studio
 
 ### Code Quality
 

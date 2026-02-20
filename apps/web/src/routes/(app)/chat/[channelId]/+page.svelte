@@ -9,6 +9,7 @@
 	import { createChannelQuery } from '$lib/queries/chat';
 	import { getInitials } from '$lib/utils';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let channelId = $derived(Number(page.params.channelId));
 
@@ -35,7 +36,7 @@
 	<div class="flex shrink-0 items-center gap-3 border-b px-4 py-3">
 		<Button variant="ghost" size="icon" class="lg:hidden" onclick={handleBack}>
 			<ArrowLeftIcon class="size-5" />
-			<span class="sr-only">Back to conversations</span>
+			<span class="sr-only">{m.chat_back_to_conversations()}</span>
 		</Button>
 
 		{#if channelQuery.isPending}
@@ -54,11 +55,11 @@
 			<div>
 				<h1 class="font-semibold">{getDisplayName()}</h1>
 				{#if channelQuery.data.type === 'dm'}
-					<p class="text-xs text-muted-foreground">Direct message</p>
+					<p class="text-xs text-muted-foreground">{m.chat_direct_message()}</p>
 				{/if}
 			</div>
 		{:else}
-			<span class="text-muted-foreground">Channel not found</span>
+			<span class="text-muted-foreground">{m.chat_channel_not_found()}</span>
 		{/if}
 	</div>
 
@@ -73,7 +74,7 @@
 	{:else if channelQuery.isError}
 		<div class="flex flex-1 items-center justify-center">
 			<p class="text-muted-foreground">
-				Could not load this conversation. It may not exist or you may not have access.
+				{m.chat_conversation_error()}
 			</p>
 		</div>
 	{:else}

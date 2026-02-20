@@ -11,6 +11,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { m } from '$lib/paraglide/messages.js';
 	import { createMeQuery } from '$lib/queries/auth';
 	import { createMyMatchesQuery, createMyStatsQuery } from '$lib/queries/users';
 	import { getGameStore } from '$lib/stores/game.svelte';
@@ -49,15 +50,15 @@
 </script>
 
 <svelte:head>
-	<title>Play | ft_transcendence</title>
+	<title>{m.play_title()} | ft_transcendence</title>
 </svelte:head>
 
 {#if gameStore.phase === 'idle'}
 	<div class="space-y-8">
 		<div class="flex items-center justify-between">
 			<div>
-				<h1 class="text-3xl font-bold tracking-tight">Play</h1>
-				<p class="text-muted-foreground">Challenge players or practice your skills</p>
+				<h1 class="text-3xl font-bold tracking-tight">{m.play_title()}</h1>
+				<p class="text-muted-foreground">{m.play_subtitle()}</p>
 			</div>
 		</div>
 
@@ -69,19 +70,19 @@
 						<GamepadIcon class="size-12 text-primary" />
 					</div>
 					<div class="flex-1 space-y-2">
-						<h2 class="text-2xl font-bold">Ready to Play?</h2>
+						<h2 class="text-2xl font-bold">{m.play_ready()}</h2>
 						<p class="text-muted-foreground">
-							Jump into a ranked match against another player or play a casual game.
+							{m.play_ready_description()}
 						</p>
 					</div>
 					<div class="flex flex-col gap-2 sm:flex-row">
 						<Button size="lg" class="gap-2" onclick={handleQuickMatch}>
 							<SwordsIcon class="size-5" />
-							Ranked Match
+							{m.play_ranked_match()}
 						</Button>
 						<Button size="lg" variant="outline" class="gap-2" onclick={handleCasualMatch}>
 							<GamepadIcon class="size-5" />
-							Casual Match
+							{m.play_casual_match()}
 						</Button>
 						<Button
 							size="lg"
@@ -91,7 +92,7 @@
 							disabled={!meQuery.data}
 						>
 							<TargetIcon class="size-5" />
-							Practice
+							{m.play_practice()}
 						</Button>
 					</div>
 				</div>
@@ -101,34 +102,34 @@
 		<!-- Controls Info -->
 		<Card.Root>
 			<Card.Header>
-				<Card.Title>Controls</Card.Title>
-				<Card.Description>Learn the controls before jumping in</Card.Description>
+				<Card.Title>{m.play_controls()}</Card.Title>
+				<Card.Description>{m.play_controls_description()}</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					<div class="space-y-1">
-						<div class="font-medium">Movement</div>
-						<div class="text-sm text-muted-foreground">WASD or Arrow Keys</div>
+						<div class="font-medium">{m.play_control_movement()}</div>
+						<div class="text-sm text-muted-foreground">{m.play_control_movement_keys()}</div>
 					</div>
 					<div class="space-y-1">
-						<div class="font-medium">Shoot</div>
-						<div class="text-sm text-muted-foreground">Spacebar (auto-fire)</div>
+						<div class="font-medium">{m.play_control_shoot()}</div>
+						<div class="text-sm text-muted-foreground">{m.play_control_shoot_keys()}</div>
 					</div>
 					<div class="space-y-1">
-						<div class="font-medium">Focus Mode</div>
-						<div class="text-sm text-muted-foreground">Shift (slower + precise shot)</div>
+						<div class="font-medium">{m.play_control_focus()}</div>
+						<div class="text-sm text-muted-foreground">{m.play_control_focus_keys()}</div>
 					</div>
 					<div class="space-y-1">
-						<div class="font-medium">Dash</div>
-						<div class="text-sm text-muted-foreground">Q (8s cooldown)</div>
+						<div class="font-medium">{m.play_control_dash()}</div>
+						<div class="text-sm text-muted-foreground">{m.play_control_dash_keys()}</div>
 					</div>
 					<div class="space-y-1">
-						<div class="font-medium">Bomb</div>
-						<div class="text-sm text-muted-foreground">E (clear bullets, 12s cooldown)</div>
+						<div class="font-medium">{m.play_control_bomb()}</div>
+						<div class="text-sm text-muted-foreground">{m.play_control_bomb_keys()}</div>
 					</div>
 					<div class="space-y-1">
-						<div class="font-medium">Ultimate</div>
-						<div class="text-sm text-muted-foreground">R (charge by dealing damage)</div>
+						<div class="font-medium">{m.play_control_ultimate()}</div>
+						<div class="text-sm text-muted-foreground">{m.play_control_ultimate_keys()}</div>
 					</div>
 				</div>
 			</Card.Content>
@@ -140,9 +141,9 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<TrophyIcon class="size-5" />
-						Your Stats
+						{m.dashboard_your_stats()}
 					</Card.Title>
-					<Card.Description>Your performance overview</Card.Description>
+					<Card.Description>{m.dashboard_stats_description()}</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					{#if statsQuery.isPending || meQuery.isPending}
@@ -158,7 +159,7 @@
 						<div class="py-8 text-center">
 							<p class="text-muted-foreground">
 								<a href="/auth/login" class="text-primary underline">Sign in</a>
-								to track your stats
+								{m.dashboard_sign_in_stats()}
 							</p>
 						</div>
 					{:else if statsQuery.data}
@@ -166,11 +167,11 @@
 						<div class="grid grid-cols-3 gap-4">
 							<div class="space-y-1">
 								<span class="text-2xl font-bold text-green-600">{stats.wins}</span>
-								<p class="text-sm text-muted-foreground">Wins</p>
+								<p class="text-sm text-muted-foreground">{m.dashboard_wins()}</p>
 							</div>
 							<div class="space-y-1">
 								<span class="text-2xl font-bold text-red-600">{stats.losses}</span>
-								<p class="text-sm text-muted-foreground">Losses</p>
+								<p class="text-sm text-muted-foreground">{m.dashboard_losses()}</p>
 							</div>
 							<div class="space-y-1">
 								<div class="flex items-center gap-1">
@@ -179,13 +180,13 @@
 										>{formatWinRate(stats.wins, stats.wins + stats.losses)}</span
 									>
 								</div>
-								<p class="text-sm text-muted-foreground">Win Rate</p>
+								<p class="text-sm text-muted-foreground">{m.dashboard_win_rate()}</p>
 							</div>
 						</div>
 					{:else}
 						<div class="py-8 text-center">
 							<p class="text-muted-foreground">
-								No games played yet. Start playing to track your stats!
+								{m.dashboard_no_games()}
 							</p>
 						</div>
 					{/if}
@@ -198,12 +199,12 @@
 					<div>
 						<Card.Title class="flex items-center gap-2">
 							<SwordsIcon class="size-5" />
-							Recent Matches
+							{m.dashboard_recent_matches()}
 						</Card.Title>
-						<Card.Description>Your latest games</Card.Description>
+						<Card.Description>{m.dashboard_latest_games()}</Card.Description>
 					</div>
 					{#if matchesQuery.data && matchesQuery.data.matches.length > 0}
-						<Button variant="ghost" size="sm" href="/profile">View All</Button>
+						<Button variant="ghost" size="sm" href="/profile">{m.common_view_all()}</Button>
 					{/if}
 				</Card.Header>
 				<Card.Content>
@@ -217,7 +218,7 @@
 						<div class="py-8 text-center">
 							<p class="text-muted-foreground">
 								<a href="/auth/login" class="text-primary underline">Sign in</a>
-								to see your matches
+								{m.dashboard_sign_in_matches()}
 							</p>
 						</div>
 					{:else if matchesQuery.data && matchesQuery.data.matches.length > 0}
@@ -237,7 +238,7 @@
 												? 'bg-green-600 hover:bg-green-600'
 												: 'bg-red-600 text-white hover:bg-red-600'}
 										>
-											{match.result === 'win' ? 'Win' : 'Loss'}
+											{match.result === 'win' ? m.dashboard_win() : m.dashboard_loss()}
 										</Badge>
 									</div>
 								</div>
@@ -245,7 +246,7 @@
 						</div>
 					{:else}
 						<div class="py-8 text-center">
-							<p class="text-muted-foreground">No matches yet. Play your first game!</p>
+							<p class="text-muted-foreground">{m.dashboard_no_matches()}</p>
 						</div>
 					{/if}
 				</Card.Content>

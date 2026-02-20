@@ -6,12 +6,13 @@
 	import GamepadIcon from '@lucide/svelte/icons/gamepad-2';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import { m } from '$lib/paraglide/messages.js';
 
 	const meQuery = createMeQuery();
 </script>
 
 <svelte:head>
-	<title>Welcome | ft_transcendence</title>
+	<title>{m.welcome_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="mx-auto max-w-2xl space-y-8">
@@ -19,23 +20,22 @@
 		<div class="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-primary/10">
 			<PartyPopperIcon class="size-10 text-primary" />
 		</div>
-		<h1 class="text-4xl font-bold tracking-tight">Welcome to ft_transcendence!</h1>
+		<h1 class="text-4xl font-bold tracking-tight">{m.welcome_heading()}</h1>
 		{#if meQuery.data}
 			<p class="mt-2 text-xl text-muted-foreground">
-				Great to have you here, {meQuery.data.displayName}!
+				{m.welcome_greeting_name({ name: meQuery.data.displayName })}
 			</p>
 		{:else}
-			<p class="mt-2 text-xl text-muted-foreground">Great to have you here!</p>
+			<p class="mt-2 text-xl text-muted-foreground">{m.welcome_greeting_generic()}</p>
 		{/if}
 	</div>
 
 	<Card.Root class="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
 		<Card.Content class="pt-6">
 			<div class="space-y-4 text-center">
-				<h2 class="text-2xl font-semibold">What is ft_transcendence?</h2>
+				<h2 class="text-2xl font-semibold">{m.welcome_what_is()}</h2>
 				<p class="text-muted-foreground">
-					ft_transcendence is a real-time multiplayer Pong platform. Challenge other players, climb
-					the leaderboard, earn achievements, and chat with the community.
+					{m.welcome_description()}
 				</p>
 			</div>
 		</Card.Content>
@@ -49,11 +49,11 @@
 				>
 					<UserIcon class="size-6 text-primary" />
 				</div>
-				<h3 class="font-semibold">Set Up Profile</h3>
-				<p class="mt-1 text-sm text-muted-foreground">Customize your avatar and display name</p>
+				<h3 class="font-semibold">{m.welcome_setup_profile()}</h3>
+				<p class="mt-1 text-sm text-muted-foreground">{m.welcome_setup_profile_description()}</p>
 				<Button href="/settings" variant="outline" class="mt-4 w-full gap-2">
 					<SettingsIcon class="size-4" />
-					Settings
+					{m.welcome_settings()}
 				</Button>
 			</Card.Content>
 		</Card.Root>
@@ -65,11 +65,11 @@
 				>
 					<GamepadIcon class="size-6 text-primary" />
 				</div>
-				<h3 class="font-semibold">Start Playing</h3>
-				<p class="mt-1 text-sm text-muted-foreground">Jump into your first match</p>
+				<h3 class="font-semibold">{m.welcome_start_playing()}</h3>
+				<p class="mt-1 text-sm text-muted-foreground">{m.welcome_start_playing_description()}</p>
 				<Button href="/" class="mt-4 w-full gap-2">
 					<GamepadIcon class="size-4" />
-					Game Lobby
+					{m.welcome_game_lobby()}
 				</Button>
 			</Card.Content>
 		</Card.Root>
@@ -92,9 +92,9 @@
 						<path d="M16 3.13a4 4 0 0 1 0 7.75" />
 					</svg>
 				</div>
-				<h3 class="font-semibold">Find Players</h3>
-				<p class="mt-1 text-sm text-muted-foreground">Browse the leaderboard</p>
-				<Button href="/leaderboard" variant="outline" class="mt-4 w-full">Leaderboard</Button>
+				<h3 class="font-semibold">{m.welcome_find_players()}</h3>
+				<p class="mt-1 text-sm text-muted-foreground">{m.welcome_find_players_description()}</p>
+				<Button href="/leaderboard" variant="outline" class="mt-4 w-full">{m.welcome_leaderboard()}</Button>
 			</Card.Content>
 		</Card.Root>
 	</div>
@@ -102,7 +102,7 @@
 	<div class="text-center">
 		<Button href="/" size="lg" class="gap-2">
 			<GamepadIcon class="size-5" />
-			Go to Game Lobby
+			{m.welcome_go_to_lobby()}
 		</Button>
 	</div>
 </div>

@@ -21,6 +21,7 @@
 	import TrashIcon from '@lucide/svelte/icons/trash-2';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let offset = $state(0);
 	const limit = 20;
@@ -70,7 +71,7 @@
 	async function handleMarkAllRead() {
 		try {
 			await markAllAsReadMutation.mutateAsync();
-			toast.success('All notifications marked as read');
+			toast.success(m.notifications_all_marked_read());
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to mark all as read';
 			toast.error(message);
@@ -80,7 +81,7 @@
 	async function handleDelete(notificationId: number) {
 		try {
 			await deleteMutation.mutateAsync(notificationId);
-			toast.success('Notification deleted');
+			toast.success(m.notifications_deleted());
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to delete notification';
 			toast.error(message);
@@ -99,14 +100,14 @@
 </script>
 
 <svelte:head>
-	<title>Notifications | ft_transcendence</title>
+	<title>{m.notifications_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="mx-auto max-w-2xl space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-2xl font-bold">Notifications</h1>
-			<p class="text-muted-foreground">Stay updated on your activity</p>
+			<h1 class="text-2xl font-bold">{m.notifications_title()}</h1>
+			<p class="text-muted-foreground">{m.notifications_subtitle()}</p>
 		</div>
 		{#if notificationsQuery.data?.notifications.some((n) => !n.isRead)}
 			<Button
@@ -115,7 +116,7 @@
 				disabled={markAllAsReadMutation.isPending}
 			>
 				<CheckCheckIcon class="mr-2 size-4" />
-				Mark all as read
+				{m.notifications_mark_all_read()}
 			</Button>
 		{/if}
 	</div>
@@ -124,7 +125,7 @@
 		<CardHeader>
 			<CardTitle class="flex items-center gap-2">
 				<BellIcon class="size-5" />
-				All Notifications
+				{m.notifications_all()}
 				{#if notificationsQuery.data}
 					<span class="text-sm font-normal text-muted-foreground">
 						({notificationsQuery.data.total})
@@ -149,9 +150,9 @@
 			{:else if notificationsQuery.data?.notifications.length === 0}
 				<div class="py-12 text-center">
 					<BellIcon class="mx-auto mb-4 size-12 text-muted-foreground" />
-					<p class="text-muted-foreground">No notifications yet</p>
+					<p class="text-muted-foreground">{m.notifications_none()}</p>
 					<p class="text-sm text-muted-foreground">
-						You'll see notifications here when something important happens
+						{m.notifications_none_hint()}
 					</p>
 				</div>
 			{:else if notificationsQuery.data}
@@ -214,13 +215,12 @@
 				{#if notificationsQuery.data.total > limit}
 					<div class="mt-4 flex items-center justify-between border-t pt-4">
 						<div class="text-sm text-muted-foreground">
-							Showing {offset + 1}-{Math.min(offset + limit, notificationsQuery.data.total)} of {notificationsQuery
-								.data.total}
+							{m.common_showing_range({ start: offset + 1, end: Math.min(offset + limit, notificationsQuery.data.total), total: notificationsQuery.data.total })}
 						</div>
 						<div class="flex gap-2">
 							<Button variant="outline" size="sm" onclick={handlePrevPage} disabled={offset === 0}>
 								<ChevronLeftIcon class="mr-1 size-4" />
-								Previous
+								{m.common_previous()}
 							</Button>
 							<Button
 								variant="outline"
@@ -228,7 +228,7 @@
 								onclick={handleNextPage}
 								disabled={!notificationsQuery.data.hasMore}
 							>
-								Next
+								{m.common_next()}
 								<ChevronRightIcon class="ml-1 size-4" />
 							</Button>
 						</div>

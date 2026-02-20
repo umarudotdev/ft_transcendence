@@ -10,6 +10,8 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Avatar, AvatarFallback, AvatarImage } from '$lib/components/ui/avatar';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime';
 	import {
 		createAdminUsersQuery,
 		createUpdateRoleMutation,
@@ -105,7 +107,7 @@
 	}
 
 	function formatDate(date: Date): string {
-		return new Date(date).toLocaleDateString('en-US', {
+		return new Date(date).toLocaleDateString(getLocale(), {
 			year: 'numeric',
 			month: 'short',
 			day: 'numeric'
@@ -116,21 +118,21 @@
 	const canGoBack = $derived(currentPage > 0);
 	const canGoNext = $derived(currentPage < totalPages - 1);
 
-	const roleOptions: { value: UserRole; label: string }[] = [
-		{ value: 'user', label: 'User' },
-		{ value: 'moderator', label: 'Moderator' },
-		{ value: 'admin', label: 'Admin' }
-	];
+	const roleOptions = $derived([
+		{ value: 'user' as UserRole, label: m.admin_users_role_user() },
+		{ value: 'moderator' as UserRole, label: m.admin_users_role_moderator() },
+		{ value: 'admin' as UserRole, label: m.admin_users_role_admin() }
+	]);
 </script>
 
 <svelte:head>
-	<title>User Management | Admin | ft_transcendence</title>
+	<title>{m.admin_users_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="space-y-6">
 	<div>
-		<h1 class="text-2xl font-bold tracking-tight">User Management</h1>
-		<p class="text-muted-foreground">View and manage platform users</p>
+		<h1 class="text-2xl font-bold tracking-tight">{m.admin_users_title()}</h1>
+		<p class="text-muted-foreground">{m.admin_users_subtitle()}</p>
 	</div>
 
 	<!-- Filters -->
@@ -140,7 +142,7 @@
 				<SearchIcon class="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
 					type="search"
-					placeholder="Search by name or email..."
+					placeholder={m.admin_users_search_placeholder()}
 					class="pl-9"
 					bind:value={search}
 				/>
@@ -153,10 +155,10 @@
 				}}
 			>
 				<Select.Trigger class="w-full sm:w-40">
-					{roleFilter ? getRoleText(roleFilter as UserRole) : 'All Roles'}
+					{roleFilter ? getRoleText(roleFilter as UserRole) : m.admin_users_all_roles()}
 				</Select.Trigger>
 				<Select.Content>
-					<Select.Item value="">All Roles</Select.Item>
+					<Select.Item value="">{m.admin_users_all_roles()}</Select.Item>
 					{#each roleOptions as option}
 						<Select.Item value={option.value}>{option.label}</Select.Item>
 					{/each}
@@ -170,11 +172,11 @@
 		<Table.Root>
 			<Table.Header>
 				<Table.Row>
-					<Table.Head class="w-[250px]">User</Table.Head>
-					<Table.Head>Role</Table.Head>
-					<Table.Head class="hidden md:table-cell">Status</Table.Head>
-					<Table.Head class="hidden lg:table-cell">Joined</Table.Head>
-					<Table.Head class="text-right">Actions</Table.Head>
+					<Table.Head class="w-[250px]">{m.admin_users_user_column()}</Table.Head>
+					<Table.Head>{m.admin_users_role_column()}</Table.Head>
+					<Table.Head class="hidden md:table-cell">{m.admin_users_status_column()}</Table.Head>
+					<Table.Head class="hidden lg:table-cell">{m.admin_users_joined_column()}</Table.Head>
+					<Table.Head class="text-right">{m.admin_users_actions_column()}</Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
@@ -199,13 +201,13 @@
 				{:else if usersQuery.error}
 					<Table.Row>
 						<Table.Cell colspan={5} class="h-32 text-center">
-							<p class="text-muted-foreground">Failed to load users. Please try again.</p>
+							<p class="text-muted-foreground">{m.admin_users_failed()}</p>
 						</Table.Cell>
 					</Table.Row>
 				{:else if usersQuery.data?.users.length === 0}
 					<Table.Row>
 						<Table.Cell colspan={5} class="h-32 text-center">
-							<p class="text-muted-foreground">No users found.</p>
+							<p class="text-muted-foreground">{m.admin_users_no_users()}</p>
 						</Table.Cell>
 					</Table.Row>
 				{:else}
@@ -235,12 +237,12 @@
 							<Table.Cell class="hidden md:table-cell">
 								<div class="flex flex-wrap gap-1">
 									{#if user.emailVerified}
-										<Badge variant="outline" class="text-green-600">Verified</Badge>
+										<Badge variant="outline" class="text-green-600">{m.common_verified()}</Badge>
 									{:else}
-										<Badge variant="outline" class="text-yellow-600">Unverified</Badge>
+										<Badge variant="outline" class="text-yellow-600">{m.common_unverified()}</Badge>
 									{/if}
 									{#if user.activeSanctions > 0}
-										<Badge variant="destructive">{user.activeSanctions} Sanctions</Badge>
+										<Badge variant="destructive">{m.admin_users_sanctions_count({ count: user.activeSanctions })}</Badge>
 									{/if}
 								</div>
 							</Table.Cell>
@@ -255,10 +257,10 @@
 										onclick={() => openRoleDialog(user)}
 										disabled={isSelf || (isAdmin && meQuery.data?.role !== 'admin')}
 										title={isSelf
-											? 'Cannot change own role'
+											? m.admin_users_cannot_change_own()
 											: isAdmin
-												? 'Cannot modify admin'
-												: 'Change role'}
+												? m.admin_users_cannot_modify_admin()
+												: m.admin_users_change_role()}
 									>
 										<UserCogIcon class="size-4" />
 									</Button>
@@ -269,10 +271,10 @@
 										onclick={() => openDeleteDialog(user)}
 										disabled={isSelf || isAdmin}
 										title={isSelf
-											? 'Cannot delete yourself'
+											? m.admin_users_cannot_delete_self()
 											: isAdmin
-												? 'Cannot delete admin'
-												: 'Delete user'}
+												? m.admin_users_cannot_delete_admin()
+												: m.admin_users_delete_title()}
 									>
 										<TrashIcon class="size-4" />
 									</Button>
@@ -288,10 +290,10 @@
 		{#if (usersQuery.data?.total ?? 0) > pageSize}
 			<div class="flex items-center justify-between border-t px-4 py-3">
 				<p class="text-sm text-muted-foreground">
-					Showing {currentPage * pageSize + 1} to {Math.min(
+					{m.common_showing_range({ start: currentPage * pageSize + 1, end: Math.min(
 						(currentPage + 1) * pageSize,
 						usersQuery.data?.total ?? 0
-					)} of {usersQuery.data?.total ?? 0} users
+					), total: usersQuery.data?.total ?? 0 })}
 				</p>
 				<div class="flex gap-1">
 					<Button
@@ -301,7 +303,7 @@
 						onclick={() => (currentPage -= 1)}
 					>
 						<ChevronLeftIcon class="size-4" />
-						Previous
+						{m.common_previous()}
 					</Button>
 					<Button
 						variant="outline"
@@ -309,7 +311,7 @@
 						disabled={!canGoNext}
 						onclick={() => (currentPage += 1)}
 					>
-						Next
+						{m.common_next()}
 						<ChevronRightIcon class="size-4" />
 					</Button>
 				</div>
@@ -322,14 +324,14 @@
 <Dialog.Root bind:open={roleDialogOpen}>
 	<Dialog.Content>
 		<Dialog.Header>
-			<Dialog.Title>Change User Role</Dialog.Title>
+			<Dialog.Title>{m.admin_users_change_role_title()}</Dialog.Title>
 			<Dialog.Description>
-				Change the role for {selectedUser?.displayName}
+				{m.admin_users_change_role_for({ name: selectedUser?.displayName ?? '' })}
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="space-y-4 py-4">
 			<div class="space-y-2">
-				<Label>New Role</Label>
+				<Label>{m.admin_users_new_role()}</Label>
 				<Select.Root type="single" bind:value={newRole}>
 					<Select.Trigger>
 						{getRoleText(newRole as UserRole)}
@@ -351,18 +353,18 @@
 				</Select.Root>
 			</div>
 			<div class="space-y-2">
-				<Label for="roleReason">Reason (optional)</Label>
+				<Label for="roleReason">{m.admin_users_reason_optional()}</Label>
 				<Textarea
 					id="roleReason"
-					placeholder="Enter a reason for this change..."
+					placeholder={m.admin_users_reason_placeholder()}
 					bind:value={roleReason}
 				/>
 			</div>
 		</div>
 		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (roleDialogOpen = false)}>Cancel</Button>
+			<Button variant="outline" onclick={() => (roleDialogOpen = false)}>{m.common_cancel()}</Button>
 			<Button onclick={handleRoleChange} disabled={updateRoleMutation.isPending}>
-				{updateRoleMutation.isPending ? 'Saving...' : 'Save Changes'}
+				{updateRoleMutation.isPending ? m.admin_users_saving() : m.admin_users_save_changes()}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>
@@ -372,30 +374,30 @@
 <Dialog.Root bind:open={deleteDialogOpen}>
 	<Dialog.Content>
 		<Dialog.Header>
-			<Dialog.Title>Delete User</Dialog.Title>
+			<Dialog.Title>{m.admin_users_delete_title()}</Dialog.Title>
 			<Dialog.Description>
-				Are you sure you want to delete {selectedUser?.displayName}? This action cannot be undone.
+				{m.admin_users_delete_confirm({ name: selectedUser?.displayName ?? '' })}
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="space-y-4 py-4">
 			<div class="space-y-2">
-				<Label for="deleteReason">Reason (required)</Label>
+				<Label for="deleteReason">{m.admin_users_delete_reason()}</Label>
 				<Textarea
 					id="deleteReason"
-					placeholder="Enter a reason for deleting this user..."
+					placeholder={m.admin_users_delete_reason_placeholder()}
 					bind:value={deleteReason}
 					required
 				/>
 			</div>
 		</div>
 		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (deleteDialogOpen = false)}>Cancel</Button>
+			<Button variant="outline" onclick={() => (deleteDialogOpen = false)}>{m.common_cancel()}</Button>
 			<Button
 				variant="destructive"
 				onclick={handleDelete}
 				disabled={deleteUserMutation.isPending || !deleteReason.trim()}
 			>
-				{deleteUserMutation.isPending ? 'Deleting...' : 'Delete User'}
+				{deleteUserMutation.isPending ? m.admin_users_deleting() : m.admin_users_delete_button()}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

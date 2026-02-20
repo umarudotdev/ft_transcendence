@@ -6,6 +6,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Spinner } from '$lib/components/ui/spinner';
+	import { m } from '$lib/paraglide/messages.js';
 	import { ShieldCheck, CircleAlert, CircleCheck, RefreshCw } from '@lucide/svelte';
 
 	let status = $state<string | null>(null);
@@ -25,7 +26,7 @@
 			const response = await api.api.status.get();
 
 			if (response.error) {
-				error = 'Failed to connect to API';
+				error = m.status_failed_to_connect();
 				return;
 			}
 
@@ -48,7 +49,7 @@
 </script>
 
 <svelte:head>
-	<title>System Status | ft_transcendence</title>
+	<title>{m.status_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="relative min-h-screen overflow-hidden bg-background">
@@ -88,18 +89,18 @@
 				</span>
 				<span class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
 					{#if loading}
-						Checking
+						{m.status_checking()}
 					{:else if error}
-						Degraded
+						{m.status_degraded()}
 					{:else}
-						Operational
+						{m.status_operational()}
 					{/if}
 				</span>
 			</div>
 
-			<h1 class="text-4xl font-bold tracking-tight">System Status</h1>
+			<h1 class="text-4xl font-bold tracking-tight">{m.status_title()}</h1>
 			<p class="mx-auto max-w-md text-muted-foreground">
-				Real-time health monitoring for ft_transcendence services
+				{m.status_subtitle()}
 			</p>
 		</header>
 
@@ -111,8 +112,8 @@
 							<ShieldCheck class="size-5" />
 						</div>
 						<div>
-							<Card.Title class="text-lg">API Server</Card.Title>
-							<Card.Description>ElysiaJS Backend Service</Card.Description>
+							<Card.Title class="text-lg">{m.status_api_server()}</Card.Title>
+							<Card.Description>{m.status_api_description()}</Card.Description>
 						</div>
 					</div>
 					<Badge
@@ -120,11 +121,11 @@
 						class={!loading && !error ? 'bg-emerald-600 hover:bg-emerald-600' : ''}
 					>
 						{#if loading}
-							Checking...
+							{m.status_checking_badge()}
 						{:else if error}
-							Offline
+							{m.status_offline()}
 						{:else}
-							Online
+							{m.status_online()}
 						{/if}
 					</Badge>
 				</div>
@@ -134,12 +135,12 @@
 				{#if loading}
 					<div class="flex items-center justify-center gap-3 py-8">
 						<Spinner class="size-5 text-muted-foreground" />
-						<span class="text-muted-foreground">Checking API status...</span>
+						<span class="text-muted-foreground">{m.status_checking_api()}</span>
 					</div>
 				{:else if error}
 					<Alert.Root variant="destructive">
 						<CircleAlert class="size-4" />
-						<Alert.Title>Connection Failed</Alert.Title>
+						<Alert.Title>{m.status_connection_failed()}</Alert.Title>
 						<Alert.Description>
 							{error}
 						</Alert.Description>
@@ -150,11 +151,10 @@
 					>
 						<CircleCheck class="size-4 text-emerald-600 dark:text-emerald-400" />
 						<Alert.Title class="text-emerald-800 dark:text-emerald-200">
-							All Systems Operational
+							{m.status_all_operational()}
 						</Alert.Title>
 						<Alert.Description class="text-emerald-700 dark:text-emerald-300">
-							API Status: <span class="font-mono font-semibold">{status}</span> — Eden Treaty connection
-							verified
+							{m.status_api_verified({ status: status ?? '' })}
 						</Alert.Description>
 					</Alert.Root>
 				{/if}
@@ -163,19 +163,19 @@
 					<div class="border-t pt-4">
 						<dl class="grid grid-cols-2 gap-4 text-sm">
 							<div>
-								<dt class="text-muted-foreground">Protocol</dt>
+								<dt class="text-muted-foreground">{m.status_protocol()}</dt>
 								<dd class="font-mono font-medium">HTTP/REST</dd>
 							</div>
 							<div>
-								<dt class="text-muted-foreground">Client</dt>
+								<dt class="text-muted-foreground">{m.status_client()}</dt>
 								<dd class="font-mono font-medium">Eden Treaty</dd>
 							</div>
 							<div>
-								<dt class="text-muted-foreground">Endpoint</dt>
+								<dt class="text-muted-foreground">{m.status_endpoint()}</dt>
 								<dd class="font-mono text-xs font-medium">/status</dd>
 							</div>
 							<div>
-								<dt class="text-muted-foreground">Last Check</dt>
+								<dt class="text-muted-foreground">{m.status_last_check()}</dt>
 								<dd class="font-mono font-medium">
 									{lastChecked ? formatTime(lastChecked) : '—'}
 								</dd>
@@ -189,17 +189,17 @@
 				<Button onclick={checkStatus} disabled={loading} class="w-full" variant="outline">
 					{#if loading}
 						<Spinner class="size-4" />
-						Checking...
+						{m.status_checking_badge()}
 					{:else}
 						<RefreshCw class="size-4" />
-						Refresh Status
+						{m.status_refresh()}
 					{/if}
 				</Button>
 			</Card.Footer>
 		</Card.Root>
 
 		<p class="mt-8 text-center text-xs text-muted-foreground">
-			Automatic health checks run every 30 seconds in production
+			{m.status_auto_check()}
 		</p>
 	</div>
 </div>

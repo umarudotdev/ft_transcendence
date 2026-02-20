@@ -3,6 +3,8 @@
 	import type { Achievement } from '$lib/queries/gamification';
 	import TrophyIcon from '@lucide/svelte/icons/trophy';
 	import LockIcon from '@lucide/svelte/icons/lock';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime';
 
 	interface Props {
 		achievement: Achievement;
@@ -13,7 +15,7 @@
 	let { achievement, unlocked = false, unlockedAt }: Props = $props();
 
 	function formatDate(date: Date): string {
-		return new Date(date).toLocaleDateString(undefined, {
+		return new Date(date).toLocaleDateString(getLocale(), {
 			year: 'numeric',
 			month: 'short',
 			day: 'numeric'
@@ -48,7 +50,7 @@
 				</h3>
 				<p class="text-sm text-muted-foreground">
 					{#if achievement.isSecret && !unlocked}
-						This achievement is hidden until unlocked
+						{m.achievements_secret()}
 					{:else}
 						{achievement.description}
 					{/if}
@@ -60,7 +62,7 @@
 					</span>
 					{#if unlocked && unlockedAt}
 						<span class="text-xs text-muted-foreground">
-							Unlocked {formatDate(unlockedAt)}
+							{m.achievements_unlocked({ date: formatDate(unlockedAt) })}
 						</span>
 					{/if}
 				</div>

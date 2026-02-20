@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
 	import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card';
+	import { m } from '$lib/paraglide/messages.js';
 	import {
 		Dialog,
 		DialogContent,
@@ -93,14 +94,14 @@
 			// Update username if changed and valid
 			if (newUsername !== user.username) {
 				if (!usernameValid) {
-					toast.error('Invalid username format');
+					toast.error(m.username_invalid_format());
 					return;
 				}
 				await updateUsernameMutation.mutateAsync({ username: newUsername });
 			}
 
 			showEditDialog = false;
-			toast.success('Profile updated!');
+			toast.success(m.profile_updated_toast());
 		} catch (error) {
 			const message = error instanceof Error ? error.message : 'Failed to update';
 			toast.error(message);
@@ -156,7 +157,7 @@
 </script>
 
 <svelte:head>
-	<title>Profile | ft_transcendence</title>
+	<title>{m.profile_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl space-y-6">
@@ -179,8 +180,7 @@
 		<Card>
 			<CardContent class="p-6 text-center">
 				<p class="text-muted-foreground">
-					Please <a href="/auth/login" class="font-medium text-primary underline">log in</a> to view your
-					profile.
+					{m.profile_login_required()}
 				</p>
 			</CardContent>
 		</Card>
@@ -216,37 +216,37 @@
 								<span
 									class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800"
 								>
-									Verified
+									{m.common_verified()}
 								</span>
 							{:else}
 								<span
 									class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800"
 								>
-									Unverified
+									{m.common_unverified()}
 								</span>
 							{/if}
 							{#if user.twoFactorEnabled}
 								<span
 									class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
 								>
-									2FA Enabled
+									{m.profile_2fa_enabled()}
 								</span>
 							{/if}
 							{#if user.intraId}
 								<span
 									class="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800"
 								>
-									42 Linked
+									{m.profile_42_linked()}
 								</span>
 							{/if}
 						</div>
 
 						<div class="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
 							<Button variant="outline" size="sm" onclick={() => goto('/settings')}>
-								Settings
+								{m.settings_title()}
 							</Button>
 							<Button variant="outline" size="sm" onclick={() => goto('/settings/security')}>
-								Security
+								{m.settings_security()}
 							</Button>
 						</div>
 					</div>
@@ -256,9 +256,9 @@
 
 		<Tabs value="overview" class="space-y-6">
 			<TabsList class="grid w-full grid-cols-3">
-				<TabsTrigger value="overview">Overview</TabsTrigger>
-				<TabsTrigger value="matches">Match History</TabsTrigger>
-				<TabsTrigger value="friends">Friends</TabsTrigger>
+				<TabsTrigger value="overview">{m.profile_overview()}</TabsTrigger>
+				<TabsTrigger value="matches">{m.profile_match_history()}</TabsTrigger>
+				<TabsTrigger value="friends">{m.profile_friends()}</TabsTrigger>
 			</TabsList>
 
 			<TabsContent value="overview" class="space-y-6">
@@ -266,8 +266,8 @@
 
 				<Card>
 					<CardHeader class="flex flex-row items-center justify-between pb-2">
-						<CardTitle class="text-lg">Recent Matches</CardTitle>
-						<Button variant="ghost" size="sm" onclick={() => {}}>View All</Button>
+						<CardTitle class="text-lg">{m.profile_recent_matches()}</CardTitle>
+						<Button variant="ghost" size="sm" onclick={() => {}}>{m.common_view_all()}</Button>
 					</CardHeader>
 					<CardContent>
 						{#if matchesQuery.isPending}
@@ -277,7 +277,7 @@
 								{/each}
 							</div>
 						{:else if matchesQuery.data?.matches.length === 0}
-							<p class="py-4 text-center text-muted-foreground">No matches yet. Start playing!</p>
+							<p class="py-4 text-center text-muted-foreground">{m.profile_no_matches()}</p>
 						{:else if matchesQuery.data}
 							<div class="space-y-2">
 								{#each matchesQuery.data.matches.slice(0, 5) as match}
@@ -337,23 +337,23 @@
 <Dialog bind:open={showEditDialog}>
 	<DialogContent>
 		<DialogHeader>
-			<DialogTitle>Edit Profile</DialogTitle>
-			<DialogDescription>Update your display name and username.</DialogDescription>
+			<DialogTitle>{m.profile_edit_title()}</DialogTitle>
+			<DialogDescription>{m.profile_edit_description()}</DialogDescription>
 		</DialogHeader>
 		<div class="space-y-4 py-4">
 			<div class="space-y-2">
-				<Label for="displayName">Display Name</Label>
+				<Label for="displayName">{m.profile_display_name()}</Label>
 				<Input
 					id="displayName"
 					bind:value={newDisplayName}
-					placeholder="Enter your display name"
+					placeholder={m.profile_display_name_placeholder()}
 					maxlength={50}
 				/>
-				<p class="text-xs text-muted-foreground">This is how your name appears to others.</p>
+				<p class="text-xs text-muted-foreground">{m.profile_display_name_help()}</p>
 			</div>
 
 			<div class="space-y-2">
-				<Label for="username">Username</Label>
+				<Label for="username">{m.auth_register_username()}</Label>
 				<Input
 					id="username"
 					bind:value={newUsername}
@@ -363,18 +363,18 @@
 					pattern="^[a-z0-9_]+$"
 				/>
 				<p class="text-xs text-muted-foreground">
-					3-20 characters. Lowercase letters, numbers, and underscores only.
+					{m.username_format_help()}
 				</p>
 				{#if newUsername && !usernameValid}
-					<p class="text-xs text-destructive">Invalid username format.</p>
+					<p class="text-xs text-destructive">{m.username_invalid_format()}</p>
 				{/if}
 				<p class="text-xs text-muted-foreground">
-					Note: You can only change your username once every 30 days.
+					{m.username_change_limit()}
 				</p>
 			</div>
 		</div>
 		<DialogFooter>
-			<Button variant="outline" onclick={() => (showEditDialog = false)}>Cancel</Button>
+			<Button variant="outline" onclick={() => (showEditDialog = false)}>{m.common_cancel()}</Button>
 			<Button
 				onclick={saveProfile}
 				disabled={updateProfileMutation.isPending ||
@@ -382,9 +382,9 @@
 					!newDisplayName.trim()}
 			>
 				{#if updateProfileMutation.isPending || updateUsernameMutation.isPending}
-					Saving...
+					{m.profile_saving()}
 				{:else}
-					Save
+					{m.common_save()}
 				{/if}
 			</Button>
 		</DialogFooter>

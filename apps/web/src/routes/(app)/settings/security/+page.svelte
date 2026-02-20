@@ -8,6 +8,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { m } from '$lib/paraglide/messages.js';
 	import {
 		createChangeEmailMutation,
 		createChangePasswordMutation,
@@ -106,8 +107,7 @@
 			{ currentPassword, newPassword },
 			{
 				onSuccess: () => {
-					successMessage =
-						'Password changed successfully. You have been logged out of all sessions.';
+					successMessage = m.security_password_changed();
 					currentPassword = '';
 					newPassword = '';
 					confirmPassword = '';
@@ -131,8 +131,7 @@
 			{ password: setNewPassword },
 			{
 				onSuccess: () => {
-					setPasswordSuccessMessage =
-						'Password set successfully! You can now change your email, delete your account, and unlink your 42 account.';
+					setPasswordSuccessMessage = m.security_password_set();
 					setNewPassword = '';
 					setConfirmPassword = '';
 				}
@@ -156,8 +155,7 @@
 			{ newEmail, password: emailPassword },
 			{
 				onSuccess: () => {
-					emailSuccessMessage =
-						'Verification email sent! Please check your new email address and click the link to confirm the change.';
+					emailSuccessMessage = m.security_email_verification_sent();
 					newEmail = '';
 					emailPassword = '';
 				}
@@ -177,7 +175,7 @@
 			{ password: unlinkPassword },
 			{
 				onSuccess: () => {
-					unlinkSuccessMessage = '42 account unlinked successfully.';
+					unlinkSuccessMessage = m.security_42_unlinked();
 					unlinkPassword = '';
 					unlinkDialogOpen = false;
 				}
@@ -206,7 +204,7 @@
 </script>
 
 <svelte:head>
-	<title>Security Settings | ft_transcendence</title>
+	<title>{m.security_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="mx-auto max-w-2xl space-y-6">
@@ -216,10 +214,10 @@
 			class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
 		>
 			<ArrowLeftIcon class="size-4" />
-			Back to Settings
+			{m.security_back()}
 		</a>
-		<h1 class="mt-4 text-2xl font-bold tracking-tight">Security Settings</h1>
-		<p class="text-muted-foreground">Manage your account security settings</p>
+		<h1 class="mt-4 text-2xl font-bold tracking-tight">{m.security_title()}</h1>
+		<p class="text-muted-foreground">{m.security_subtitle()}</p>
 	</div>
 
 	{#if meQuery.isPending}
@@ -237,7 +235,7 @@
 		<Alert variant="destructive">
 			<AlertTriangleIcon class="size-4" />
 			<AlertDescription>
-				Please <a href="/auth/login" class="font-medium underline">log in</a> to access security settings.
+				{m.security_login_required()}
 			</AlertDescription>
 		</Alert>
 	{:else if meQuery.data}
@@ -249,24 +247,23 @@
 					<Card.Title class="flex items-center gap-2">
 						<KeyIcon class="size-5" />
 						{#if !user.hasPassword}
-							Set Password
+							{m.security_set_password()}
 						{:else}
-							Change Password
+							{m.security_change_password()}
 						{/if}
 					</Card.Title>
 					<Card.Description>
 						{#if !user.hasPassword}
-							Set a password to enable all account features
+							{m.security_set_password_description()}
 						{:else}
-							Update your password to keep your account secure
+							{m.security_change_password_description()}
 						{/if}
 					</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					{#if !user.hasPassword}
 						<p class="mb-4 text-sm text-muted-foreground">
-							You signed up with 42 OAuth. Set a password to enable email changes, account deletion,
-							and unlinking your 42 account.
+							{m.security_set_password_info()}
 						</p>
 						<form onsubmit={handleSetPassword} class="space-y-4">
 							{#if setPasswordSuccessMessage}
@@ -286,7 +283,7 @@
 							{/if}
 
 							<div class="space-y-2">
-								<Label for="set-new-password">New Password</Label>
+								<Label for="set-new-password">{m.security_new_password()}</Label>
 								<Input
 									type="password"
 									id="set-new-password"
@@ -297,7 +294,7 @@
 							</div>
 
 							<div class="space-y-2">
-								<Label for="set-confirm-password">Confirm Password</Label>
+								<Label for="set-confirm-password">{m.security_confirm_new_password()}</Label>
 								<Input
 									type="password"
 									id="set-confirm-password"
@@ -309,7 +306,7 @@
 
 							{#if setNewPassword.length > 0}
 								<div class="rounded-lg bg-muted p-4">
-									<p class="text-sm font-medium">Password requirements:</p>
+									<p class="text-sm font-medium">{m.password_requirements_title()}</p>
 									<ul class="mt-2 space-y-1 text-sm">
 										<li
 											class="flex items-center gap-2 {setPasswordRequirements.minLength
@@ -321,7 +318,7 @@
 											{:else}
 												<CircleIcon class="size-4" />
 											{/if}
-											At least 8 characters
+											{m.password_min_length()}
 										</li>
 										<li
 											class="flex items-center gap-2 {setPasswordRequirements.hasUpper
@@ -333,7 +330,7 @@
 											{:else}
 												<CircleIcon class="size-4" />
 											{/if}
-											One uppercase letter
+											{m.password_one_uppercase()}
 										</li>
 										<li
 											class="flex items-center gap-2 {setPasswordRequirements.hasLower
@@ -345,7 +342,7 @@
 											{:else}
 												<CircleIcon class="size-4" />
 											{/if}
-											One lowercase letter
+											{m.password_one_lowercase()}
 										</li>
 										<li
 											class="flex items-center gap-2 {setPasswordRequirements.hasNumber
@@ -357,7 +354,7 @@
 											{:else}
 												<CircleIcon class="size-4" />
 											{/if}
-											One number
+											{m.password_one_number()}
 										</li>
 										<li
 											class="flex items-center gap-2 {setPasswordRequirements.passwordsMatch
@@ -369,14 +366,14 @@
 											{:else}
 												<CircleIcon class="size-4" />
 											{/if}
-											Passwords match
+											{m.password_passwords_match()}
 										</li>
 									</ul>
 								</div>
 							{/if}
 
 							<Button type="submit" disabled={!isSetPasswordValid || setPasswordMutation.isPending}>
-								{setPasswordMutation.isPending ? 'Setting Password...' : 'Set Password'}
+								{setPasswordMutation.isPending ? m.security_setting_password() : m.security_set_password_button()}
 							</Button>
 						</form>
 					{:else}
@@ -398,7 +395,7 @@
 							{/if}
 
 							<div class="space-y-2">
-								<Label for="current-password">Current Password</Label>
+								<Label for="current-password">{m.security_current_password()}</Label>
 								<Input
 									type="password"
 									id="current-password"
@@ -409,7 +406,7 @@
 							</div>
 
 							<div class="space-y-2">
-								<Label for="new-password">New Password</Label>
+								<Label for="new-password">{m.security_new_password()}</Label>
 								<Input
 									type="password"
 									id="new-password"
@@ -420,7 +417,7 @@
 							</div>
 
 							<div class="space-y-2">
-								<Label for="confirm-password">Confirm New Password</Label>
+								<Label for="confirm-password">{m.security_confirm_new_password()}</Label>
 								<Input
 									type="password"
 									id="confirm-password"
@@ -432,7 +429,7 @@
 
 							{#if newPassword.length > 0}
 								<div class="rounded-lg bg-muted p-4">
-									<p class="text-sm font-medium">Password requirements:</p>
+									<p class="text-sm font-medium">{m.password_requirements_title()}</p>
 									<ul class="mt-2 space-y-1 text-sm">
 										<li
 											class="flex items-center gap-2 {passwordRequirements.minLength
@@ -444,7 +441,7 @@
 											{:else}
 												<CircleIcon class="size-4" />
 											{/if}
-											At least 8 characters
+											{m.password_min_length()}
 										</li>
 										<li
 											class="flex items-center gap-2 {passwordRequirements.hasUpper
@@ -456,7 +453,7 @@
 											{:else}
 												<CircleIcon class="size-4" />
 											{/if}
-											One uppercase letter
+											{m.password_one_uppercase()}
 										</li>
 										<li
 											class="flex items-center gap-2 {passwordRequirements.hasLower
@@ -468,7 +465,7 @@
 											{:else}
 												<CircleIcon class="size-4" />
 											{/if}
-											One lowercase letter
+											{m.password_one_lowercase()}
 										</li>
 										<li
 											class="flex items-center gap-2 {passwordRequirements.hasNumber
@@ -480,7 +477,7 @@
 											{:else}
 												<CircleIcon class="size-4" />
 											{/if}
-											One number
+											{m.password_one_number()}
 										</li>
 										<li
 											class="flex items-center gap-2 {passwordRequirements.passwordsMatch
@@ -492,14 +489,14 @@
 											{:else}
 												<CircleIcon class="size-4" />
 											{/if}
-											Passwords match
+											{m.password_passwords_match()}
 										</li>
 									</ul>
 								</div>
 							{/if}
 
 							<Button type="submit" disabled={!isPasswordValid || changePasswordMutation.isPending}>
-								{changePasswordMutation.isPending ? 'Changing Password...' : 'Change Password'}
+								{changePasswordMutation.isPending ? m.security_changing_password() : m.security_change_password_button()}
 							</Button>
 						</form>
 					{/if}
@@ -511,9 +508,9 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<MailIcon class="size-5" />
-						Change Email
+						{m.security_change_email()}
 					</Card.Title>
-					<Card.Description>Update your email address</Card.Description>
+					<Card.Description>{m.security_change_email_description()}</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					<form onsubmit={handleChangeEmail} class="space-y-4">
@@ -535,42 +532,41 @@
 
 						<div class="rounded-lg bg-muted p-3">
 							<p class="text-sm text-muted-foreground">
-								<span class="font-medium">Current email:</span>
+								<span class="font-medium">{m.security_current_email()}</span>
 								{user.email}
 							</p>
 						</div>
 
 						<div class="space-y-2">
-							<Label for="new-email">New Email Address</Label>
+							<Label for="new-email">{m.security_new_email()}</Label>
 							<Input
 								type="email"
 								id="new-email"
 								bind:value={newEmail}
-								placeholder="Enter your new email"
+								placeholder={m.security_new_email_placeholder()}
 								required
 								autocomplete="email"
 							/>
 						</div>
 
 						<div class="space-y-2">
-							<Label for="email-password">Current Password</Label>
+							<Label for="email-password">{m.security_current_password()}</Label>
 							<Input
 								type="password"
 								id="email-password"
 								bind:value={emailPassword}
-								placeholder="Confirm with your password"
+								placeholder={m.security_email_password_placeholder()}
 								required
 								autocomplete="current-password"
 							/>
 						</div>
 
 						<p class="text-sm text-muted-foreground">
-							A verification email will be sent to your new address. Your email won't change until
-							you click the verification link.
+							{m.security_email_verification_note()}
 						</p>
 
 						<Button type="submit" disabled={!isEmailValid || changeEmailMutation.isPending}>
-							{changeEmailMutation.isPending ? 'Sending Verification...' : 'Change Email'}
+							{changeEmailMutation.isPending ? m.security_sending_verification() : m.security_change_email_button()}
 						</Button>
 					</form>
 				</Card.Content>
@@ -581,9 +577,9 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<LinkIcon class="size-5" />
-						42 Account
+						{m.security_42_account()}
 					</Card.Title>
-					<Card.Description>Link your 42 account for quick sign-in</Card.Description>
+					<Card.Description>{m.security_42_description()}</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					{#if unlinkSuccessMessage}
@@ -603,10 +599,10 @@
 									class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
 								>
 									<CheckCircleIcon class="mr-1 size-3" />
-									42 Account Linked
+									{m.security_42_linked()}
 								</Badge>
 								<p class="mt-2 text-sm text-muted-foreground">
-									Your 42 account is connected. You can use it to sign in.
+									{m.security_42_linked_info()}
 								</p>
 							</div>
 							{#if user.hasPassword}
@@ -619,16 +615,15 @@
 												{...props}
 											>
 												<UnlinkIcon class="mr-2 size-4" />
-												Unlink
+												{m.security_42_unlink()}
 											</Button>
 										{/snippet}
 									</Dialog.Trigger>
 									<Dialog.Content class="sm:max-w-md">
 										<Dialog.Header>
-											<Dialog.Title>Unlink 42 Account</Dialog.Title>
+											<Dialog.Title>{m.security_42_unlink_title()}</Dialog.Title>
 											<Dialog.Description>
-												Enter your password to confirm unlinking your 42 account. You can re-link it
-												later.
+												{m.security_42_unlink_description()}
 											</Dialog.Description>
 										</Dialog.Header>
 										<form onsubmit={handleUnlink42} class="space-y-4">
@@ -640,7 +635,7 @@
 											{/if}
 
 											<div class="space-y-2">
-												<Label for="unlink-password">Password</Label>
+												<Label for="unlink-password">{m.common_password()}</Label>
 												<Input
 													type="password"
 													id="unlink-password"
@@ -657,14 +652,14 @@
 													variant="outline"
 													onclick={() => (unlinkDialogOpen = false)}
 												>
-													Cancel
+													{m.common_cancel()}
 												</Button>
 												<Button
 													type="submit"
 													variant="destructive"
 													disabled={!unlinkPassword || unlink42Mutation.isPending}
 												>
-													{unlink42Mutation.isPending ? 'Unlinking...' : 'Unlink Account'}
+													{unlink42Mutation.isPending ? m.security_42_unlinking() : m.security_42_unlink_confirm()}
 												</Button>
 											</Dialog.Footer>
 										</form>
@@ -674,13 +669,13 @@
 						</div>
 						{#if !user.hasPassword}
 							<p class="mt-2 text-sm text-muted-foreground">
-								Set up a password first to be able to unlink your 42 account.
+								{m.security_42_set_password_first()}
 							</p>
 						{/if}
 					{:else}
 						<Button variant="outline" onclick={redirectToLink42}>
 							<LinkIcon class="mr-2 size-4" />
-							Link 42 Account
+							{m.security_42_link()}
 						</Button>
 					{/if}
 				</Card.Content>
@@ -691,9 +686,9 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<ShieldIcon class="size-5" />
-						Two-Factor Authentication
+						{m.security_2fa_title()}
 					</Card.Title>
-					<Card.Description>Add an extra layer of security to your account</Card.Description>
+					<Card.Description>{m.security_2fa_description()}</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					{#if user.twoFactorEnabled}
@@ -703,22 +698,22 @@
 								class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
 							>
 								<CheckCircleIcon class="mr-1 size-3" />
-								2FA Enabled
+								{m.security_2fa_enabled()}
 							</Badge>
 							<Button variant="link" class="text-destructive" href="/settings/2fa?action=disable">
-								Disable 2FA
+								{m.security_2fa_disable()}
 							</Button>
 						</div>
 						<p class="mt-2 text-sm text-muted-foreground">
-							Your account is protected with two-factor authentication.
+							{m.security_2fa_enabled_info()}
 						</p>
 					{:else}
 						<Button href="/settings/2fa">
 							<ShieldIcon class="mr-2 size-4" />
-							Enable 2FA
+							{m.security_2fa_enable()}
 						</Button>
 						<p class="mt-2 text-sm text-muted-foreground">
-							Protect your account with time-based one-time passwords (TOTP).
+							{m.security_2fa_totp_info()}
 						</p>
 					{/if}
 				</Card.Content>
@@ -729,16 +724,16 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2">
 						<LogOutIcon class="size-5" />
-						Active Sessions
+						{m.security_sessions_title()}
 					</Card.Title>
 					<Card.Description
-						>Sign out from all devices if you suspect unauthorized access</Card.Description
+						>{m.security_sessions_description()}</Card.Description
 					>
 				</Card.Header>
 				<Card.Content>
 					<Button variant="destructive" href="/auth/logout?all=true">
 						<LogOutIcon class="mr-2 size-4" />
-						Sign Out All Devices
+						{m.security_sessions_sign_out_all()}
 					</Button>
 				</Card.Content>
 			</Card.Root>
@@ -748,10 +743,10 @@
 				<Card.Header>
 					<Card.Title class="flex items-center gap-2 text-destructive">
 						<TrashIcon class="size-5" />
-						Delete Account
+						{m.security_delete_title()}
 					</Card.Title>
 					<Card.Description
-						>Permanently delete your account and all associated data</Card.Description
+						>{m.security_delete_description()}</Card.Description
 					>
 				</Card.Header>
 				<Card.Content>
@@ -759,29 +754,27 @@
 						<Alert variant="destructive">
 							<AlertTriangleIcon class="size-4" />
 							<AlertDescription>
-								You need to set a password before you can delete your account. Go to the "Set
-								Password" section above.
+								{m.security_delete_need_password()}
 							</AlertDescription>
 						</Alert>
 					{:else}
 						<p class="mb-4 text-sm text-muted-foreground">
-							This action is irreversible. All your data, including match history, achievements, and
-							messages will be permanently deleted.
+							{m.security_delete_warning()}
 						</p>
 						<Dialog.Root bind:open={deleteDialogOpen}>
 							<Dialog.Trigger>
 								{#snippet child({ props })}
 									<Button variant="destructive" {...props}>
 										<TrashIcon class="mr-2 size-4" />
-										Delete My Account
+										{m.security_delete_button()}
 									</Button>
 								{/snippet}
 							</Dialog.Trigger>
 							<Dialog.Content class="sm:max-w-md">
 								<Dialog.Header>
-									<Dialog.Title class="text-destructive">Delete Account</Dialog.Title>
+									<Dialog.Title class="text-destructive">{m.security_delete_dialog_title()}</Dialog.Title>
 									<Dialog.Description>
-										This action cannot be undone. All your data will be permanently deleted.
+										{m.security_delete_dialog_description()}
 									</Dialog.Description>
 								</Dialog.Header>
 								<form onsubmit={handleDeleteAccount} class="space-y-4">
@@ -793,7 +786,7 @@
 									{/if}
 
 									<div class="space-y-2">
-										<Label for="delete-password">Password</Label>
+										<Label for="delete-password">{m.common_password()}</Label>
 										<Input
 											type="password"
 											id="delete-password"
@@ -805,7 +798,7 @@
 									</div>
 
 									<div class="space-y-2">
-										<Label for="delete-confirm">Type DELETE to confirm</Label>
+										<Label for="delete-confirm">{m.security_delete_type_confirm()}</Label>
 										<Input
 											type="text"
 											id="delete-confirm"
@@ -826,14 +819,14 @@
 												deleteConfirmText = '';
 											}}
 										>
-											Cancel
+											{m.common_cancel()}
 										</Button>
 										<Button
 											type="submit"
 											variant="destructive"
 											disabled={!canDeleteAccount || deleteAccountMutation.isPending}
 										>
-											{deleteAccountMutation.isPending ? 'Deleting...' : 'Delete Account'}
+											{deleteAccountMutation.isPending ? m.security_delete_deleting() : m.security_delete_confirm()}
 										</Button>
 									</Dialog.Footer>
 								</form>

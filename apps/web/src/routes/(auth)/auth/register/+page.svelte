@@ -13,6 +13,7 @@
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
+	import { m } from '$lib/paraglide/messages.js';
 
 	// Form state
 	let email = $state('');
@@ -60,20 +61,20 @@
 	// Condensed password requirements text (only show unmet)
 	const unmetPasswordReqs = $derived(() => {
 		const unmet: string[] = [];
-		if (!passwordRequirements.minLength) unmet.push('8+ characters');
-		if (!passwordRequirements.hasUppercase) unmet.push('uppercase');
-		if (!passwordRequirements.hasLowercase) unmet.push('lowercase');
-		if (!passwordRequirements.hasNumber) unmet.push('number');
+		if (!passwordRequirements.minLength) unmet.push(m.password_8_chars());
+		if (!passwordRequirements.hasUppercase) unmet.push(m.password_uppercase());
+		if (!passwordRequirements.hasLowercase) unmet.push(m.password_lowercase());
+		if (!passwordRequirements.hasNumber) unmet.push(m.password_number());
 		return unmet;
 	});
 
 	// Username error message (show first failing requirement)
 	const usernameError = $derived(() => {
 		if (username.length === 0) return null;
-		if (!usernameRequirements.minLength) return 'Username must be at least 3 characters';
-		if (!usernameRequirements.maxLength) return 'Username must be at most 20 characters';
+		if (!usernameRequirements.minLength) return m.username_min_length();
+		if (!usernameRequirements.maxLength) return m.username_max_length();
 		if (!usernameRequirements.validChars)
-			return 'Only lowercase letters, numbers, and underscores allowed';
+			return m.username_valid_chars();
 		return null;
 	});
 
@@ -88,16 +89,16 @@
 	);
 
 	// User-friendly error messages
-	const errorMessages: Record<string, string> = {
-		'Email already exists': 'An account with this email already exists. Try signing in instead.',
-		'Username already exists': 'This username is taken. Please choose another one.',
-		'Invalid email': 'Please enter a valid email address.',
-		'Weak password': 'Please choose a stronger password.',
-		'Email already registered': 'An account with this email already exists. Try signing in instead.'
+	const errorMessages: Record<string, () => string> = {
+		'Email already exists': () => m.auth_error_email_exists(),
+		'Username already exists': () => m.auth_error_username_exists(),
+		'Invalid email': () => m.auth_error_invalid_email(),
+		'Weak password': () => m.auth_error_weak_password(),
+		'Email already registered': () => m.auth_error_email_already_registered()
 	};
 
 	function getFriendlyError(error: string): string {
-		return errorMessages[error] || error;
+		return errorMessages[error]?.() ?? error;
 	}
 
 	function handleNextStep(e: SubmitEvent) {
@@ -119,7 +120,7 @@
 		errorMessage = '';
 
 		if (!isStep2Valid) {
-			errorMessage = 'Please fill in all required fields correctly.';
+			errorMessage = m.auth_register_fill_fields();
 			return;
 		}
 
@@ -127,7 +128,7 @@
 			{ email, password, displayName, username },
 			{
 				onSuccess: () => {
-					toast.success('Account created! Check your email to verify.');
+					toast.success(m.auth_register_success_toast());
 					goto('/auth/login?registered=true');
 				},
 				onError: (error: Error) => {
@@ -144,12 +145,12 @@
 
 <Card.Root class="w-full max-w-md border-y">
 	<Card.Header class="text-center">
-		<Card.Title class="text-2xl">Create an account</Card.Title>
+		<Card.Title class="text-2xl">{m.auth_register_title()}</Card.Title>
 		<Card.Description>
 			{#if currentStep === 1}
-				Enter your email and create a password
+				{m.auth_register_step1_description()}
 			{:else}
-				Set up your profile
+				{m.auth_register_step2_description()}
 			{/if}
 		</Card.Description>
 	</Card.Header>
@@ -167,7 +168,7 @@
 			<div transition:fade={{ duration: 200 }}>
 				<form onsubmit={handleNextStep} class="space-y-4">
 					<div class="space-y-2">
-						<Label for="email">Email</Label>
+						<Label for="email">{m.common_email()}</Label>
 						<Input
 							id="email"
 							type="email"
@@ -179,7 +180,7 @@
 					</div>
 
 					<div class="space-y-2">
-						<Label for="password">Password</Label>
+						<Label for="password">{m.common_password()}</Label>
 						<PasswordInput
 							id="password"
 							bind:value={password}
@@ -194,13 +195,13 @@
 								class="flex items-center gap-2 text-sm text-muted-foreground"
 							>
 								<CircleAlertIcon class="size-4 shrink-0" />
-								Needs: {unmetPasswordReqs().join(', ')}
+								{m.password_needs({ requirements: unmetPasswordReqs().join(', ') })}
 							</p>
 						{/if}
 					</div>
 
 					<div class="space-y-2">
-						<Label for="confirmPassword">Confirm Password</Label>
+						<Label for="confirmPassword">{m.auth_register_confirm_password()}</Label>
 						<PasswordInput
 							id="confirmPassword"
 							bind:value={confirmPassword}
@@ -214,7 +215,7 @@
 								class="flex items-center gap-2 text-sm text-destructive"
 							>
 								<CircleAlertIcon class="size-4 shrink-0" />
-								Passwords do not match
+								{m.auth_register_password_mismatch()}
 							</p>
 						{/if}
 					</div>
@@ -224,7 +225,7 @@
 						class="w-full gap-2"
 						disabled={!isStep1Valid || registerMutation.isPending}
 					>
-						Continue
+						{m.common_continue()}
 						<ArrowRightIcon class="size-4" />
 					</Button>
 				</form>
@@ -234,7 +235,7 @@
 						<span class="w-full border-t"></span>
 					</div>
 					<div class="relative flex justify-center text-xs uppercase">
-						<span class="bg-card px-2 text-muted-foreground">Or continue with</span>
+						<span class="bg-card px-2 text-muted-foreground">{m.common_or_continue_with()}</span>
 					</div>
 				</div>
 
@@ -244,19 +245,19 @@
 					onclick={redirectTo42OAuth}
 					disabled={registerMutation.isPending}
 				>
-					Sign in with 42
+					{m.auth_login_sign_in_42()}
 				</Button>
 
 				<p class="mt-4 text-center text-sm text-muted-foreground">
-					Already have an account?
-					<a href="/auth/login" class="text-primary hover:underline">Sign in</a>
+					{m.auth_register_has_account()}
+					<a href="/auth/login" class="text-primary hover:underline">{m.common_sign_in()}</a>
 				</p>
 			</div>
 		{:else}
 			<div transition:fade={{ duration: 200 }}>
 				<form onsubmit={handleSubmit} class="space-y-4">
 					<div class="space-y-2">
-						<Label for="displayName">Display Name</Label>
+						<Label for="displayName">{m.auth_register_display_name()}</Label>
 						<Input
 							id="displayName"
 							type="text"
@@ -264,14 +265,14 @@
 							required
 							minlength={1}
 							maxlength={50}
-							placeholder="Your display name"
+							placeholder={m.auth_register_display_name_placeholder()}
 							disabled={registerMutation.isPending}
 						/>
-						<p class="text-xs text-muted-foreground">This is how your name will appear to others</p>
+						<p class="text-xs text-muted-foreground">{m.auth_register_display_name_help()}</p>
 					</div>
 
 					<div class="space-y-2">
-						<Label for="username">Username</Label>
+						<Label for="username">{m.auth_register_username()}</Label>
 						<Input
 							id="username"
 							type="text"
@@ -280,7 +281,7 @@
 							minlength={3}
 							maxlength={20}
 							pattern="^[a-z0-9_]+$"
-							placeholder="your_username"
+							placeholder={m.auth_register_username_placeholder()}
 							disabled={registerMutation.isPending}
 						/>
 						{#if usernameError()}
@@ -303,21 +304,21 @@
 							disabled={registerMutation.isPending}
 						>
 							<ArrowLeftIcon class="size-4" />
-							Back
+							{m.common_back()}
 						</Button>
 						<Button
 							type="submit"
 							class="flex-1"
 							disabled={!isStep2Valid || registerMutation.isPending}
 						>
-							{registerMutation.isPending ? 'Creating account...' : 'Create account'}
+							{registerMutation.isPending ? m.auth_register_creating() : m.auth_register_create()}
 						</Button>
 					</div>
 				</form>
 
 				<p class="mt-4 text-center text-sm text-muted-foreground">
-					Already have an account?
-					<a href="/auth/login" class="text-primary hover:underline">Sign in</a>
+					{m.auth_register_has_account()}
+					<a href="/auth/login" class="text-primary hover:underline">{m.common_sign_in()}</a>
 				</p>
 			</div>
 		{/if}

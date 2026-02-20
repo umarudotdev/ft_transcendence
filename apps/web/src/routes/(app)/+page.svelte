@@ -7,6 +7,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { m } from '$lib/paraglide/messages.js';
 	import { createMeQuery } from '$lib/queries/auth';
 	import { createMyMatchesQuery, createMyStatsQuery } from '$lib/queries/users';
 
@@ -21,14 +22,14 @@
 </script>
 
 <svelte:head>
-	<title>Game Lobby | ft_transcendence</title>
+	<title>{m.dashboard_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="space-y-8">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold tracking-tight">Game Lobby</h1>
-			<p class="text-muted-foreground">Challenge players or practice against AI</p>
+			<h1 class="text-3xl font-bold tracking-tight">{m.dashboard_title()}</h1>
+			<p class="text-muted-foreground">{m.dashboard_subtitle()}</p>
 		</div>
 	</div>
 
@@ -40,13 +41,13 @@
 					<GamepadIcon class="size-12 text-primary" />
 				</div>
 				<div class="flex-1 space-y-2">
-					<h2 class="text-2xl font-bold">Ready to Play?</h2>
-					<p class="text-muted-foreground">Jump into a quick match against another player.</p>
+					<h2 class="text-2xl font-bold">{m.dashboard_ready()}</h2>
+					<p class="text-muted-foreground">{m.dashboard_ready_description()}</p>
 				</div>
 				<div class="flex flex-col gap-2 sm:flex-row">
 					<Button size="lg" class="gap-2" href="/play">
 						<SwordsIcon class="size-5" />
-						Quick Match
+						{m.dashboard_quick_match()}
 					</Button>
 				</div>
 			</div>
@@ -59,9 +60,9 @@
 			<Card.Header>
 				<Card.Title class="flex items-center gap-2">
 					<TrophyIcon class="size-5" />
-					Your Stats
+					{m.dashboard_your_stats()}
 				</Card.Title>
-				<Card.Description>Your performance overview</Card.Description>
+				<Card.Description>{m.dashboard_stats_description()}</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				{#if statsQuery.isPending || meQuery.isPending}
@@ -76,7 +77,7 @@
 				{:else if !meQuery.data}
 					<div class="py-8 text-center">
 						<p class="text-muted-foreground">
-							<a href="/auth/login" class="text-primary underline">Sign in</a> to track your stats
+							<a href="/auth/login" class="text-primary underline">Sign in</a> {m.dashboard_sign_in_stats()}
 						</p>
 					</div>
 				{:else if statsQuery.data}
@@ -86,13 +87,13 @@
 							<div class="flex items-center gap-1">
 								<span class="text-2xl font-bold text-green-600">{stats.wins}</span>
 							</div>
-							<p class="text-sm text-muted-foreground">Wins</p>
+							<p class="text-sm text-muted-foreground">{m.dashboard_wins()}</p>
 						</div>
 						<div class="space-y-1">
 							<div class="flex items-center gap-1">
 								<span class="text-2xl font-bold text-red-600">{stats.losses}</span>
 							</div>
-							<p class="text-sm text-muted-foreground">Losses</p>
+							<p class="text-sm text-muted-foreground">{m.dashboard_losses()}</p>
 						</div>
 						<div class="space-y-1">
 							<div class="flex items-center gap-1">
@@ -101,13 +102,13 @@
 									>{formatWinRate(stats.wins, stats.wins + stats.losses)}</span
 								>
 							</div>
-							<p class="text-sm text-muted-foreground">Win Rate</p>
+							<p class="text-sm text-muted-foreground">{m.dashboard_win_rate()}</p>
 						</div>
 					</div>
 				{:else}
 					<div class="py-8 text-center">
 						<p class="text-muted-foreground">
-							No games played yet. Start playing to track your stats!
+							{m.dashboard_no_games()}
 						</p>
 					</div>
 				{/if}
@@ -120,12 +121,12 @@
 				<div>
 					<Card.Title class="flex items-center gap-2">
 						<SwordsIcon class="size-5" />
-						Recent Matches
+						{m.dashboard_recent_matches()}
 					</Card.Title>
-					<Card.Description>Your latest games</Card.Description>
+					<Card.Description>{m.dashboard_latest_games()}</Card.Description>
 				</div>
 				{#if matchesQuery.data && matchesQuery.data.matches.length > 0}
-					<Button variant="ghost" size="sm" href="/profile">View All</Button>
+					<Button variant="ghost" size="sm" href="/profile">{m.common_view_all()}</Button>
 				{/if}
 			</Card.Header>
 			<Card.Content>
@@ -138,7 +139,7 @@
 				{:else if !meQuery.data}
 					<div class="py-8 text-center">
 						<p class="text-muted-foreground">
-							<a href="/auth/login" class="text-primary underline">Sign in</a> to see your matches
+							<a href="/auth/login" class="text-primary underline">Sign in</a> {m.dashboard_sign_in_matches()}
 						</p>
 					</div>
 				{:else if matchesQuery.data && matchesQuery.data.matches.length > 0}
@@ -158,7 +159,7 @@
 											? 'bg-green-600 hover:bg-green-600'
 											: 'bg-red-600 text-white hover:bg-red-600'}
 									>
-										{match.result === 'win' ? 'Win' : 'Loss'}
+										{match.result === 'win' ? m.dashboard_win() : m.dashboard_loss()}
 									</Badge>
 								</div>
 							</div>
@@ -166,7 +167,7 @@
 					</div>
 				{:else}
 					<div class="py-8 text-center">
-						<p class="text-muted-foreground">No matches yet. Play your first game!</p>
+						<p class="text-muted-foreground">{m.dashboard_no_matches()}</p>
 					</div>
 				{/if}
 			</Card.Content>

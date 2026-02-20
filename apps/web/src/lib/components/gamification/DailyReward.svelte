@@ -19,6 +19,7 @@
 	import FlameIcon from '@lucide/svelte/icons/flame';
 	import CoinsIcon from '@lucide/svelte/icons/coins';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let showDialog = $state(false);
 
@@ -54,10 +55,10 @@
 	>
 		{#if streak.canClaimReward}
 			<GiftIcon class="mr-2 size-4" />
-			Claim Daily
+			{m.gamification_claim_daily()}
 		{:else}
 			<CheckIcon class="mr-2 size-4" />
-			Claimed
+			{m.gamification_claimed()}
 		{/if}
 	</Button>
 
@@ -66,13 +67,13 @@
 			<DialogHeader>
 				<DialogTitle class="flex items-center gap-2">
 					<GiftIcon class="size-5" />
-					Daily Reward
+					{m.gamification_daily_reward()}
 				</DialogTitle>
 				<DialogDescription>
 					{#if streak.canClaimReward}
-						Your daily reward is ready to claim!
+						{m.gamification_daily_ready()}
 					{:else}
-						You've already claimed today's reward. Come back tomorrow!
+						{m.gamification_daily_claimed_already()}
 					{/if}
 				</DialogDescription>
 			</DialogHeader>
@@ -82,7 +83,7 @@
 					<CardContent class="flex items-center justify-between p-4">
 						<div class="flex items-center gap-2">
 							<FlameIcon class="size-5 text-orange-500" />
-							<span class="font-medium">Current Streak</span>
+							<span class="font-medium">{m.gamification_current_streak()}</span>
 						</div>
 						<span class="text-2xl font-bold">{streak.currentStreak}</span>
 					</CardContent>
@@ -92,19 +93,19 @@
 					<Card>
 						<CardContent class="p-4">
 							<div class="flex items-center justify-between">
-								<span class="text-muted-foreground">Base Reward</span>
+								<span class="text-muted-foreground">{m.gamification_base_reward()}</span>
 								<span class="font-mono">{baseReward} pts</span>
 							</div>
 							{#if streak.currentStreak > 0}
 								<div class="flex items-center justify-between">
-									<span class="text-muted-foreground">Streak Bonus</span>
+									<span class="text-muted-foreground">{m.gamification_streak_bonus()}</span>
 									<span class="font-mono text-green-600">
 										+{streakBonus} pts
 									</span>
 								</div>
 							{/if}
 							<div class="mt-2 flex items-center justify-between border-t pt-2">
-								<span class="font-medium">Total</span>
+								<span class="font-medium">{m.gamification_total()}</span>
 								<span class="flex items-center gap-1 text-lg font-bold">
 									<CoinsIcon class="size-4 text-yellow-500" />
 									{totalReward}
@@ -116,14 +117,14 @@
 			</div>
 
 			<DialogFooter>
-				<Button variant="outline" onclick={() => (showDialog = false)}>Close</Button>
+				<Button variant="outline" onclick={() => (showDialog = false)}>{m.common_close()}</Button>
 				{#if streak.canClaimReward}
 					<Button onclick={handleClaim} disabled={claimMutation.isPending}>
 						{#if claimMutation.isPending}
-							Claiming...
+							{m.gamification_claiming()}
 						{:else}
 							<GiftIcon class="mr-2 size-4" />
-							Claim Reward
+							{m.gamification_claim_reward()}
 						{/if}
 					</Button>
 				{/if}

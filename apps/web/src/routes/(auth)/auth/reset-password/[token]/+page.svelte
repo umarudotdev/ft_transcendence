@@ -12,6 +12,7 @@
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import AlertTriangleIcon from '@lucide/svelte/icons/alert-triangle';
 	import CircleAlertIcon from '@lucide/svelte/icons/circle-alert';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let password = $state('');
 	let confirmPassword = $state('');
@@ -40,23 +41,23 @@
 	// Condensed password requirements text (only show unmet)
 	const unmetPasswordReqs = $derived(() => {
 		const unmet: string[] = [];
-		if (!passwordRequirements.minLength) unmet.push('8+ characters');
-		if (!passwordRequirements.hasUppercase) unmet.push('uppercase');
-		if (!passwordRequirements.hasLowercase) unmet.push('lowercase');
-		if (!passwordRequirements.hasNumber) unmet.push('number');
+		if (!passwordRequirements.minLength) unmet.push(m.password_8_chars());
+		if (!passwordRequirements.hasUppercase) unmet.push(m.password_uppercase());
+		if (!passwordRequirements.hasLowercase) unmet.push(m.password_lowercase());
+		if (!passwordRequirements.hasNumber) unmet.push(m.password_number());
 		return unmet;
 	});
 
 	// User-friendly error messages
-	const errorMessages: Record<string, string> = {
-		'Invalid token': 'This reset link is invalid or has already been used.',
-		'Token expired': 'This reset link has expired. Please request a new one.',
-		'Expired token': 'This reset link has expired. Please request a new one.',
-		'Weak password': 'Please choose a stronger password.'
+	const errorMessages: Record<string, () => string> = {
+		'Invalid token': () => m.auth_reset_invalid_token(),
+		'Token expired': () => m.auth_reset_expired_token(),
+		'Expired token': () => m.auth_reset_expired_token(),
+		'Weak password': () => m.auth_error_weak_password()
 	};
 
 	function getFriendlyError(error: string): string {
-		return errorMessages[error] || error;
+		return errorMessages[error]?.() ?? error;
 	}
 
 	async function handleSubmit(e: SubmitEvent) {
@@ -64,18 +65,18 @@
 		errorMessage = '';
 
 		if (!isPasswordValid) {
-			errorMessage = 'Please meet all password requirements';
+			errorMessage = m.auth_reset_meet_requirements();
 			return;
 		}
 
 		if (!passwordsMatch) {
-			errorMessage = 'Passwords do not match';
+			errorMessage = m.auth_reset_passwords_mismatch();
 			return;
 		}
 
 		const token = page.params.token;
 		if (!token) {
-			errorMessage = 'Invalid reset link';
+			errorMessage = m.auth_reset_invalid_link();
 			return;
 		}
 
@@ -83,7 +84,7 @@
 			{ token, password },
 			{
 				onSuccess: () => {
-					toast.success('Password reset successfully!');
+					toast.success(m.auth_reset_success());
 					success = true;
 				},
 				onError: (error: Error) => {
@@ -96,8 +97,8 @@
 
 <Card.Root class="w-full max-w-md border-y">
 	<Card.Header class="text-center">
-		<Card.Title class="text-2xl">Reset Password</Card.Title>
-		<Card.Description>Enter your new password below</Card.Description>
+		<Card.Title class="text-2xl">{m.auth_reset_title()}</Card.Title>
+		<Card.Description>{m.auth_reset_description()}</Card.Description>
 	</Card.Header>
 	<Card.Content>
 		{#if success}
@@ -107,10 +108,10 @@
 				>
 					<CheckCircleIcon class="size-4" />
 					<AlertDescription>
-						Your password has been reset successfully! You can now sign in with your new password.
+						{m.auth_reset_success()}
 					</AlertDescription>
 				</Alert>
-				<Button class="w-full" onclick={() => goto('/auth/login')}>Go to Login</Button>
+				<Button class="w-full" onclick={() => goto('/auth/login')}>{m.auth_reset_go_to_login()}</Button>
 			</div>
 		{:else}
 			<div transition:fade={{ duration: 200 }}>
@@ -123,7 +124,7 @@
 									{errorMessage}
 									{#if errorMessage.includes('expired')}
 										<a href="/auth/forgot-password" class="ml-1 underline hover:no-underline">
-											Request new link
+											{m.auth_reset_request_new_link()}
 										</a>
 									{/if}
 								</AlertDescription>
@@ -132,7 +133,7 @@
 					{/if}
 
 					<div class="space-y-2">
-						<Label for="password">New Password</Label>
+						<Label for="password">{m.auth_reset_new_password()}</Label>
 						<PasswordInput
 							id="password"
 							bind:value={password}
@@ -147,13 +148,13 @@
 								class="flex items-center gap-2 text-sm text-muted-foreground"
 							>
 								<CircleAlertIcon class="size-4 shrink-0" />
-								Needs: {unmetPasswordReqs().join(', ')}
+								{m.password_needs({ requirements: unmetPasswordReqs().join(', ') })}
 							</p>
 						{/if}
 					</div>
 
 					<div class="space-y-2">
-						<Label for="confirmPassword">Confirm Password</Label>
+						<Label for="confirmPassword">{m.auth_reset_confirm_password()}</Label>
 						<PasswordInput
 							id="confirmPassword"
 							bind:value={confirmPassword}
@@ -167,7 +168,7 @@
 								class="flex items-center gap-2 text-sm text-destructive"
 							>
 								<CircleAlertIcon class="size-4 shrink-0" />
-								Passwords do not match
+								{m.auth_reset_passwords_mismatch()}
 							</p>
 						{/if}
 					</div>
@@ -177,12 +178,12 @@
 						class="w-full"
 						disabled={resetMutation.isPending || !isPasswordValid || !passwordsMatch}
 					>
-						{resetMutation.isPending ? 'Resetting...' : 'Reset Password'}
+						{resetMutation.isPending ? m.auth_reset_resetting() : m.auth_reset_submit()}
 					</Button>
 				</form>
 
 				<p class="mt-4 text-center text-sm text-muted-foreground">
-					<a href="/auth/login" class="text-primary hover:underline">Back to Login</a>
+					<a href="/auth/login" class="text-primary hover:underline">{m.auth_reset_back_to_login()}</a>
 				</p>
 			</div>
 		{/if}

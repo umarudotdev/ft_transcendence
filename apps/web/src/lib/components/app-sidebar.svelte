@@ -7,22 +7,24 @@
 	import TrophyIcon from '@lucide/svelte/icons/trophy';
 	import UserIcon from '@lucide/svelte/icons/user';
 	import { page } from '$app/stores';
+	import LanguageSwitcher from '$lib/components/language-switcher.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import { createMeQuery } from '$lib/queries/auth';
+	import { m } from '$lib/paraglide/messages.js';
 
 	const meQuery = createMeQuery();
 
 	const currentPath = $derived($page.url.pathname);
 
-	const navItems = [
-		{ href: '/leaderboard', label: 'Leaderboard', icon: TrophyIcon },
-		{ href: '/achievements', label: 'Achievements', icon: MedalIcon },
-		{ href: '/chat', label: 'Chat', icon: MessageSquareIcon },
-		{ href: '/profile', label: 'Profile', icon: UserIcon },
-		{ href: '/settings', label: 'Settings', icon: SettingsIcon }
-	];
+	const navItems = $derived([
+		{ href: '/leaderboard', label: m.nav_leaderboard(), icon: TrophyIcon },
+		{ href: '/achievements', label: m.nav_achievements(), icon: MedalIcon },
+		{ href: '/chat', label: m.nav_chat(), icon: MessageSquareIcon },
+		{ href: '/profile', label: m.nav_profile(), icon: UserIcon },
+		{ href: '/settings', label: m.nav_settings(), icon: SettingsIcon }
+	]);
 
 	const isAdmin = $derived(meQuery.data?.role === 'admin' || meQuery.data?.role === 'moderator');
 
@@ -43,7 +45,7 @@
 			class="size-14 rounded-2xl bg-md3-primary text-md3-on-primary shadow-lg transition-all duration-200 hover:scale-105 hover:shadow-xl active:scale-95"
 		>
 			<PlayIcon class="size-7" />
-			<span class="sr-only">Play</span>
+			<span class="sr-only">{m.nav_play()}</span>
 		</Button>
 	</Sidebar.Header>
 
@@ -78,7 +80,7 @@
 						<Sidebar.MenuItem class="w-full">
 							<Sidebar.MenuButton
 								isActive={adminActive}
-								tooltipContent="Admin Panel"
+								tooltipContent={m.nav_admin()}
 								class="mx-auto flex size-12 items-center justify-center rounded-2xl transition-all duration-200 {adminActive
 									? 'bg-md3-tertiary-container text-md3-on-tertiary-container shadow-sm'
 									: 'text-md3-on-surface-variant hover:bg-md3-surface-container-highest hover:text-md3-on-surface'}"
@@ -86,7 +88,7 @@
 								{#snippet child({ props })}
 									<a href="/admin" {...props}>
 										<ShieldIcon class="size-6" />
-										<span class="sr-only">Admin Panel</span>
+										<span class="sr-only">{m.nav_admin()}</span>
 									</a>
 								{/snippet}
 							</Sidebar.MenuButton>
@@ -97,8 +99,9 @@
 		</Sidebar.Group>
 	</Sidebar.Content>
 
-	<!-- Footer with Theme Toggle -->
-	<Sidebar.Footer class="flex items-center justify-center p-4">
+	<!-- Footer with Language & Theme -->
+	<Sidebar.Footer class="flex flex-col items-center gap-2 p-4">
+		<LanguageSwitcher />
 		<ThemeToggle />
 	</Sidebar.Footer>
 </Sidebar.Root>

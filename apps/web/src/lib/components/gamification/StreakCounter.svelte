@@ -1,5 +1,6 @@
 <script lang="ts">
 	import FlameIcon from '@lucide/svelte/icons/flame';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		currentStreak: number;
@@ -33,9 +34,9 @@
 	>
 		<FlameIcon class="{iconSizeClasses[size]} {isHotStreak ? 'animate-pulse' : ''}" />
 		<span class="font-mono">{currentStreak}</span>
-		<span class="text-muted-foreground">day{currentStreak !== 1 ? 's' : ''}</span>
+		<span class="text-muted-foreground">{m.gamification_day({ count: currentStreak })}</span>
 	</span>
 	{#if showLongest && longestStreak !== undefined}
-		<span class="text-xs text-muted-foreground">(best: {longestStreak})</span>
+		<span class="text-xs text-muted-foreground">{m.gamification_best({ count: longestStreak })}</span>
 	{/if}
 </div>

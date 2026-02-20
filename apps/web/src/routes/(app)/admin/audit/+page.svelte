@@ -5,6 +5,8 @@
 	import * as Select from '$lib/components/ui/select';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime';
 	import { createAuditLogQuery, type AuditLogEntry } from '$lib/queries/moderation';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
@@ -22,7 +24,7 @@
 	);
 
 	function formatDate(date: Date): string {
-		return new Date(date).toLocaleDateString('en-US', {
+		return new Date(date).toLocaleDateString(getLocale(), {
 			year: 'numeric',
 			month: 'short',
 			day: 'numeric',
@@ -68,24 +70,24 @@
 	const canGoBack = $derived(currentPage > 0);
 	const canGoNext = $derived(currentPage < totalPages - 1);
 
-	const actionOptions = [
-		{ value: 'role_changed', label: 'Role Changed' },
-		{ value: 'user_deleted', label: 'User Deleted' },
-		{ value: 'report_created', label: 'Report Created' },
-		{ value: 'report_resolved', label: 'Report Resolved' },
-		{ value: 'sanction_issued', label: 'Sanction Issued' },
-		{ value: 'sanction_revoked', label: 'Sanction Revoked' }
-	];
+	const actionOptions = $derived([
+		{ value: 'role_changed', label: m.admin_audit_role_changed() },
+		{ value: 'user_deleted', label: m.admin_audit_user_deleted() },
+		{ value: 'report_created', label: m.admin_audit_report_created() },
+		{ value: 'report_resolved', label: m.admin_audit_report_resolved() },
+		{ value: 'sanction_issued', label: m.admin_audit_sanction_issued() },
+		{ value: 'sanction_revoked', label: m.admin_audit_sanction_revoked() }
+	]);
 </script>
 
 <svelte:head>
-	<title>Audit Log | Admin | ft_transcendence</title>
+	<title>{m.admin_audit_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="space-y-6">
 	<div>
-		<h1 class="text-2xl font-bold tracking-tight">Audit Log</h1>
-		<p class="text-muted-foreground">View all administrative actions and changes</p>
+		<h1 class="text-2xl font-bold tracking-tight">{m.admin_audit_title()}</h1>
+		<p class="text-muted-foreground">{m.admin_audit_subtitle()}</p>
 	</div>
 
 	<!-- Filters -->
@@ -99,10 +101,10 @@
 				}}
 			>
 				<Select.Trigger class="w-full sm:w-48">
-					{actionFilter ? formatAction(actionFilter) : 'All Actions'}
+					{actionFilter ? formatAction(actionFilter) : m.admin_audit_all_actions()}
 				</Select.Trigger>
 				<Select.Content>
-					<Select.Item value="">All Actions</Select.Item>
+					<Select.Item value="">{m.admin_audit_all_actions()}</Select.Item>
 					{#each actionOptions as option}
 						<Select.Item value={option.value}>{option.label}</Select.Item>
 					{/each}
@@ -116,11 +118,11 @@
 		<Table.Root>
 			<Table.Header>
 				<Table.Row>
-					<Table.Head class="w-[180px]">Date</Table.Head>
-					<Table.Head>Actor</Table.Head>
-					<Table.Head>Action</Table.Head>
-					<Table.Head>Target</Table.Head>
-					<Table.Head class="hidden lg:table-cell">Details</Table.Head>
+					<Table.Head class="w-[180px]">{m.admin_audit_date()}</Table.Head>
+					<Table.Head>{m.admin_audit_actor()}</Table.Head>
+					<Table.Head>{m.admin_audit_action()}</Table.Head>
+					<Table.Head>{m.admin_audit_target()}</Table.Head>
+					<Table.Head class="hidden lg:table-cell">{m.admin_audit_details()}</Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
@@ -137,13 +139,13 @@
 				{:else if auditLogQuery.error}
 					<Table.Row>
 						<Table.Cell colspan={5} class="h-32 text-center">
-							<p class="text-muted-foreground">Failed to load audit log. Please try again.</p>
+							<p class="text-muted-foreground">{m.admin_audit_failed()}</p>
 						</Table.Cell>
 					</Table.Row>
 				{:else if auditLogQuery.data?.entries.length === 0}
 					<Table.Row>
 						<Table.Cell colspan={5} class="h-32 text-center">
-							<p class="text-muted-foreground">No audit log entries found.</p>
+							<p class="text-muted-foreground">{m.admin_audit_no_entries()}</p>
 						</Table.Cell>
 					</Table.Row>
 				{:else}
@@ -172,7 +174,7 @@
 								{#if details}
 									<div class="max-w-[300px] truncate text-sm text-muted-foreground">
 										{#if details.reason}
-											Reason: {details.reason}
+											{m.admin_audit_reason_prefix({ reason: details.reason })}
 										{:else if details.oldRole && details.newRole}
 											{details.oldRole} → {details.newRole}
 										{:else if details.email}
@@ -195,10 +197,10 @@
 		{#if (auditLogQuery.data?.total ?? 0) > pageSize}
 			<div class="flex items-center justify-between border-t px-4 py-3">
 				<p class="text-sm text-muted-foreground">
-					Showing {currentPage * pageSize + 1} to {Math.min(
+					{m.common_showing_range({ start: currentPage * pageSize + 1, end: Math.min(
 						(currentPage + 1) * pageSize,
 						auditLogQuery.data?.total ?? 0
-					)} of {auditLogQuery.data?.total ?? 0} entries
+					), total: auditLogQuery.data?.total ?? 0 })}
 				</p>
 				<div class="flex gap-1">
 					<Button
@@ -208,7 +210,7 @@
 						onclick={() => (currentPage -= 1)}
 					>
 						<ChevronLeftIcon class="size-4" />
-						Previous
+						{m.common_previous()}
 					</Button>
 					<Button
 						variant="outline"
@@ -216,7 +218,7 @@
 						disabled={!canGoNext}
 						onclick={() => (currentPage += 1)}
 					>
-						Next
+						{m.common_next()}
 						<ChevronRightIcon class="size-4" />
 					</Button>
 				</div>

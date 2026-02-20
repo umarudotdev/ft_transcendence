@@ -4,6 +4,7 @@
 	import { createSendMessageMutation } from '$lib/queries/chat';
 	import { getChatStore } from '$lib/stores/chat.svelte';
 	import SendIcon from '@lucide/svelte/icons/send';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		channelId: number;
@@ -76,13 +77,13 @@
 			bind:value={content}
 			oninput={handleInput}
 			onkeydown={handleKeydown}
-			placeholder="Type a message..."
+			placeholder={m.chat_type_message()}
 			class="max-h-32 min-h-[2.5rem] resize-none"
 			rows={1}
 		/>
 		<Button type="submit" size="icon" disabled={!content.trim() || sendMessageMutation.isPending}>
 			<SendIcon class="size-4" />
-			<span class="sr-only">Send message</span>
+			<span class="sr-only">{m.chat_send()}</span>
 		</Button>
 	</div>
 </form>

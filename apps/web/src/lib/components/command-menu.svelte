@@ -6,6 +6,7 @@
 	import { createLogoutMutation } from '$lib/queries/auth';
 	import { api } from '$lib/api';
 	import { getInitials } from '$lib/utils';
+	import { m } from '$lib/paraglide/messages.js';
 
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import GamepadIcon from '@lucide/svelte/icons/gamepad-2';
@@ -111,7 +112,7 @@
 	class="flex h-10 w-full max-w-md items-center gap-3 rounded-full bg-md3-surface-container-highest px-4 text-md3-on-surface-variant transition-colors hover:bg-md3-surface-container-high"
 >
 	<SearchIcon class="size-5 shrink-0" />
-	<span class="flex-1 text-left text-sm">Search...</span>
+	<span class="flex-1 text-left text-sm">{m.common_search()}</span>
 	<Kbd.Group class="hidden sm:inline-flex">
 		<Kbd.Root>Ctrl</Kbd.Root>
 		<Kbd.Root>K</Kbd.Root>
@@ -119,21 +120,21 @@
 </button>
 
 <Command.Dialog bind:open>
-	<Command.Input placeholder="Type a command or search users..." bind:value={searchValue} />
+	<Command.Input placeholder={m.command_search_placeholder()} bind:value={searchValue} />
 	<Command.List>
 		{#if !isSearching && !hasSearched}
-			<Command.Empty>No results found.</Command.Empty>
+			<Command.Empty>{m.common_no_results()}</Command.Empty>
 		{/if}
 		{#if isSearching || hasSearched}
-			<Command.Group heading="Users" forceMount>
+			<Command.Group heading={m.command_users()} forceMount>
 				{#if isSearching}
 					<div class="flex items-center gap-2 px-2 py-3 text-sm text-muted-foreground">
 						<LoaderIcon class="size-4 animate-spin" />
-						<span>Searching users...</span>
+						<span>{m.command_searching()}</span>
 					</div>
 				{:else if userResults.length === 0}
 					<div class="px-2 py-3 text-sm text-muted-foreground">
-						No users found for "{searchValue}"
+						{m.command_no_users({ query: searchValue })}
 					</div>
 				{:else}
 					{#each userResults as user (user.id)}
@@ -162,63 +163,63 @@
 			</Command.Group>
 			<Command.Separator />
 		{/if}
-		<Command.Group heading="Navigation">
+		<Command.Group heading={m.command_navigation()}>
 			<Command.Item onSelect={() => navigate('/')}>
 				<GamepadIcon />
-				<span>Game Lobby</span>
+				<span>{m.nav_game_lobby()}</span>
 			</Command.Item>
 			<Command.Item onSelect={() => navigate('/leaderboard')}>
 				<TrophyIcon />
-				<span>Leaderboard</span>
+				<span>{m.nav_leaderboard()}</span>
 			</Command.Item>
 			<Command.Item onSelect={() => navigate('/achievements')}>
 				<MedalIcon />
-				<span>Achievements</span>
+				<span>{m.nav_achievements()}</span>
 			</Command.Item>
 			<Command.Item onSelect={() => navigate('/notifications')}>
 				<BellIcon />
-				<span>Notifications</span>
+				<span>{m.nav_notifications()}</span>
 			</Command.Item>
 			<Command.Item onSelect={() => navigate('/profile')}>
 				<UserIcon />
-				<span>Profile</span>
+				<span>{m.nav_profile()}</span>
 			</Command.Item>
 		</Command.Group>
 		<Command.Separator />
-		<Command.Group heading="Settings">
+		<Command.Group heading={m.command_settings()}>
 			<Command.Item onSelect={() => navigate('/settings')}>
 				<SettingsIcon />
-				<span>Account</span>
+				<span>{m.command_account()}</span>
 			</Command.Item>
 			<Command.Item onSelect={() => navigate('/settings/security')}>
 				<ShieldIcon />
-				<span>Security</span>
+				<span>{m.command_security()}</span>
 			</Command.Item>
 			<Command.Item onSelect={() => navigate('/settings/2fa')}>
 				<KeyIcon />
-				<span>Two-Factor Auth</span>
+				<span>{m.command_two_factor()}</span>
 			</Command.Item>
 		</Command.Group>
 		<Command.Separator />
-		<Command.Group heading="Theme">
+		<Command.Group heading={m.command_theme()}>
 			<Command.Item onSelect={() => setTheme('light')}>
 				<SunIcon />
-				<span>Light</span>
+				<span>{m.theme_light()}</span>
 			</Command.Item>
 			<Command.Item onSelect={() => setTheme('dark')}>
 				<MoonIcon />
-				<span>Dark</span>
+				<span>{m.theme_dark()}</span>
 			</Command.Item>
 			<Command.Item onSelect={() => setTheme('system')}>
 				<MonitorIcon />
-				<span>System</span>
+				<span>{m.theme_system()}</span>
 			</Command.Item>
 		</Command.Group>
 		<Command.Separator />
-		<Command.Group heading="Account">
+		<Command.Group heading={m.command_account()}>
 			<Command.Item onSelect={handleLogout}>
 				<LogOutIcon />
-				<span>Sign Out</span>
+				<span>{m.command_sign_out()}</span>
 			</Command.Item>
 		</Command.Group>
 	</Command.List>

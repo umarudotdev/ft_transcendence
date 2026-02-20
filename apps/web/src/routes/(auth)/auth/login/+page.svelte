@@ -20,6 +20,7 @@
 	import CheckCircleIcon from '@lucide/svelte/icons/check-circle';
 	import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let email = $state('');
 	let password = $state('');
@@ -36,27 +37,27 @@
 	const oauthError = $derived(page.url.searchParams.get('error'));
 
 	// User-friendly error messages
-	const errorMessages: Record<string, string> = {
-		invalid_oauth: 'Invalid OAuth response. Please try again.',
-		invalid_state: 'Security check failed. Please try again.',
-		token_exchange_failed: 'Unable to complete authentication. Please try again.',
-		profile_fetch_failed: 'Unable to fetch your profile. Please try again.',
-		account_already_linked: 'This 42 account is already linked to another user.',
+	const errorMessages: Record<string, () => string> = {
+		invalid_oauth: () => m.auth_error_invalid_oauth(),
+		invalid_state: () => m.auth_error_invalid_state(),
+		token_exchange_failed: () => m.auth_error_token_exchange(),
+		profile_fetch_failed: () => m.auth_error_profile_fetch(),
+		account_already_linked: () => m.auth_error_account_linked(),
 		// API error mappings
-		'Invalid credentials': 'Email or password is incorrect. Please try again.',
-		'Email not verified': 'Please verify your email before signing in.',
-		'Account locked': 'Too many failed attempts. Please try again later.',
-		'Invalid 2FA code': 'Incorrect code. Please check your authenticator app and try again.'
+		'Invalid credentials': () => m.auth_error_invalid_credentials(),
+		'Email not verified': () => m.auth_error_email_not_verified(),
+		'Account locked': () => m.auth_error_account_locked(),
+		'Invalid 2FA code': () => m.auth_error_invalid_2fa()
 	};
 
 	const friendlyOAuthError = $derived(
 		oauthError
-			? errorMessages[oauthError] || `Authentication error: ${oauthError.replace(/_/g, ' ')}`
+			? (errorMessages[oauthError]?.() ?? m.auth_error_authentication({ error: oauthError.replace(/_/g, ' ') }))
 			: null
 	);
 
 	function getFriendlyError(error: string): string {
-		return errorMessages[error] || error;
+		return errorMessages[error]?.() ?? error;
 	}
 
 	async function handleLogin(e: SubmitEvent) {
@@ -70,7 +71,7 @@
 					if (data.requires2fa) {
 						requires2fa = true;
 					} else {
-						toast.success('Welcome back!');
+						toast.success(m.auth_login_welcome_toast());
 						goto('/');
 					}
 				},
@@ -89,7 +90,7 @@
 			{ code },
 			{
 				onSuccess: () => {
-					toast.success('Successfully authenticated!');
+					toast.success(m.auth_2fa_success_toast());
 					goto('/');
 				},
 				onError: (error: Error) => {
@@ -122,12 +123,12 @@
 			</div>
 		{/if}
 		<Card.Title class="text-2xl">
-			{requires2fa ? 'Two-Factor Authentication' : 'Welcome back'}
+			{requires2fa ? m.auth_2fa_title() : m.auth_login_title()}
 		</Card.Title>
 		<Card.Description>
 			{requires2fa
-				? 'Enter the 6-digit code from your authenticator app'
-				: 'Sign in to your account to continue'}
+				? m.auth_2fa_description()
+				: m.auth_login_description()}
 		</Card.Description>
 	</Card.Header>
 	<Card.Content>
@@ -139,8 +140,8 @@
 					<CheckCircleIcon class="size-4" />
 					<AlertDescription>
 						{registeredSuccess
-							? 'Account created! Check your email to verify before signing in.'
-							: 'Email verified! You can now sign in.'}
+							? m.auth_login_registered_success()
+							: m.auth_login_verified_success()}
 					</AlertDescription>
 				</Alert>
 			</div>
@@ -161,7 +162,7 @@
 								redirectTo42OAuth();
 							}}
 						>
-							Try again with 42
+							{m.auth_login_try_again_42()}
 						</Button>
 					</AlertDescription>
 				</Alert>
@@ -176,7 +177,7 @@
 						{errorMessage}
 						{#if errorMessage.includes('verify your email')}
 							<a href="/auth/resend-verification" class="ml-1 underline hover:no-underline">
-								Resend verification email
+								{m.auth_login_resend_verification()}
 							</a>
 						{/if}
 					</AlertDescription>
@@ -216,12 +217,12 @@
 							class="w-full"
 							disabled={code.length !== 6 || verify2faMutation.isPending}
 						>
-							{verify2faMutation.isPending ? 'Verifying...' : 'Verify code'}
+							{verify2faMutation.isPending ? m.auth_2fa_verifying() : m.auth_2fa_verify_code()}
 						</Button>
 
 						<Button type="button" variant="ghost" class="w-full gap-2" onclick={handleBack}>
 							<ArrowLeftIcon class="size-4" />
-							Back to login
+							{m.auth_2fa_back_to_login()}
 						</Button>
 					</div>
 				</form>
@@ -230,7 +231,7 @@
 			<div transition:fade={{ duration: 200 }}>
 				<form onsubmit={handleLogin} class="space-y-4">
 					<div class="space-y-2">
-						<Label for="email">Email</Label>
+						<Label for="email">{m.common_email()}</Label>
 						<Input
 							id="email"
 							type="email"
@@ -243,9 +244,9 @@
 
 					<div class="space-y-2">
 						<div class="flex items-center justify-between">
-							<Label for="password">Password</Label>
+							<Label for="password">{m.common_password()}</Label>
 							<a href="/auth/forgot-password" class="text-sm text-primary hover:underline">
-								Forgot password?
+								{m.auth_login_forgot_password()}
 							</a>
 						</div>
 						<PasswordInput
@@ -257,7 +258,7 @@
 					</div>
 
 					<Button type="submit" class="w-full" disabled={loginMutation.isPending}>
-						{loginMutation.isPending ? 'Signing in...' : 'Sign in'}
+						{loginMutation.isPending ? m.auth_login_signing_in() : m.auth_login_sign_in()}
 					</Button>
 				</form>
 
@@ -266,7 +267,7 @@
 						<span class="w-full border-t"></span>
 					</div>
 					<div class="relative flex justify-center text-xs uppercase">
-						<span class="bg-card px-2 text-muted-foreground">Or continue with</span>
+						<span class="bg-card px-2 text-muted-foreground">{m.common_or_continue_with()}</span>
 					</div>
 				</div>
 
@@ -276,12 +277,12 @@
 					onclick={redirectTo42OAuth}
 					disabled={loginMutation.isPending}
 				>
-					Sign in with 42
+					{m.auth_login_sign_in_42()}
 				</Button>
 
 				<p class="mt-4 text-center text-sm text-muted-foreground">
-					Don't have an account?
-					<a href="/auth/register" class="text-primary hover:underline">Sign up</a>
+					{m.auth_login_no_account()}
+					<a href="/auth/register" class="text-primary hover:underline">{m.common_sign_up()}</a>
 				</p>
 			</div>
 		{/if}

@@ -8,6 +8,7 @@
 	import UserIcon from '@lucide/svelte/icons/user';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import { m } from '$lib/paraglide/messages.js';
 
 	const meQuery = createMeQuery();
 	const logoutMutation = createLogoutMutation();
@@ -26,7 +27,7 @@
 	<DropdownMenu.Root>
 		<DropdownMenu.Trigger>
 			{#snippet child({ props })}
-				<Button variant="ghost" size="icon" class="size-10" aria-label="User menu" {...props}>
+				<Button variant="ghost" size="icon" class="size-10" aria-label={m.header_user_menu()} {...props}>
 					<Avatar class="corner-squircle size-7 ring-2 ring-md3-outline-variant">
 						{#if user.avatarUrl}
 							<AvatarImage src={user.avatarUrl} alt={user.displayName} />
@@ -50,22 +51,22 @@
 			<DropdownMenu.Separator />
 			<DropdownMenu.Item onclick={() => goto('/profile')}>
 				<UserIcon class="mr-2 size-4" />
-				Profile
+				{m.nav_profile()}
 			</DropdownMenu.Item>
 			<DropdownMenu.Item onclick={() => goto('/settings')}>
 				<SettingsIcon class="mr-2 size-4" />
-				Settings
+				{m.nav_settings()}
 			</DropdownMenu.Item>
 			<DropdownMenu.Separator />
 			<DropdownMenu.Item onclick={handleLogout}>
 				<LogOutIcon class="mr-2 size-4" />
-				{logoutMutation.isPending ? 'Signing out...' : 'Sign out'}
+				{logoutMutation.isPending ? m.header_signing_out() : m.common_sign_out()}
 			</DropdownMenu.Item>
 		</DropdownMenu.Content>
 	</DropdownMenu.Root>
 {:else}
 	<Button variant="ghost" href="/auth/login">
 		<UserIcon class="size-5" />
-		Sign in
+		{m.common_sign_in()}
 	</Button>
 {/if}

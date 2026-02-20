@@ -6,6 +6,7 @@
 	import { Alert, AlertDescription } from '$lib/components/ui/alert';
 	import { createVerifyEmailMutation } from '$lib/queries/auth';
 	import { onMount } from 'svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let errorMessage = $state('');
 	let isVerifying = $state(true);
@@ -17,7 +18,7 @@
 		const token = page.params.token;
 
 		if (!token) {
-			errorMessage = 'Invalid verification link';
+			errorMessage = m.auth_verify_invalid_link();
 			isVerifying = false;
 			return;
 		}
@@ -37,26 +38,26 @@
 
 <Card.Root class="w-full max-w-md border-y">
 	<Card.Header>
-		<Card.Title class="text-2xl">Email Verification</Card.Title>
+		<Card.Title class="text-2xl">{m.auth_verify_title()}</Card.Title>
 	</Card.Header>
 	<Card.Content>
 		{#if isVerifying}
 			<div class="py-4 text-center">
 				<div class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
-				<p>Verifying your email...</p>
+				<p>{m.auth_verify_verifying()}</p>
 			</div>
 		{:else if success}
 			<Alert class="mb-4">
 				<AlertDescription>
-					Your email has been verified successfully! You can now log in to your account.
+					{m.auth_verify_success()}
 				</AlertDescription>
 			</Alert>
-			<Button class="w-full" onclick={() => goto('/auth/login?verified=true')}>Go to Login</Button>
+			<Button class="w-full" onclick={() => goto('/auth/login?verified=true')}>{m.auth_verify_go_to_login()}</Button>
 		{:else}
 			<Alert variant="destructive" class="mb-4">
 				<AlertDescription>{errorMessage}</AlertDescription>
 			</Alert>
-			<Button class="w-full" onclick={() => goto('/auth/login')}>Go to Login</Button>
+			<Button class="w-full" onclick={() => goto('/auth/login')}>{m.auth_verify_go_to_login()}</Button>
 		{/if}
 	</Card.Content>
 </Card.Root>

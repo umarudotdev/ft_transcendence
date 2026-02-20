@@ -7,6 +7,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { m } from '$lib/paraglide/messages.js';
 	import {
 		createDisable2faMutation,
 		createEnable2faMutation,
@@ -55,7 +56,7 @@
 			{ code: verificationCode },
 			{
 				onSuccess: () => {
-					successMessage = 'Two-factor authentication enabled successfully!';
+					successMessage = m.twofa_enable_success();
 					setTimeout(() => {
 						goto('/settings/security');
 					}, 2000);
@@ -72,7 +73,7 @@
 			{ code: verificationCode },
 			{
 				onSuccess: () => {
-					successMessage = 'Two-factor authentication disabled.';
+					successMessage = m.twofa_disable_success();
 					setTimeout(() => {
 						goto('/settings/security');
 					}, 2000);
@@ -84,7 +85,7 @@
 
 <svelte:head>
 	<title>
-		{isDisableMode ? 'Disable' : 'Enable'} Two-Factor Authentication | ft_transcendence
+		{isDisableMode ? m.twofa_disable_title() : m.twofa_enable_title()} | ft_transcendence
 	</title>
 </svelte:head>
 
@@ -94,7 +95,7 @@
 		class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
 	>
 		<ArrowLeftIcon class="size-4" />
-		Back to Security Settings
+		{m.twofa_back_to_security()}
 	</a>
 
 	{#if meQuery.isPending}
@@ -112,7 +113,7 @@
 		<Alert variant="destructive">
 			<AlertTriangleIcon class="size-4" />
 			<AlertDescription>
-				Please <a href="/auth/login" class="font-medium underline">log in</a> to manage 2FA settings.
+				{m.twofa_login_required()}
 			</AlertDescription>
 		</Alert>
 	{:else if meQuery.data}
@@ -126,12 +127,12 @@
 					>
 						<CheckCircleIcon class="size-7 text-green-600 dark:text-green-400" />
 					</div>
-					<Card.Title class="text-xl">Success</Card.Title>
+					<Card.Title class="text-xl">{m.twofa_success_title()}</Card.Title>
 					<Card.Description>{successMessage}</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					<p class="text-center text-sm text-muted-foreground">
-						Redirecting to security settings...
+						{m.twofa_redirecting()}
 					</p>
 				</Card.Content>
 			</Card.Root>
@@ -143,15 +144,15 @@
 					>
 						<ShieldOffIcon class="size-7 text-destructive" />
 					</div>
-					<Card.Title class="text-xl">Disable Two-Factor Authentication</Card.Title>
-					<Card.Description>Enter your authenticator code to disable 2FA</Card.Description>
+					<Card.Title class="text-xl">{m.twofa_disable_title()}</Card.Title>
+					<Card.Description>{m.twofa_disable_description()}</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					{#if !user.twoFactorEnabled}
 						<Alert>
 							<AlertTriangleIcon class="size-4" />
 							<AlertDescription>
-								Two-factor authentication is not enabled on your account.
+								{m.twofa_disable_not_enabled()}
 							</AlertDescription>
 						</Alert>
 					{:else}
@@ -161,7 +162,7 @@
 							>
 								<AlertTriangleIcon class="size-4" />
 								<AlertDescription>
-									<strong>Warning:</strong> Disabling 2FA will make your account less secure.
+									<strong>{m.twofa_disable_warning()}</strong>
 								</AlertDescription>
 							</Alert>
 
@@ -200,14 +201,14 @@
 							</div>
 
 							<div class="flex gap-3">
-								<Button variant="outline" class="flex-1" href="/settings/security">Cancel</Button>
+								<Button variant="outline" class="flex-1" href="/settings/security">{m.common_cancel()}</Button>
 								<Button
 									type="submit"
 									variant="destructive"
 									class="flex-1"
 									disabled={verificationCode.length !== 6 || disable2faMutation.isPending}
 								>
-									{disable2faMutation.isPending ? 'Disabling...' : 'Disable 2FA'}
+									{disable2faMutation.isPending ? m.twofa_disabling() : m.twofa_disable_button()}
 								</Button>
 							</div>
 						</form>
@@ -222,15 +223,15 @@
 					>
 						<ShieldCheckIcon class="size-7 text-green-600 dark:text-green-400" />
 					</div>
-					<Card.Title class="text-xl">Already Enabled</Card.Title>
+					<Card.Title class="text-xl">{m.twofa_already_enabled_title()}</Card.Title>
 					<Card.Description
-						>Two-factor authentication is already enabled on your account.</Card.Description
+						>{m.twofa_already_enabled_description()}</Card.Description
 					>
 				</Card.Header>
 				<Card.Content>
 					<Button variant="outline" class="w-full" href="/settings/security">
 						<ArrowLeftIcon class="mr-2 size-4" />
-						Return to Security Settings
+						{m.twofa_return_to_security()}
 					</Button>
 				</Card.Content>
 			</Card.Root>
@@ -242,16 +243,16 @@
 					>
 						<ShieldIcon class="size-7 text-primary" />
 					</div>
-					<Card.Title class="text-xl">Enable Two-Factor Authentication</Card.Title>
-					<Card.Description>Add an extra layer of security to your account</Card.Description>
+					<Card.Title class="text-xl">{m.twofa_enable_title()}</Card.Title>
+					<Card.Description>{m.twofa_enable_description()}</Card.Description>
 				</Card.Header>
 				<Card.Content class="space-y-6">
 					<p class="text-center text-sm text-muted-foreground">
-						You'll need to enter a code from your authenticator app when signing in.
+						{m.twofa_enable_info()}
 					</p>
 
 					<div class="rounded-lg bg-muted p-4">
-						<h4 class="text-sm font-medium">Supported authenticator apps</h4>
+						<h4 class="text-sm font-medium">{m.twofa_supported_apps()}</h4>
 						<ul class="mt-2 grid grid-cols-2 gap-1 text-sm text-muted-foreground">
 							<li>• Google Authenticator</li>
 							<li>• Microsoft Authenticator</li>
@@ -268,7 +269,7 @@
 					{/if}
 
 					<Button class="w-full" onclick={handleEnableSetup} disabled={enable2faMutation.isPending}>
-						{enable2faMutation.isPending ? 'Setting up...' : 'Begin Setup'}
+						{enable2faMutation.isPending ? m.twofa_setting_up() : m.twofa_begin_setup()}
 					</Button>
 				</Card.Content>
 			</Card.Root>
@@ -280,8 +281,8 @@
 					>
 						<QrCodeIcon class="size-7 text-primary" />
 					</div>
-					<Card.Title class="text-xl">Scan QR Code</Card.Title>
-					<Card.Description>Use your authenticator app to scan the code</Card.Description>
+					<Card.Title class="text-xl">{m.twofa_scan_title()}</Card.Title>
+					<Card.Description>{m.twofa_scan_description()}</Card.Description>
 				</Card.Header>
 				<Card.Content>
 					<form onsubmit={handleVerifyAndEnable} class="space-y-6">
@@ -293,7 +294,7 @@
 
 						<details class="rounded-lg bg-muted">
 							<summary class="cursor-pointer p-3 text-sm font-medium"
-								>Can't scan? Enter manually</summary
+								>{m.twofa_manual_entry()}</summary
 							>
 							<div class="border-t px-3 pt-2 pb-3">
 								<code
@@ -312,7 +313,7 @@
 						{/if}
 
 						<div class="space-y-3">
-							<p class="text-center text-sm font-medium">Enter verification code</p>
+							<p class="text-center text-sm font-medium">{m.twofa_enter_code()}</p>
 							<div class="flex justify-center">
 								<InputOTP.Root
 									maxlength={6}
@@ -353,14 +354,14 @@
 								}}
 							>
 								<ArrowLeftIcon class="size-4" />
-								Back
+								{m.common_back()}
 							</Button>
 							<Button
 								type="submit"
 								class="flex-1"
 								disabled={verificationCode.length !== 6 || verify2faMutation.isPending}
 							>
-								{verify2faMutation.isPending ? 'Verifying...' : 'Enable 2FA'}
+								{verify2faMutation.isPending ? m.twofa_verifying() : m.twofa_enable_button()}
 							</Button>
 						</div>
 					</form>

@@ -27,10 +27,10 @@
 
 			<div class="flex gap-2">
 				<Button variant="outline" size="sm" onclick={() => setLocale('en')}>English</Button>
-				<Button variant="outline" size="sm" onclick={() => setLocale('ja')}>Japanese</Button>
 				<Button variant="outline" size="sm" onclick={() => setLocale('pt-br')}>
-					Portuguese (BR)
+					Português (BR)
 				</Button>
+				<Button variant="outline" size="sm" onclick={() => setLocale('es')}>Español</Button>
 			</div>
 
 			<p class="text-sm text-muted-foreground">

@@ -8,6 +8,8 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { Tabs, TabsContent, TabsList, TabsTrigger } from '$lib/components/ui/tabs';
 	import { MatchHistory, StatsCard } from '$lib/components/profile';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime';
 	import { createMeQuery } from '$lib/queries/auth';
 	import {
 		createBlockUserMutation,
@@ -55,7 +57,7 @@
 	const isOwnProfile = $derived(meQuery.data?.id === userId);
 
 	function formatJoinDate(date: Date): string {
-		return new Intl.DateTimeFormat('en-US', {
+		return new Intl.DateTimeFormat(getLocale(), {
 			month: 'long',
 			year: 'numeric'
 		}).format(date);
@@ -119,46 +121,46 @@
 		switch (status) {
 			case 'none':
 				return {
-					label: 'Add Friend',
+					label: m.user_add_friend(),
 					variant: 'default',
 					action: handleAddFriend
 				};
 			case 'friends':
 				return {
-					label: 'Remove Friend',
+					label: m.user_remove_friend(),
 					variant: 'outline',
 					action: handleRemoveFriend
 				};
 			case 'pending_sent':
 				return {
-					label: 'Request Pending',
+					label: m.user_request_pending(),
 					variant: 'secondary',
 					action: null,
 					disabled: true
 				};
 			case 'pending_received':
 				return {
-					label: 'Respond to Request',
+					label: m.user_respond_to_request(),
 					variant: 'default',
 					action: () => goto('/profile')
 				};
 			case 'blocked':
 				return {
-					label: 'Blocked',
+					label: m.user_blocked(),
 					variant: 'secondary',
 					action: null,
 					disabled: true
 				};
 			case 'blocked_by':
 				return {
-					label: 'Unavailable',
+					label: m.user_unavailable(),
 					variant: 'secondary',
 					action: null,
 					disabled: true
 				};
 			default:
 				return {
-					label: 'Add Friend',
+					label: m.user_add_friend(),
 					variant: 'default',
 					action: handleAddFriend
 				};
@@ -168,7 +170,7 @@
 
 <svelte:head>
 	<title>
-		{profileQuery.data?.user.displayName ?? 'User Profile'} | ft_transcendence
+		{profileQuery.data?.user.displayName ?? m.user_profile()} | ft_transcendence
 	</title>
 </svelte:head>
 
@@ -177,9 +179,9 @@
 		<Card>
 			<CardContent class="p-6 text-center">
 				<p class="text-muted-foreground">
-					This is your profile.
+					{m.user_this_is_you()}
 					<a href="/profile" class="font-medium text-primary underline">
-						Go to your profile page
+						{m.user_go_to_profile()}
 					</a>
 				</p>
 			</CardContent>
@@ -202,8 +204,8 @@
 	{:else if !profileQuery.data}
 		<Card>
 			<CardContent class="p-6 text-center">
-				<p class="text-muted-foreground">User not found.</p>
-				<Button variant="outline" class="mt-4" onclick={() => goto('/')}>Go Home</Button>
+				<p class="text-muted-foreground">{m.user_not_found()}</p>
+				<Button variant="outline" class="mt-4" onclick={() => goto('/')}>{m.user_go_home()}</Button>
 			</CardContent>
 		</Card>
 	{:else}
@@ -225,13 +227,13 @@
 					<div class="flex-1 text-center sm:text-left">
 						<h1 class="text-2xl font-bold">{user.displayName}</h1>
 						<p class="mt-1 text-muted-foreground">
-							Member since {formatJoinDate(user.createdAt)}
+							{m.user_member_since({ date: formatJoinDate(user.createdAt) })}
 						</p>
 
 						{#if friendshipStatus === 'friends'}
 							<Badge variant="secondary" class="mt-2">
 								<CheckIcon class="mr-1 size-3" />
-								Friends
+								{m.user_friends()}
 							</Badge>
 						{/if}
 
@@ -255,12 +257,12 @@
 							{#if friendshipStatus !== 'blocked' && friendshipStatus !== 'blocked_by'}
 								<Button variant="outline" onclick={handleMessage} disabled={dmMutation.isPending}>
 									<MessageSquareIcon class="mr-2 size-4" />
-									Message
+									{m.user_message()}
 								</Button>
 							{/if}
 
 							{#if friendshipStatus === 'friends'}
-								<Button variant="outline">Challenge to Game</Button>
+								<Button variant="outline">{m.user_challenge()}</Button>
 							{/if}
 
 							{#if friendshipStatus !== 'blocked' && friendshipStatus !== 'blocked_by'}
@@ -270,7 +272,7 @@
 									onclick={handleBlock}
 									disabled={blockUserMutation.isPending}
 								>
-									Block User
+									{m.user_block()}
 								</Button>
 							{/if}
 						</div>
@@ -281,8 +283,8 @@
 
 		<Tabs value="overview" class="space-y-6">
 			<TabsList class="grid w-full grid-cols-2">
-				<TabsTrigger value="overview">Overview</TabsTrigger>
-				<TabsTrigger value="matches">Match History</TabsTrigger>
+				<TabsTrigger value="overview">{m.user_overview()}</TabsTrigger>
+				<TabsTrigger value="matches">{m.profile_match_history()}</TabsTrigger>
 			</TabsList>
 
 			<TabsContent value="overview" class="space-y-6">
@@ -290,7 +292,7 @@
 
 				<Card>
 					<CardContent class="p-4">
-						<h3 class="mb-4 font-semibold">Recent Matches</h3>
+						<h3 class="mb-4 font-semibold">{m.user_recent_matches()}</h3>
 						{#if matchesQuery.isPending}
 							<div class="space-y-3">
 								{#each Array(3) as _}
@@ -298,7 +300,7 @@
 								{/each}
 							</div>
 						{:else if matchesQuery.data?.matches.length === 0}
-							<p class="py-4 text-center text-muted-foreground">No matches yet.</p>
+							<p class="py-4 text-center text-muted-foreground">{m.user_no_matches()}</p>
 						{:else if matchesQuery.data}
 							<div class="space-y-2">
 								{#each matchesQuery.data.matches.slice(0, 5) as match}

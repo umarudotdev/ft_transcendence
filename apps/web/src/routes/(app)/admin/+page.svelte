@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { m } from '$lib/paraglide/messages.js';
 	import { createAdminDashboardQuery } from '$lib/queries/moderation';
 	import UsersIcon from '@lucide/svelte/icons/users';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
@@ -13,59 +14,59 @@
 
 	const statCards = $derived([
 		{
-			label: 'Total Users',
+			label: m.admin_total_users(),
 			value: dashboardQuery.data?.totalUsers ?? 0,
 			icon: UsersIcon,
 			color: 'text-blue-600',
 			bg: 'bg-blue-100 dark:bg-blue-900/30'
 		},
 		{
-			label: 'Moderators',
+			label: m.admin_moderators(),
 			value: dashboardQuery.data?.totalModerators ?? 0,
 			icon: ShieldIcon,
 			color: 'text-green-600',
 			bg: 'bg-green-100 dark:bg-green-900/30'
 		},
 		{
-			label: 'Admins',
+			label: m.admin_admins(),
 			value: dashboardQuery.data?.totalAdmins ?? 0,
 			icon: ShieldAlertIcon,
 			color: 'text-purple-600',
 			bg: 'bg-purple-100 dark:bg-purple-900/30'
 		},
 		{
-			label: 'Pending Reports',
+			label: m.admin_pending_reports(),
 			value: dashboardQuery.data?.pendingReports ?? 0,
 			icon: FlagIcon,
 			color: 'text-yellow-600',
 			bg: 'bg-yellow-100 dark:bg-yellow-900/30'
 		},
 		{
-			label: 'Active Sanctions',
+			label: m.admin_active_sanctions(),
 			value: dashboardQuery.data?.activeSanctions ?? 0,
 			icon: GavelIcon,
 			color: 'text-red-600',
 			bg: 'bg-red-100 dark:bg-red-900/30'
 		},
 		{
-			label: 'Recent Activity',
+			label: m.admin_recent_activity(),
 			value: dashboardQuery.data?.recentAuditLogs ?? 0,
 			icon: ActivityIcon,
 			color: 'text-slate-600',
 			bg: 'bg-slate-100 dark:bg-slate-900/30',
-			subtitle: 'Last 24h'
+			subtitle: m.admin_last_24h()
 		}
 	]);
 </script>
 
 <svelte:head>
-	<title>Admin Dashboard | ft_transcendence</title>
+	<title>{m.admin_dashboard_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="space-y-6">
 	<div>
-		<h1 class="text-2xl font-bold tracking-tight">Admin Dashboard</h1>
-		<p class="text-muted-foreground">Overview of platform statistics and activity</p>
+		<h1 class="text-2xl font-bold tracking-tight">{m.admin_dashboard_title()}</h1>
+		<p class="text-muted-foreground">{m.admin_dashboard_subtitle()}</p>
 	</div>
 
 	<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -87,7 +88,7 @@
 			<Card.Root class="col-span-full">
 				<Card.Content class="p-6 text-center">
 					<p class="text-muted-foreground">
-						Failed to load dashboard stats. Please try again later.
+						{m.admin_failed_dashboard()}
 					</p>
 				</Card.Content>
 			</Card.Root>
@@ -116,7 +117,7 @@
 	<div class="grid gap-4 md:grid-cols-2">
 		<Card.Root>
 			<Card.Header>
-				<Card.Title>Quick Actions</Card.Title>
+				<Card.Title>{m.admin_quick_actions()}</Card.Title>
 			</Card.Header>
 			<Card.Content class="space-y-2">
 				<a
@@ -125,8 +126,8 @@
 				>
 					<UsersIcon class="size-5 text-muted-foreground" />
 					<div>
-						<p class="font-medium">Manage Users</p>
-						<p class="text-sm text-muted-foreground">View, edit roles, or delete users</p>
+						<p class="font-medium">{m.admin_manage_users()}</p>
+						<p class="text-sm text-muted-foreground">{m.admin_manage_users_description()}</p>
 					</div>
 				</a>
 				<a
@@ -135,8 +136,8 @@
 				>
 					<FlagIcon class="size-5 text-muted-foreground" />
 					<div>
-						<p class="font-medium">Review Reports</p>
-						<p class="text-sm text-muted-foreground">Handle pending user reports</p>
+						<p class="font-medium">{m.admin_review_reports()}</p>
+						<p class="text-sm text-muted-foreground">{m.admin_review_reports_description()}</p>
 					</div>
 				</a>
 				<a
@@ -145,8 +146,8 @@
 				>
 					<GavelIcon class="size-5 text-muted-foreground" />
 					<div>
-						<p class="font-medium">Manage Sanctions</p>
-						<p class="text-sm text-muted-foreground">View and revoke user sanctions</p>
+						<p class="font-medium">{m.admin_manage_sanctions()}</p>
+						<p class="text-sm text-muted-foreground">{m.admin_manage_sanctions_description()}</p>
 					</div>
 				</a>
 			</Card.Content>
@@ -154,11 +155,11 @@
 
 		<Card.Root>
 			<Card.Header>
-				<Card.Title>Platform Health</Card.Title>
+				<Card.Title>{m.admin_platform_health()}</Card.Title>
 			</Card.Header>
 			<Card.Content class="space-y-4">
 				<div class="flex items-center justify-between">
-					<span class="text-sm text-muted-foreground">Report Resolution Rate</span>
+					<span class="text-sm text-muted-foreground">{m.admin_resolution_rate()}</span>
 					<span class="font-medium">
 						{#if dashboardQuery.data}
 							{dashboardQuery.data.pendingReports === 0 ? '100%' : 'N/A'}
@@ -168,15 +169,15 @@
 					</span>
 				</div>
 				<div class="flex items-center justify-between">
-					<span class="text-sm text-muted-foreground">Active Sanctions</span>
+					<span class="text-sm text-muted-foreground">{m.admin_active_sanctions()}</span>
 					<span class="font-medium">
 						{dashboardQuery.data?.activeSanctions ?? '--'}
 					</span>
 				</div>
 				<div class="flex items-center justify-between">
-					<span class="text-sm text-muted-foreground">Admin Activity (24h)</span>
+					<span class="text-sm text-muted-foreground">{m.admin_admin_activity()}</span>
 					<span class="font-medium">
-						{dashboardQuery.data?.recentAuditLogs ?? '--'} actions
+						{dashboardQuery.data?.recentAuditLogs ?? '--'} {m.admin_actions_suffix()}
 					</span>
 				</div>
 			</Card.Content>

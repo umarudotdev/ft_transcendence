@@ -7,9 +7,13 @@
 	import { Skeleton } from '$lib/components/ui/skeleton';
 	import { createLogoutMutation, createMeQuery } from '$lib/queries/auth';
 	import { getInitials } from '$lib/utils';
+	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
+	import CheckIcon from '@lucide/svelte/icons/check';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale, setLocale } from '$lib/paraglide/runtime';
 
 	const meQuery = createMeQuery();
 	const logoutMutation = createLogoutMutation();
@@ -24,13 +28,13 @@
 </script>
 
 <svelte:head>
-	<title>Settings | ft_transcendence</title>
+	<title>{m.settings_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="mx-auto max-w-2xl space-y-6">
 	<div>
-		<h1 class="text-2xl font-bold tracking-tight">Settings</h1>
-		<p class="text-muted-foreground">Manage your account preferences and security</p>
+		<h1 class="text-2xl font-bold tracking-tight">{m.settings_title()}</h1>
+		<p class="text-muted-foreground">{m.settings_subtitle()}</p>
 	</div>
 
 	{#if meQuery.isPending}
@@ -49,8 +53,7 @@
 		<Card.Root>
 			<Card.Content class="p-6 text-center">
 				<p class="text-muted-foreground">
-					Please <a href="/auth/login" class="font-medium text-primary underline">log in</a> to access
-					settings.
+					{m.settings_login_required()}
 				</p>
 			</Card.Content>
 		</Card.Root>
@@ -76,14 +79,14 @@
 									variant="secondary"
 									class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
 								>
-									Verified
+									{m.common_verified()}
 								</Badge>
 							{:else}
 								<Badge
 									variant="secondary"
 									class="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
 								>
-									Unverified
+									{m.common_unverified()}
 								</Badge>
 							{/if}
 							{#if user.twoFactorEnabled}
@@ -111,12 +114,40 @@
 						<ShieldIcon class="size-5 text-primary" />
 					</div>
 					<div>
-						<h3 class="font-medium">Security</h3>
-						<p class="text-sm text-muted-foreground">Password, 2FA, and connected accounts</p>
+						<h3 class="font-medium">{m.settings_security()}</h3>
+						<p class="text-sm text-muted-foreground">{m.settings_security_description()}</p>
 					</div>
 				</div>
 				<ChevronRightIcon class="size-5 text-muted-foreground" />
 			</a>
+
+			<!-- Language Settings -->
+			<div class="rounded-lg border bg-card p-4">
+				<div class="flex items-center gap-4">
+					<div class="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+						<GlobeIcon class="size-5 text-primary" />
+					</div>
+					<div class="flex-1">
+						<h3 class="font-medium">{m.settings_language()}</h3>
+						<p class="text-sm text-muted-foreground">{m.settings_language_description()}</p>
+					</div>
+				</div>
+				<div class="mt-3 flex gap-2 pl-14">
+					{#each [{ code: 'en' as const, label: 'English' }, { code: 'pt-br' as const, label: 'Português (BR)' }, { code: 'es' as const, label: 'Español' }] as lang}
+						<Button
+							variant={getLocale() === lang.code ? 'default' : 'outline'}
+							size="sm"
+							onclick={() => setLocale(lang.code)}
+							class="gap-1"
+						>
+							{#if getLocale() === lang.code}
+								<CheckIcon class="size-3" />
+							{/if}
+							{lang.label}
+						</Button>
+					{/each}
+				</div>
+			</div>
 		</div>
 
 		<!-- Logout -->
@@ -128,7 +159,7 @@
 				disabled={logoutMutation.isPending}
 			>
 				<LogOutIcon class="mr-2 size-4" />
-				{logoutMutation.isPending ? 'Signing out...' : 'Sign Out'}
+				{logoutMutation.isPending ? m.settings_signing_out() : m.settings_sign_out()}
 			</Button>
 		</div>
 	{/if}

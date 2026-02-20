@@ -17,6 +17,7 @@
 		type Achievement
 	} from '$lib/queries/gamification';
 	import TrophyIcon from '@lucide/svelte/icons/trophy';
+	import { m } from '$lib/paraglide/messages.js';
 
 	const achievementsQuery = createAchievementsQuery();
 	const myAchievementsQuery = createMyAchievementsQuery();
@@ -59,14 +60,14 @@
 </script>
 
 <svelte:head>
-	<title>Achievements | ft_transcendence</title>
+	<title>{m.achievements_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-2xl font-bold">Achievements</h1>
-			<p class="text-muted-foreground">Track your progress and earn rewards</p>
+			<h1 class="text-2xl font-bold">{m.achievements_title()}</h1>
+			<p class="text-muted-foreground">{m.achievements_subtitle()}</p>
 		</div>
 		<DailyReward />
 	</div>
@@ -74,7 +75,7 @@
 	<div class="grid gap-4 md:grid-cols-3">
 		<Card>
 			<CardHeader class="pb-2">
-				<CardTitle class="text-sm font-medium text-muted-foreground">Points Balance</CardTitle>
+				<CardTitle class="text-sm font-medium text-muted-foreground">{m.achievements_points_balance()}</CardTitle>
 			</CardHeader>
 			<CardContent>
 				{#if pointsQuery.isPending}
@@ -87,7 +88,7 @@
 
 		<Card>
 			<CardHeader class="pb-2">
-				<CardTitle class="text-sm font-medium text-muted-foreground">Login Streak</CardTitle>
+				<CardTitle class="text-sm font-medium text-muted-foreground">{m.achievements_login_streak()}</CardTitle>
 			</CardHeader>
 			<CardContent>
 				{#if streakQuery.isPending}
@@ -105,7 +106,7 @@
 
 		<Card>
 			<CardHeader class="pb-2">
-				<CardTitle class="text-sm font-medium text-muted-foreground">Achievements</CardTitle>
+				<CardTitle class="text-sm font-medium text-muted-foreground">{m.achievements_title()}</CardTitle>
 			</CardHeader>
 			<CardContent>
 				<div class="flex items-baseline gap-2">
@@ -123,7 +124,7 @@
 		<CardHeader>
 			<CardTitle class="flex items-center gap-2">
 				<TrophyIcon class="size-5" />
-				All Achievements
+				{m.achievements_all()}
 			</CardTitle>
 		</CardHeader>
 		<CardContent>
@@ -136,7 +137,7 @@
 			{:else if achievementsQuery.data?.length === 0}
 				<div class="py-12 text-center">
 					<TrophyIcon class="mx-auto mb-4 size-12 text-muted-foreground" />
-					<p class="text-muted-foreground">No achievements available yet</p>
+					<p class="text-muted-foreground">{m.achievements_none()}</p>
 				</div>
 			{:else}
 				{@const categories = Object.keys(groupedAchievements())}

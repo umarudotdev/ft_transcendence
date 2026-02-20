@@ -9,6 +9,8 @@
 	import { Textarea } from '$lib/components/ui/textarea';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Skeleton } from '$lib/components/ui/skeleton';
+	import { m } from '$lib/paraglide/messages.js';
+	import { getLocale } from '$lib/paraglide/runtime';
 	import {
 		createReportsQuery,
 		createResolveReportMutation,
@@ -75,7 +77,7 @@
 	}
 
 	function formatDate(date: Date): string {
-		return new Date(date).toLocaleDateString('en-US', {
+		return new Date(date).toLocaleDateString(getLocale(), {
 			year: 'numeric',
 			month: 'short',
 			day: 'numeric',
@@ -88,31 +90,31 @@
 	const canGoBack = $derived(currentPage > 0);
 	const canGoNext = $derived(currentPage < totalPages - 1);
 
-	const statusOptions: { value: ReportStatus; label: string }[] = [
-		{ value: 'pending', label: 'Pending' },
-		{ value: 'reviewed', label: 'Reviewed' },
-		{ value: 'resolved', label: 'Resolved' },
-		{ value: 'dismissed', label: 'Dismissed' }
-	];
+	const statusOptions = $derived([
+		{ value: 'pending' as ReportStatus, label: m.admin_reports_status_pending() },
+		{ value: 'reviewed' as ReportStatus, label: m.admin_reports_status_reviewed() },
+		{ value: 'resolved' as ReportStatus, label: m.admin_reports_status_resolved() },
+		{ value: 'dismissed' as ReportStatus, label: m.admin_reports_status_dismissed() }
+	]);
 
-	const resolutionOptions: { value: Resolution; label: string; description: string }[] = [
-		{ value: 'no_action', label: 'No Action', description: 'Dismiss the report without action' },
-		{ value: 'warning', label: 'Warning', description: 'Issue a warning to the user' },
-		{ value: 'timeout', label: 'Timeout', description: 'Temporarily suspend the user' },
-		{ value: 'ban', label: 'Ban', description: 'Permanently ban the user' }
-	];
+	const resolutionOptions = $derived([
+		{ value: 'no_action' as Resolution, label: m.admin_reports_resolution_no_action(), description: m.admin_reports_resolution_no_action_desc() },
+		{ value: 'warning' as Resolution, label: m.admin_reports_resolution_warning(), description: m.admin_reports_resolution_warning_desc() },
+		{ value: 'timeout' as Resolution, label: m.admin_reports_resolution_timeout(), description: m.admin_reports_resolution_timeout_desc() },
+		{ value: 'ban' as Resolution, label: m.admin_reports_resolution_ban(), description: m.admin_reports_resolution_ban_desc() }
+	]);
 
 	const needsDuration = $derived((resolution as Resolution) === 'timeout');
 </script>
 
 <svelte:head>
-	<title>Reports | Admin | ft_transcendence</title>
+	<title>{m.admin_reports_title()} | ft_transcendence</title>
 </svelte:head>
 
 <div class="space-y-6">
 	<div>
-		<h1 class="text-2xl font-bold tracking-tight">Reports</h1>
-		<p class="text-muted-foreground">Review and resolve user reports</p>
+		<h1 class="text-2xl font-bold tracking-tight">{m.admin_reports_title()}</h1>
+		<p class="text-muted-foreground">{m.admin_reports_subtitle()}</p>
 	</div>
 
 	<!-- Filters -->
@@ -126,10 +128,10 @@
 				}}
 			>
 				<Select.Trigger class="w-full sm:w-40">
-					{statusFilter ? getStatusText(statusFilter as ReportStatus) : 'All Statuses'}
+					{statusFilter ? getStatusText(statusFilter as ReportStatus) : m.admin_reports_all_statuses()}
 				</Select.Trigger>
 				<Select.Content>
-					<Select.Item value="">All Statuses</Select.Item>
+					<Select.Item value="">{m.admin_reports_all_statuses()}</Select.Item>
 					{#each statusOptions as option}
 						<Select.Item value={option.value}>{option.label}</Select.Item>
 					{/each}
@@ -143,12 +145,12 @@
 		<Table.Root>
 			<Table.Header>
 				<Table.Row>
-					<Table.Head>Reporter</Table.Head>
-					<Table.Head>Reported User</Table.Head>
-					<Table.Head>Reason</Table.Head>
-					<Table.Head>Status</Table.Head>
-					<Table.Head class="hidden lg:table-cell">Date</Table.Head>
-					<Table.Head class="text-right">Actions</Table.Head>
+					<Table.Head>{m.admin_reports_reporter()}</Table.Head>
+					<Table.Head>{m.admin_reports_reported_user()}</Table.Head>
+					<Table.Head>{m.admin_reports_reason()}</Table.Head>
+					<Table.Head>{m.admin_reports_status()}</Table.Head>
+					<Table.Head class="hidden lg:table-cell">{m.admin_reports_date()}</Table.Head>
+					<Table.Head class="text-right">{m.admin_reports_actions()}</Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
@@ -166,13 +168,13 @@
 				{:else if reportsQuery.error}
 					<Table.Row>
 						<Table.Cell colspan={6} class="h-32 text-center">
-							<p class="text-muted-foreground">Failed to load reports. Please try again.</p>
+							<p class="text-muted-foreground">{m.admin_reports_failed()}</p>
 						</Table.Cell>
 					</Table.Row>
 				{:else if reportsQuery.data?.reports.length === 0}
 					<Table.Row>
 						<Table.Cell colspan={6} class="h-32 text-center">
-							<p class="text-muted-foreground">No reports found.</p>
+							<p class="text-muted-foreground">{m.admin_reports_no_reports()}</p>
 						</Table.Cell>
 					</Table.Row>
 				{:else}
@@ -193,10 +195,10 @@
 							</Table.Cell>
 							<Table.Cell class="text-right">
 								{#if report.status === 'pending'}
-									<Button size="sm" onclick={() => openResolveDialog(report)}>Resolve</Button>
+									<Button size="sm" onclick={() => openResolveDialog(report)}>{m.admin_reports_resolve()}</Button>
 								{:else}
 									<span class="text-sm text-muted-foreground">
-										{report.resolution ?? 'No action'}
+										{report.resolution ?? m.admin_reports_no_action()}
 									</span>
 								{/if}
 							</Table.Cell>
@@ -210,10 +212,10 @@
 		{#if (reportsQuery.data?.total ?? 0) > pageSize}
 			<div class="flex items-center justify-between border-t px-4 py-3">
 				<p class="text-sm text-muted-foreground">
-					Showing {currentPage * pageSize + 1} to {Math.min(
+					{m.common_showing_range({ start: currentPage * pageSize + 1, end: Math.min(
 						(currentPage + 1) * pageSize,
 						reportsQuery.data?.total ?? 0
-					)} of {reportsQuery.data?.total ?? 0} reports
+					), total: reportsQuery.data?.total ?? 0 })}
 				</p>
 				<div class="flex gap-1">
 					<Button
@@ -223,7 +225,7 @@
 						onclick={() => (currentPage -= 1)}
 					>
 						<ChevronLeftIcon class="size-4" />
-						Previous
+						{m.common_previous()}
 					</Button>
 					<Button
 						variant="outline"
@@ -231,7 +233,7 @@
 						disabled={!canGoNext}
 						onclick={() => (currentPage += 1)}
 					>
-						Next
+						{m.common_next()}
 						<ChevronRightIcon class="size-4" />
 					</Button>
 				</div>
@@ -244,19 +246,19 @@
 <Dialog.Root bind:open={resolveDialogOpen}>
 	<Dialog.Content>
 		<Dialog.Header>
-			<Dialog.Title>Resolve Report</Dialog.Title>
+			<Dialog.Title>{m.admin_reports_resolve_title()}</Dialog.Title>
 			<Dialog.Description>
 				{#if selectedReport}
-					Report against {selectedReport.reportedUserName} for {getReasonText(
+					{m.admin_reports_resolve_description({ name: selectedReport.reportedUserName, reason: getReasonText(
 						selectedReport.reason
-					)}
+					) })}
 				{/if}
 			</Dialog.Description>
 		</Dialog.Header>
 		<div class="space-y-4 py-4">
 			{#if selectedReport?.description}
 				<div class="space-y-2">
-					<Label>Description</Label>
+					<Label>{m.admin_reports_description_label()}</Label>
 					<p class="rounded-md border p-3 text-sm text-muted-foreground">
 						{selectedReport.description}
 					</p>
@@ -264,10 +266,10 @@
 			{/if}
 
 			<div class="space-y-2">
-				<Label>Resolution</Label>
+				<Label>{m.admin_reports_resolution()}</Label>
 				<Select.Root type="single" bind:value={resolution}>
 					<Select.Trigger>
-						{resolutionOptions.find((o) => o.value === resolution)?.label ?? 'Select resolution'}
+						{resolutionOptions.find((o) => o.value === resolution)?.label ?? m.admin_reports_select_resolution()}
 					</Select.Trigger>
 					<Select.Content>
 						{#each resolutionOptions as option}
@@ -284,7 +286,7 @@
 
 			{#if needsDuration}
 				<div class="space-y-2">
-					<Label for="duration">Duration (hours)</Label>
+					<Label for="duration">{m.admin_reports_duration()}</Label>
 					<Input
 						id="duration"
 						type="number"
@@ -296,21 +298,21 @@
 			{/if}
 
 			<div class="space-y-2">
-				<Label for="notes">Notes (optional)</Label>
+				<Label for="notes">{m.admin_reports_notes()}</Label>
 				<Textarea
 					id="notes"
-					placeholder="Add any notes about this resolution..."
+					placeholder={m.admin_reports_notes_placeholder()}
 					bind:value={notes}
 				/>
 			</div>
 		</div>
 		<Dialog.Footer>
-			<Button variant="outline" onclick={() => (resolveDialogOpen = false)}>Cancel</Button>
+			<Button variant="outline" onclick={() => (resolveDialogOpen = false)}>{m.common_cancel()}</Button>
 			<Button
 				onclick={handleResolve}
 				disabled={resolveReportMutation.isPending || (needsDuration && !sanctionDuration)}
 			>
-				{resolveReportMutation.isPending ? 'Resolving...' : 'Resolve Report'}
+				{resolveReportMutation.isPending ? m.admin_reports_resolving() : m.admin_reports_resolve_button()}
 			</Button>
 		</Dialog.Footer>
 	</Dialog.Content>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import LanguageSwitcher from '$lib/components/language-switcher.svelte';
 	import ThemeToggle from '$lib/components/theme-toggle.svelte';
 
 	let { children } = $props();
@@ -34,7 +35,8 @@
 		class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_transparent_60%,_rgba(0,0,0,0.15)_100%)] dark:bg-[radial-gradient(ellipse_at_center,_transparent_0%,_transparent_60%,_rgba(0,0,0,0.3)_100%)]"
 	></div>
 
-	<div class="absolute top-4 right-4 z-10">
+	<div class="absolute top-4 right-4 z-10 flex items-center gap-2">
+		<LanguageSwitcher />
 		<ThemeToggle />
 	</div>
 	<div class="relative z-10 w-full max-w-md">

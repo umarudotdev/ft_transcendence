@@ -5,6 +5,7 @@
 	import { createConversationsQuery } from '$lib/queries/chat';
 	import MessageSquareIcon from '@lucide/svelte/icons/message-square';
 	import ConversationItem from './ConversationItem.svelte';
+	import { m } from '$lib/paraglide/messages.js';
 
 	interface Props {
 		selectedChannelId?: number;
@@ -21,7 +22,7 @@
 
 <div class="flex h-full flex-col">
 	<div class="border-b p-4">
-		<h2 class="text-lg font-semibold">Messages</h2>
+		<h2 class="text-lg font-semibold">{m.chat_messages()}</h2>
 	</div>
 
 	<ScrollArea class="flex-1">
@@ -39,13 +40,13 @@
 			</div>
 		{:else if conversationsQuery.isError}
 			<div class="flex flex-col items-center justify-center p-8 text-center">
-				<p class="text-sm text-muted-foreground">Failed to load conversations</p>
+				<p class="text-sm text-muted-foreground">{m.chat_failed_to_load()}</p>
 			</div>
 		{:else if conversationsQuery.data?.length === 0}
 			<div class="flex flex-col items-center justify-center p-8 text-center">
 				<MessageSquareIcon class="mb-2 size-10 text-muted-foreground" />
-				<p class="font-medium">No conversations yet</p>
-				<p class="text-sm text-muted-foreground">Start a chat by visiting a user's profile</p>
+				<p class="font-medium">{m.chat_no_conversations()}</p>
+				<p class="text-sm text-muted-foreground">{m.chat_start_hint()}</p>
 			</div>
 		{:else if conversationsQuery.data}
 			<div class="p-2">

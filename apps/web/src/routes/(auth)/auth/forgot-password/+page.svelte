@@ -5,6 +5,7 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Alert, AlertDescription } from '$lib/components/ui/alert';
 	import { createForgotPasswordMutation } from '$lib/queries/auth';
+	import { m } from '$lib/paraglide/messages.js';
 
 	let email = $state('');
 	let success = $state(false);
@@ -32,20 +33,19 @@
 
 <Card.Root class="w-full max-w-md border-y">
 	<Card.Header>
-		<Card.Title class="text-2xl">Forgot Password</Card.Title>
+		<Card.Title class="text-2xl">{m.auth_forgot_title()}</Card.Title>
 		<Card.Description>
-			Enter your email and we'll send you a link to reset your password
+			{m.auth_forgot_description()}
 		</Card.Description>
 	</Card.Header>
 	<Card.Content>
 		{#if success}
 			<Alert class="mb-4">
 				<AlertDescription>
-					If an account with that email exists, we've sent you a password reset link. Please check
-					your inbox.
+					{m.auth_forgot_success()}
 				</AlertDescription>
 			</Alert>
-			<Button class="w-full" variant="outline" href="/auth/login">Back to Login</Button>
+			<Button class="w-full" variant="outline" href="/auth/login">{m.auth_forgot_back_to_login()}</Button>
 		{:else}
 			<form onsubmit={handleSubmit} class="space-y-4">
 				{#if errorMessage}
@@ -55,7 +55,7 @@
 				{/if}
 
 				<div class="space-y-2">
-					<Label for="email">Email</Label>
+					<Label for="email">{m.common_email()}</Label>
 					<Input
 						id="email"
 						type="email"
@@ -66,13 +66,13 @@
 				</div>
 
 				<Button type="submit" class="w-full" disabled={forgotPasswordMutation.isPending}>
-					{forgotPasswordMutation.isPending ? 'Sending...' : 'Send Reset Link'}
+					{forgotPasswordMutation.isPending ? m.auth_forgot_sending() : m.auth_forgot_send()}
 				</Button>
 			</form>
 
 			<p class="mt-4 text-center text-sm text-muted-foreground">
-				Remember your password?
-				<a href="/auth/login" class="text-primary hover:underline">Sign in</a>
+				{m.auth_forgot_remember()}
+				<a href="/auth/login" class="text-primary hover:underline">{m.common_sign_in()}</a>
 			</p>
 		{/if}
 	</Card.Content>

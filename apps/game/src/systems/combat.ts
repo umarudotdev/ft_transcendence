@@ -4,12 +4,17 @@ import type { HitEvent } from "./collision";
 
 import { TICK_RATE } from "../config";
 import { BulletSchema } from "../schemas/BulletSchema";
+import {
+  BOMB_COOLDOWN_TICKS,
+  DEATHBOMB_WINDOW_TICKS,
+  INVINCIBILITY_TICKS,
+  MAX_HP,
+} from "./constants";
+import { isSpellCardActive } from "./spellcard";
 
 const BULLET_SPEED = 500;
 const FIRE_COOLDOWN_TICKS = Math.round(TICK_RATE * 0.1); // 100ms = 6 ticks at 60Hz
 const SPREAD_COOLDOWN_TICKS = Math.round(TICK_RATE * 0.3); // 300ms between spread volleys
-const INVINCIBILITY_TICKS = Math.round(TICK_RATE * 1.5); // 1.5 seconds
-const MAX_HP = 100;
 
 const SPREAD_ANGLE = Math.PI / 12; // 15 degrees
 const SPREAD_ANGULAR_VELOCITY = 1.2; // radians/sec — how fast spread bullets curve
@@ -41,6 +46,10 @@ function spawnBullet(
 export function processFireInput(state: GameState) {
   for (const [sessionId, player] of state.players) {
     if (!player.connected || !player.isFiring) continue;
+
+    // Spell card declarer's normal fire is suppressed during the spell card
+    if (isSpellCardActive(state) && sessionId === state.spellCardDeclarer)
+      continue;
 
     const aimX = Math.sin(player.aimAngle);
     const aimY = -Math.cos(player.aimAngle);
@@ -133,6 +142,21 @@ function handleDeath(
   player: PlayerSchema,
   hit: HitEvent
 ): { deadPlayerId: string; killerId: string } | null {
+  // Deathbomb: if bomb is off cooldown, give the player a brief window to bomb
+  const bombOffCooldown =
+    state.tick - player.ability2LastUsedTick >= BOMB_COOLDOWN_TICKS;
+  if (bombOffCooldown) {
+    player.hp = 0;
+    player.deathbombWindowUntil = state.tick + DEATHBOMB_WINDOW_TICKS;
+    // Grant brief invincibility for the window duration so they don't get hit again
+    player.invincibleUntil = Math.max(
+      player.invincibleUntil,
+      state.tick + DEATHBOMB_WINDOW_TICKS
+    );
+    return null; // Defer death — lives unchanged
+  }
+
+  // No deathbomb available: immediate death
   player.lives--;
 
   if (player.lives <= 0) {
@@ -171,6 +195,25 @@ export function applyDirectDamage(
     if (player.lives > 0) {
       player.hp = MAX_HP;
       player.invincibleUntil = state.tick + INVINCIBILITY_TICKS;
+    }
+  }
+}
+
+/** Process expired deathbomb windows — player didn't bomb in time, so they die. */
+export function processDeathbombExpiry(state: GameState) {
+  for (const [, player] of state.players) {
+    if (
+      player.deathbombWindowUntil > 0 &&
+      state.tick >= player.deathbombWindowUntil
+    ) {
+      player.deathbombWindowUntil = 0;
+      player.lives--;
+
+      if (player.lives > 0) {
+        player.hp = MAX_HP;
+        player.invincibleUntil = state.tick + INVINCIBILITY_TICKS;
+      }
+      // If lives <= 0, checkGameOver will handle it
     }
   }
 }

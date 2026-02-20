@@ -19,14 +19,21 @@ import {
   chargeUltimate,
   cleanupExpiredEffects,
   updateDashFlags,
+  updateEffectWaves,
 } from "../systems/abilities";
 import { checkCollisions } from "../systems/collision";
 import {
   applyDamage,
   checkGameOver,
+  processDeathbombExpiry,
   processFireInput,
 } from "../systems/combat";
 import { applyMovement } from "../systems/movement";
+import {
+  checkSpellCardResolution,
+  isSpellCardActive,
+  processSpellCardFire,
+} from "../systems/spellcard";
 
 const InputSchema = z.object({
   up: z.boolean(),
@@ -78,6 +85,15 @@ export class GameRoom extends Room<{ state: GameState }> {
       const player = this.state.players.get(client.sessionId);
       if (!player || !player.connected) return;
 
+      // Block bomb/dash for the spell card declarer during active spell card
+      if (
+        isSpellCardActive(this.state) &&
+        client.sessionId === this.state.spellCardDeclarer &&
+        parsed.data.slot !== 3
+      ) {
+        return;
+      }
+
       const activated = activateAbility(
         this.state,
         client.sessionId,
@@ -90,6 +106,14 @@ export class GameRoom extends Room<{ state: GameState }> {
           playerId: client.sessionId,
           slot: parsed.data.slot,
         });
+
+        // Broadcast spell card declaration when ultimate (slot 3) activates
+        if (parsed.data.slot === 3 && isSpellCardActive(this.state)) {
+          this.broadcast("spellCardDeclared", {
+            declarerId: client.sessionId,
+            endsAtTick: this.state.spellCardEndsAtTick,
+          });
+        }
       }
     },
 
@@ -360,6 +384,9 @@ export class GameRoom extends Room<{ state: GameState }> {
     // 1. Process fire input → spawn bullets
     processFireInput(this.state);
 
+    // 1b. Spell card fire (if active)
+    processSpellCardFire(this.state);
+
     // 2. Move players and bullets
     applyMovement(this.state, dt);
 
@@ -379,6 +406,13 @@ export class GameRoom extends Room<{ state: GameState }> {
             hp: victim.hp,
             lives: victim.lives,
           });
+
+          // Notify client of deathbomb window
+          if (victim.deathbombWindowUntil > this.state.tick) {
+            this.broadcast("deathbombWindow", {
+              playerId: hit.playerId,
+            });
+          }
         }
 
         // Charge the shooter's ultimate
@@ -404,11 +438,23 @@ export class GameRoom extends Room<{ state: GameState }> {
       }
     }
 
-    // 5. Cleanup expired effects and dash flags
+    // 5. Process deathbomb window expirations
+    processDeathbombExpiry(this.state);
+
+    // 6. Progressive bomb/ultimate expansion
+    updateEffectWaves(this.state);
+
+    // 7. Cleanup expired effects and dash flags
     cleanupExpiredEffects(this.state);
     updateDashFlags(this.state);
 
-    // 6. Check for game over
+    // 8. Check spell card resolution
+    const spellResult = checkSpellCardResolution(this.state);
+    if (spellResult) {
+      this.broadcast("spellCardResolution", { result: spellResult });
+    }
+
+    // 9. Check for game over
     const winnerId = checkGameOver(this.state);
     if (winnerId) {
       this.endGame(winnerId);
@@ -431,7 +477,7 @@ export class GameRoom extends Room<{ state: GameState }> {
 
     player.isFiring = input.fire;
     player.isFocusing = input.focus;
-    player.aimAngle = input.aimAngle;
+    player.desiredAimAngle = input.aimAngle;
   }
 
   private startCountdown() {

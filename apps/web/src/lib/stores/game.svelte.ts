@@ -139,6 +139,8 @@ export function createGameStore() {
   let winnerId = $state("");
   let matchResult: MatchResult | null = $state(null);
   let mySessionId: string | null = $state(null);
+  let spellCardDeclarer = $state("");
+  let spellCardEndsAtTick = $state(0);
 
   // --- Internal guards (non-reactive) ---
   let _joiningLock = false;
@@ -160,6 +162,8 @@ export function createGameStore() {
     matchResult = null;
     mySessionId = null;
     matchSessionId = null;
+    spellCardDeclarer = "";
+    spellCardEndsAtTick = 0;
     joinToken = null;
     opponent = null;
     queueMode = null;
@@ -432,14 +436,19 @@ export function createGameStore() {
         const p = extractPlayer(player);
         players.set(sessionId, p);
         players = new Map(players);
-        interpolator.pushSnapshot(sessionId, p.x, p.y);
+        interpolator.pushSnapshot(sessionId, p.x, p.y, p.aimAngle);
 
         cb.onChange(player, () => {
           if (_currentRoom !== joinedRoom) return;
           const updated = extractPlayer(player);
           players.set(sessionId, updated);
           players = new Map(players);
-          interpolator.pushSnapshot(sessionId, updated.x, updated.y);
+          interpolator.pushSnapshot(
+            sessionId,
+            updated.x,
+            updated.y,
+            updated.aimAngle
+          );
         });
       }
     );
@@ -465,6 +474,8 @@ export function createGameStore() {
       gameTick = (state.tick as number) ?? 0;
       countdownTimer = (state.countdownTimer as number) ?? 0;
       winnerId = (state.winnerId as string) ?? "";
+      spellCardDeclarer = (state.spellCardDeclarer as string) ?? "";
+      spellCardEndsAtTick = (state.spellCardEndsAtTick as number) ?? 0;
 
       // Forward-only phase advancement from server
       const serverPhase = state.phase as string;
@@ -516,6 +527,7 @@ export function createGameStore() {
           x: (e.x as number) ?? 0,
           y: (e.y as number) ?? 0,
           radius: (e.radius as number) ?? 0,
+          createdAtTick: (e.createdAtTick as number) ?? 0,
         }));
       }
     });
@@ -527,6 +539,9 @@ export function createGameStore() {
     joinedRoom.onMessage("hit", () => {});
     joinedRoom.onMessage("gameOver", () => {});
     joinedRoom.onMessage("graze", () => {});
+    joinedRoom.onMessage("deathbombWindow", () => {});
+    joinedRoom.onMessage("spellCardDeclared", () => {});
+    joinedRoom.onMessage("spellCardResolution", () => {});
 
     // Match result from Colyseus broadcast (replaces broken matchmaking WS path).
     // The message may arrive before the "finished" state patch, so buffer it.
@@ -731,6 +746,12 @@ export function createGameStore() {
     },
     get interpolator() {
       return interpolator;
+    },
+    get spellCardDeclarer() {
+      return spellCardDeclarer;
+    },
+    get spellCardEndsAtTick() {
+      return spellCardEndsAtTick;
     },
     // Methods
     joinQueue,

@@ -1,11 +1,33 @@
 import type { GameState } from "../schemas/GameState";
 
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../config";
+import { MAX_ROTATION_SPEED } from "./constants";
+
+/** Rotate `current` toward `target` by at most `maxDelta`, using shortest arc. */
+export function rotateToward(
+  current: number,
+  target: number,
+  maxDelta: number
+): number {
+  // Normalize diff to [-PI, PI] using atan2 for correct sign handling
+  const diff = Math.atan2(
+    Math.sin(target - current),
+    Math.cos(target - current)
+  );
+
+  if (Math.abs(diff) <= maxDelta) return target;
+  return current + Math.sign(diff) * maxDelta;
+}
 
 export function applyMovement(state: GameState, dt: number) {
-  // Move players
+  // Move players and rotate aim
   for (const [, player] of state.players) {
     if (!player.connected) continue;
+    player.aimAngle = rotateToward(
+      player.aimAngle,
+      player.desiredAimAngle,
+      MAX_ROTATION_SPEED * dt
+    );
     player.applyMovement(dt);
   }
 

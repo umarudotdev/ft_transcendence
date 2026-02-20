@@ -7,9 +7,12 @@
 		CANVAS_HEIGHT,
 		CANVAS_WIDTH,
 		type GameRenderState,
-		renderFrame
+		renderFrame,
+		startDashTrail
 	} from '$lib/game/renderer';
 	import { getGameStore } from '$lib/stores/game.svelte';
+
+	const MAX_ROTATION_SPEED = 8;
 
 	const gameStore = getGameStore();
 
@@ -21,10 +24,15 @@
 
 	const particles = createParticleSystem();
 
+	// Lifted to component scope for access in gameLoop
+	let inputHandler: ReturnType<typeof createInputHandler> | null = null;
+	let predictedAimAngle = 0;
+
 	// Track previous state for particle emission triggers
 	let prevEffectCount = 0;
 	let prevPlayerHps = new Map<string, number>();
 	let prevDashStates = new Map<string, boolean>();
+	let prevPlayerPositions = new Map<string, { x: number; y: number; aimAngle: number }>();
 
 	function emitParticlesFromStateChanges(state: GameRenderState) {
 		// Detect new effects (bomb/ultimate)
@@ -57,9 +65,34 @@
 			const prevDash = prevDashStates.get(sessionId) ?? false;
 			if (player.isDashing && !prevDash) {
 				particles.emitDash(player.x, player.y, player.aimAngle, rgb.r, rgb.g, rgb.b);
+				const prev = prevPlayerPositions.get(sessionId);
+				if (prev) {
+					startDashTrail(
+						prev.x,
+						prev.y,
+						player.x,
+						player.y,
+						player.aimAngle,
+						player.playerIndex
+					);
+				}
 			}
 			prevDashStates.set(sessionId, player.isDashing);
+
+			prevPlayerPositions.set(sessionId, {
+				x: player.x,
+				y: player.y,
+				aimAngle: player.aimAngle
+			});
 		}
+	}
+
+	function rotateToward(current: number, target: number, maxDelta: number): number {
+		let diff = target - current;
+		diff = ((diff + Math.PI) % (2 * Math.PI)) - Math.PI;
+		if (diff < -Math.PI) diff += 2 * Math.PI;
+		if (Math.abs(diff) <= maxDelta) return target;
+		return current + Math.sign(diff) * maxDelta;
 	}
 
 	function gameLoop(time: number) {
@@ -68,6 +101,15 @@
 		const dt = lastTime > 0 ? Math.min((time - lastTime) / 1000, 0.05) : 1 / 60;
 		lastTime = time;
 
+		// Client-side prediction of aim angle using same rotation cap as server
+		if (inputHandler) {
+			predictedAimAngle = rotateToward(
+				predictedAimAngle,
+				inputHandler.state.aimAngle,
+				MAX_ROTATION_SPEED * dt
+			);
+		}
+
 		const state: GameRenderState = {
 			players: gameStore.players,
 			bullets: gameStore.bullets,
@@ -75,7 +117,11 @@
 			tick: gameStore.gameTick,
 			phase: gameStore.phase,
 			countdownTimer: gameStore.countdownTimer,
-			mySessionId: gameStore.mySessionId ?? ''
+			mySessionId: gameStore.mySessionId ?? '',
+			interpolator: gameStore.interpolator,
+			localAimAngle: predictedAimAngle,
+			spellCardDeclarer: gameStore.spellCardDeclarer,
+			spellCardEndsAtTick: gameStore.spellCardEndsAtTick
 		};
 
 		emitParticlesFromStateChanges(state);
@@ -87,7 +133,7 @@
 	onMount(() => {
 		ctx = canvas.getContext('2d');
 
-		const inputHandler = createInputHandler(
+		inputHandler = createInputHandler(
 			(input) => gameStore.sendInput(input),
 			(slot) => gameStore.sendAbility(slot),
 			canvas,
@@ -102,7 +148,7 @@
 		animationId = requestAnimationFrame(gameLoop);
 
 		return () => {
-			inputHandler.detach();
+			inputHandler?.detach();
 			cancelAnimationFrame(animationId);
 		};
 	});

@@ -4,22 +4,21 @@ import type { PlayerSchema } from "../schemas/PlayerSchema";
 import { CANVAS_HEIGHT, CANVAS_WIDTH, TICK_RATE } from "../config";
 import { EffectSchema } from "../schemas/EffectSchema";
 import { applyDirectDamage } from "./combat";
+import { BOMB_COOLDOWN_TICKS, INVINCIBILITY_TICKS, MAX_HP } from "./constants";
+import { declareSpellCard } from "./spellcard";
 
 const DASH_COOLDOWN_TICKS = TICK_RATE * 8;
 const DASH_DISTANCE = 100;
 const DASH_INVINCIBILITY_TICKS = Math.round(TICK_RATE * 0.2);
 const DASH_VISUAL_TICKS = 6; // ~100ms — enough for 2 state patches at 20Hz
 
-const BOMB_COOLDOWN_TICKS = TICK_RATE * 12;
 const BOMB_RADIUS = 120;
 const BOMB_DAMAGE = 30;
 const BOMB_EFFECT_DURATION_TICKS = Math.round(TICK_RATE * 0.5);
+export const BOMB_EXPANSION_TICKS = 12; // ~200ms
 
 const ULTIMATE_CHARGE_REQUIRED = 100;
 const ULTIMATE_CHARGE_PER_DAMAGE = 1;
-const ULTIMATE_BULLET_CLEAR_RADIUS = 200;
-const ULTIMATE_DAMAGE = 50;
-const ULTIMATE_EFFECT_DURATION_TICKS = TICK_RATE;
 
 export type AbilitySlot = 1 | 2 | 3;
 
@@ -93,43 +92,33 @@ function activateBomb(
   sessionId: string,
   player: PlayerSchema
 ): boolean {
-  if (state.tick - player.ability2LastUsedTick < BOMB_COOLDOWN_TICKS) {
-    return false;
+  const isDeathbombing = player.deathbombWindowUntil > state.tick;
+
+  if (!isDeathbombing) {
+    // Normal bomb: check cooldown
+    if (state.tick - player.ability2LastUsedTick < BOMB_COOLDOWN_TICKS) {
+      return false;
+    }
+  } else {
+    // Deathbomb: cancel death window, restore HP, grant invincibility
+    player.deathbombWindowUntil = 0;
+    player.hp = MAX_HP;
+    player.invincibleUntil = state.tick + INVINCIBILITY_TICKS;
   }
 
   player.ability2LastUsedTick = state.tick;
   player.ability2CooldownUntil = state.tick + BOMB_COOLDOWN_TICKS;
 
-  // Clear enemy bullets within radius
-  for (let i = state.bullets.length - 1; i >= 0; i--) {
-    const bullet = state.bullets[i];
-    if (bullet.ownerId === sessionId) continue;
-
-    const dx = bullet.x - player.x;
-    const dy = bullet.y - player.y;
-    if (dx * dx + dy * dy < BOMB_RADIUS * BOMB_RADIUS) {
-      state.bullets.splice(i, 1);
-    }
-  }
-
-  // Damage enemy if in range
-  for (const [otherId, other] of state.players) {
-    if (otherId === sessionId) continue;
-    const dx = other.x - player.x;
-    const dy = other.y - player.y;
-    if (dx * dx + dy * dy < BOMB_RADIUS * BOMB_RADIUS) {
-      applyDirectDamage(state, otherId, other, BOMB_DAMAGE);
-    }
-  }
-
-  // Add visual effect
+  // Create effect — damage and bullet clearing happen progressively in updateEffectWaves
   const effect = new EffectSchema();
   effect.effectType = "bomb";
   effect.x = player.x;
   effect.y = player.y;
   effect.radius = BOMB_RADIUS;
   effect.ownerId = sessionId;
-  effect.expiresAtTick = state.tick + BOMB_EFFECT_DURATION_TICKS;
+  effect.createdAtTick = state.tick;
+  effect.expiresAtTick =
+    state.tick + BOMB_EXPANSION_TICKS + BOMB_EFFECT_DURATION_TICKS;
   state.effects.push(effect);
 
   return true;
@@ -146,45 +135,7 @@ function activateUltimate(
 
   player.ultimateCharge = 0;
 
-  // Clear enemy bullets in large radius
-  for (let i = state.bullets.length - 1; i >= 0; i--) {
-    const bullet = state.bullets[i];
-    if (bullet.ownerId === sessionId) continue;
-
-    const dx = bullet.x - player.x;
-    const dy = bullet.y - player.y;
-    if (
-      dx * dx + dy * dy <
-      ULTIMATE_BULLET_CLEAR_RADIUS * ULTIMATE_BULLET_CLEAR_RADIUS
-    ) {
-      state.bullets.splice(i, 1);
-    }
-  }
-
-  // Damage enemy if in range (same radius as bullet clear)
-  for (const [otherId, other] of state.players) {
-    if (otherId === sessionId) continue;
-    const edx = other.x - player.x;
-    const edy = other.y - player.y;
-    if (
-      edx * edx + edy * edy <
-      ULTIMATE_BULLET_CLEAR_RADIUS * ULTIMATE_BULLET_CLEAR_RADIUS
-    ) {
-      applyDirectDamage(state, otherId, other, ULTIMATE_DAMAGE);
-    }
-  }
-
-  // Add visual effect
-  const effect = new EffectSchema();
-  effect.effectType = "ultimate";
-  effect.x = player.x;
-  effect.y = player.y;
-  effect.radius = ULTIMATE_BULLET_CLEAR_RADIUS;
-  effect.ownerId = sessionId;
-  effect.expiresAtTick = state.tick + ULTIMATE_EFFECT_DURATION_TICKS;
-  state.effects.push(effect);
-
-  return true;
+  return declareSpellCard(state, sessionId);
 }
 
 export function chargeUltimate(player: PlayerSchema, damageDealt: number) {
@@ -198,6 +149,45 @@ export function updateDashFlags(state: GameState) {
   for (const [, player] of state.players) {
     if (player.isDashing && state.tick >= player.isDashingUntil) {
       player.isDashing = false;
+    }
+  }
+}
+
+/** Process expanding bomb waves each tick — clears bullets and damages enemies progressively. */
+export function updateEffectWaves(state: GameState) {
+  for (const effect of state.effects) {
+    if (effect.effectType !== "bomb") continue;
+
+    const elapsed = state.tick - effect.createdAtTick;
+    if (elapsed > BOMB_EXPANSION_TICKS) continue; // Past expansion phase
+
+    const progress = Math.min(1, elapsed / BOMB_EXPANSION_TICKS);
+    const currentRadius = effect.radius * progress;
+    const radiusSq = currentRadius * currentRadius;
+
+    // Clear enemy bullets within current radius
+    for (let i = state.bullets.length - 1; i >= 0; i--) {
+      const bullet = state.bullets[i];
+      if (bullet.ownerId === effect.ownerId) continue;
+
+      const dx = bullet.x - effect.x;
+      const dy = bullet.y - effect.y;
+      if (dx * dx + dy * dy < radiusSq) {
+        state.bullets.splice(i, 1);
+      }
+    }
+
+    // Damage enemies within current radius (once per player per effect)
+    for (const [otherId, other] of state.players) {
+      if (otherId === effect.ownerId) continue;
+      if (effect.damagedPlayers.has(otherId)) continue;
+
+      const dx = other.x - effect.x;
+      const dy = other.y - effect.y;
+      if (dx * dx + dy * dy < radiusSq) {
+        applyDirectDamage(state, otherId, other, BOMB_DAMAGE);
+        effect.damagedPlayers.add(otherId);
+      }
     }
   }
 }

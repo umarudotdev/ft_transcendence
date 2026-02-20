@@ -28,6 +28,8 @@ export class PlayerSchema extends Schema {
   @type("uint32") ability2CooldownUntil: number = 0;
 
   /** Not synced — server-only tracking */
+  desiredAimAngle: number = 0;
+  deathbombWindowUntil: number = 0;
   lastFireTick: number = 0;
   ability1LastUsedTick: number = -99999;
   ability2LastUsedTick: number = -99999;

@@ -9,6 +9,7 @@ import {
   applyDamage,
   applyDirectDamage,
   checkGameOver,
+  processDeathbombExpiry,
   processFireInput,
 } from "./combat";
 
@@ -138,9 +139,10 @@ describe("applyDamage", () => {
     expect(p1.hp).toBe(75);
   });
 
-  test("player dies and respawns with invincibility when HP reaches 0", () => {
+  test("player dies and respawns with invincibility when bomb on cooldown", () => {
     const { state, p1 } = createTwoPlayerState();
     p1.hp = 10;
+    p1.ability2LastUsedTick = state.tick - 1; // Bomb on cooldown
     state.tick = 100;
 
     const bullet = new BulletSchema();
@@ -156,10 +158,11 @@ describe("applyDamage", () => {
     expect(p1.invincibleUntil).toBeGreaterThan(100);
   });
 
-  test("returns game over when player loses last life", () => {
+  test("returns game over when player loses last life with bomb on cooldown", () => {
     const { state, p1 } = createTwoPlayerState();
     p1.hp = 10;
     p1.lives = 1;
+    p1.ability2LastUsedTick = state.tick - 1; // Bomb on cooldown
     state.tick = 100;
 
     const bullet = new BulletSchema();
@@ -171,6 +174,42 @@ describe("applyDamage", () => {
     expect(result).not.toBeNull();
     expect(result?.deadPlayerId).toBe("p1");
     expect(result?.killerId).toBe("p2");
+  });
+
+  test("lethal damage starts deathbomb window when bomb off cooldown", () => {
+    const { state, p1 } = createTwoPlayerState();
+    p1.hp = 10;
+    state.tick = 100;
+    // Default ability2LastUsedTick = -99999, so bomb is off cooldown
+
+    const bullet = new BulletSchema();
+    state.bullets.push(bullet);
+
+    const hits: HitEvent[] = [{ bulletIndex: 0, playerId: "p1", damage: 20 }];
+    const result = applyDamage(state, hits);
+
+    expect(result).toBeNull(); // Death deferred
+    expect(p1.hp).toBe(0);
+    expect(p1.lives).toBe(3); // Lives unchanged during window
+    expect(p1.deathbombWindowUntil).toBeGreaterThan(100);
+  });
+
+  test("lethal damage causes immediate death when bomb on cooldown", () => {
+    const { state, p1 } = createTwoPlayerState();
+    p1.hp = 10;
+    p1.lives = 2;
+    p1.ability2LastUsedTick = state.tick - 1; // Bomb on cooldown
+    state.tick = 100;
+
+    const bullet = new BulletSchema();
+    state.bullets.push(bullet);
+
+    const hits: HitEvent[] = [{ bulletIndex: 0, playerId: "p1", damage: 20 }];
+    applyDamage(state, hits);
+
+    expect(p1.lives).toBe(1); // Life decremented immediately
+    expect(p1.hp).toBe(100); // Respawned
+    expect(p1.deathbombWindowUntil).toBe(0); // No window
   });
 });
 
@@ -206,6 +245,45 @@ describe("applyDirectDamage", () => {
 
     expect(p1.lives).toBe(0);
     expect(p1.hp).toBe(-10);
+  });
+});
+
+describe("processDeathbombExpiry", () => {
+  test("expired window decrements lives and respawns", () => {
+    const { state, p1 } = createTwoPlayerState();
+    p1.hp = 0;
+    p1.deathbombWindowUntil = 100;
+    state.tick = 100;
+
+    processDeathbombExpiry(state);
+
+    expect(p1.lives).toBe(2);
+    expect(p1.hp).toBe(100);
+    expect(p1.deathbombWindowUntil).toBe(0);
+  });
+
+  test("last life leaves lives=0 for checkGameOver", () => {
+    const { state, p1 } = createTwoPlayerState();
+    p1.hp = 0;
+    p1.lives = 1;
+    p1.deathbombWindowUntil = 100;
+    state.tick = 100;
+
+    processDeathbombExpiry(state);
+
+    expect(p1.lives).toBe(0);
+    expect(checkGameOver(state)).toBe("p2");
+  });
+
+  test("does not affect players without active window", () => {
+    const { state, p1 } = createTwoPlayerState();
+    p1.hp = 100;
+    state.tick = 100;
+
+    processDeathbombExpiry(state);
+
+    expect(p1.lives).toBe(3);
+    expect(p1.hp).toBe(100);
   });
 });
 

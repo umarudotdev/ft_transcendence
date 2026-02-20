@@ -18,6 +18,7 @@ function createMockCtx(): CanvasRenderingContext2D {
     shadowColor: "",
     shadowBlur: 0,
     globalCompositeOperation: "source-over",
+    globalAlpha: 1,
     beginPath: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),

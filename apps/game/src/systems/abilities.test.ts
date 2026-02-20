@@ -6,9 +6,11 @@ import { EffectSchema } from "../schemas/EffectSchema";
 import { GameState } from "../schemas/GameState";
 import { PlayerSchema } from "../schemas/PlayerSchema";
 import {
+  BOMB_EXPANSION_TICKS,
   activateAbility,
   chargeUltimate,
   cleanupExpiredEffects,
+  updateEffectWaves,
 } from "./abilities";
 
 function createTwoPlayerState(): {
@@ -34,6 +36,14 @@ function createTwoPlayerState(): {
   state.players.set("p2", p2);
 
   return { state, p1, p2 };
+}
+
+/** Advance tick and call updateEffectWaves for n iterations. */
+function tickEffects(state: GameState, n: number) {
+  for (let i = 0; i < n; i++) {
+    state.tick++;
+    updateEffectWaves(state);
+  }
 }
 
 describe("activateAbility - Dash (slot 1)", () => {
@@ -87,7 +97,7 @@ describe("activateAbility - Dash (slot 1)", () => {
 });
 
 describe("activateAbility - Bomb (slot 2)", () => {
-  test("bomb clears enemy bullets in radius", () => {
+  test("bomb clears enemy bullets in radius after expansion", () => {
     const { state, p1 } = createTwoPlayerState();
 
     // Add enemy bullet near p1
@@ -112,12 +122,13 @@ describe("activateAbility - Bomb (slot 2)", () => {
     state.bullets.push(ownBullet);
 
     activateAbility(state, "p1", p1, 2);
+    tickEffects(state, BOMB_EXPANSION_TICKS);
 
     // Near enemy bullet removed, far enemy bullet + own bullet remain
     expect(state.bullets.length).toBe(2);
   });
 
-  test("bomb damages enemy in range", () => {
+  test("bomb damages enemy in range after expansion", () => {
     const { state, p1, p2 } = createTwoPlayerState();
     // Place p2 within bomb radius of p1
     p2.x = p1.x + 50;
@@ -125,6 +136,7 @@ describe("activateAbility - Bomb (slot 2)", () => {
     const startHp = p2.hp;
 
     activateAbility(state, "p1", p1, 2);
+    tickEffects(state, BOMB_EXPANSION_TICKS);
 
     expect(p2.hp).toBeLessThan(startHp);
   });
@@ -135,6 +147,7 @@ describe("activateAbility - Bomb (slot 2)", () => {
     const startHp = p2.hp;
 
     activateAbility(state, "p1", p1, 2);
+    tickEffects(state, BOMB_EXPANSION_TICKS);
 
     expect(p2.hp).toBe(startHp);
   });
@@ -166,7 +179,7 @@ describe("activateAbility - Bomb (slot 2)", () => {
     expect(result).toBe(false);
   });
 
-  test("bomb can kill enemy via applyDirectDamage", () => {
+  test("bomb can kill enemy via progressive expansion", () => {
     const { state, p1, p2 } = createTwoPlayerState();
     p2.x = p1.x + 50;
     p2.y = p1.y;
@@ -174,14 +187,62 @@ describe("activateAbility - Bomb (slot 2)", () => {
     p2.lives = 2;
 
     activateAbility(state, "p1", p1, 2);
+    tickEffects(state, BOMB_EXPANSION_TICKS);
 
     // Should have lost a life and respawned
     expect(p2.lives).toBe(1);
     expect(p2.hp).toBe(100);
   });
+
+  test("bomb wave expands progressively", () => {
+    const { state, p1 } = createTwoPlayerState();
+
+    // Place bullet at ~80% of bomb radius (96 units from center)
+    const bullet = new BulletSchema();
+    bullet.x = p1.x + 96;
+    bullet.y = p1.y;
+    bullet.ownerId = "p2";
+    state.bullets.push(bullet);
+
+    activateAbility(state, "p1", p1, 2);
+
+    // At tick 1, expansion is ~1/12 = 8.3% of radius (10px) — bullet at 96px should survive
+    tickEffects(state, 1);
+    expect(state.bullets.length).toBe(1);
+
+    // By tick 12 (full expansion), bullet should be cleared
+    tickEffects(state, BOMB_EXPANSION_TICKS - 1);
+    expect(state.bullets.length).toBe(0);
+  });
+
+  test("enemy damaged only once per effect", () => {
+    const { state, p1, p2 } = createTwoPlayerState();
+    p2.x = p1.x + 10;
+    p2.y = p1.y;
+
+    activateAbility(state, "p1", p1, 2);
+    tickEffects(state, BOMB_EXPANSION_TICKS);
+
+    // Bomb damage is 30
+    expect(p2.hp).toBe(70);
+  });
+
+  test("bomb during deathbomb window cancels death and restores HP", () => {
+    const { state, p1 } = createTwoPlayerState();
+    p1.hp = 0;
+    p1.deathbombWindowUntil = state.tick + 12;
+
+    const result = activateAbility(state, "p1", p1, 2);
+
+    expect(result).toBe(true);
+    expect(p1.hp).toBe(100);
+    expect(p1.deathbombWindowUntil).toBe(0);
+    // Effect still created
+    expect(state.effects.length).toBe(1);
+  });
 });
 
-describe("activateAbility - Ultimate (slot 3)", () => {
+describe("activateAbility - Ultimate (slot 3) → Spell Card", () => {
   test("ultimate requires full charge", () => {
     const { state, p1 } = createTwoPlayerState();
     p1.ultimateCharge = 50;
@@ -201,54 +262,16 @@ describe("activateAbility - Ultimate (slot 3)", () => {
     expect(p1.ultimateCharge).toBe(0);
   });
 
-  test("ultimate damages enemy in range", () => {
-    const { state, p1, p2 } = createTwoPlayerState();
-    p1.ultimateCharge = 100;
-    // Place p2 within ultimate radius (200px)
-    p2.x = p1.x + 100;
-    p2.y = p1.y;
-    const startHp = p2.hp;
-
-    activateAbility(state, "p1", p1, 3);
-
-    expect(p2.hp).toBeLessThan(startHp);
-  });
-
-  test("ultimate does not damage enemy out of range", () => {
-    const { state, p1, p2 } = createTwoPlayerState();
-    p1.ultimateCharge = 100;
-    // p2 at default position (400px away) — outside 200px radius
-    const startHp = p2.hp;
-
-    activateAbility(state, "p1", p1, 3);
-
-    expect(p2.hp).toBe(startHp);
-  });
-
-  test("ultimate clears enemy bullets", () => {
-    const { state, p1 } = createTwoPlayerState();
-    p1.ultimateCharge = 100;
-
-    // Add enemy bullet near p1
-    const bullet = new BulletSchema();
-    bullet.x = p1.x + 10;
-    bullet.y = p1.y;
-    bullet.ownerId = "p2";
-    state.bullets.push(bullet);
-
-    activateAbility(state, "p1", p1, 3);
-
-    expect(state.bullets.length).toBe(0);
-  });
-
-  test("ultimate creates visual effect", () => {
+  test("ultimate declares spell card instead of AoE", () => {
     const { state, p1 } = createTwoPlayerState();
     p1.ultimateCharge = 100;
 
     activateAbility(state, "p1", p1, 3);
 
-    expect(state.effects.length).toBe(1);
-    expect(state.effects[0].effectType).toBe("ultimate");
+    expect(state.spellCardDeclarer).toBe("p1");
+    expect(state.spellCardEndsAtTick).toBeGreaterThan(state.tick);
+    // No visual effect created (spell card uses bullets, not effects)
+    expect(state.effects.length).toBe(0);
   });
 });
 
@@ -320,5 +343,28 @@ describe("cleanupExpiredEffects", () => {
     cleanupExpiredEffects(state);
 
     expect(state.effects.length).toBe(0);
+  });
+});
+
+describe("updateEffectWaves", () => {
+  test("multiple effects expand independently", () => {
+    const { state, p1, p2 } = createTwoPlayerState();
+    p2.x = p1.x + 50;
+    p2.y = p1.y;
+
+    // Activate bomb for p1
+    activateAbility(state, "p1", p1, 2);
+
+    // Advance a few ticks, then activate bomb for p2
+    tickEffects(state, 5);
+    p2.ability2LastUsedTick = -99999;
+    activateAbility(state, "p2", p2, 2);
+
+    expect(state.effects.length).toBe(2);
+
+    // Both effects should process independently
+    tickEffects(state, BOMB_EXPANSION_TICKS);
+    // Both should have run without errors
+    expect(state.effects.length).toBe(2);
   });
 });

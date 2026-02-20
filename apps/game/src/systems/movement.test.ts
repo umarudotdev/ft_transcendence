@@ -4,12 +4,43 @@ import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../config";
 import { BulletSchema } from "../schemas/BulletSchema";
 import { GameState } from "../schemas/GameState";
 import { PlayerSchema } from "../schemas/PlayerSchema";
-import { applyMovement } from "./movement";
+import { applyMovement, rotateToward } from "./movement";
 
 function createState(): GameState {
   const state = new GameState();
   return state;
 }
+
+describe("rotateToward", () => {
+  test("respects max delta", () => {
+    const result = rotateToward(0, Math.PI, 0.5);
+    expect(result).toBeCloseTo(0.5, 5);
+  });
+
+  test("takes shortest arc", () => {
+    // From -170° to +170° should go through ±180° (20° gap), not 0° (340° gap)
+    const from = (-170 * Math.PI) / 180;
+    const to = (170 * Math.PI) / 180;
+    const result = rotateToward(from, to, (10 * Math.PI) / 180);
+    // Should have moved 10° in the negative direction (toward -180°)
+    expect(result).toBeCloseTo((-180 * Math.PI) / 180, 1);
+  });
+
+  test("snaps when within delta of target", () => {
+    const result = rotateToward(0.1, 0.15, 0.1);
+    expect(result).toBe(0.15);
+  });
+
+  test("rotates counter-clockwise when shorter", () => {
+    const result = rotateToward(Math.PI / 4, -Math.PI / 4, 0.3);
+    expect(result).toBeLessThan(Math.PI / 4);
+  });
+
+  test("returns target when already at target", () => {
+    const result = rotateToward(1.5, 1.5, 0.1);
+    expect(result).toBe(1.5);
+  });
+});
 
 describe("applyMovement", () => {
   test("moves player based on velocity", () => {

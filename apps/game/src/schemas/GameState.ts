@@ -19,4 +19,12 @@ export class GameState extends Schema {
   @type("string") phase: string = "waiting" satisfies GamePhase;
   @type("number") countdownTimer: number = 0;
   @type("string") winnerId: string = "";
+
+  // Spell card state (synced)
+  @type("string") spellCardDeclarer: string = "";
+  @type("uint32") spellCardEndsAtTick: number = 0;
+
+  // Spell card state (server-only)
+  spellCardDefenderId: string = "";
+  defenderLivesAtStart: number = 0;
 }

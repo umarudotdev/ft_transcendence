@@ -21,6 +21,7 @@ RUN bun install --ignore-scripts
 FROM base AS development
 COPY --from=install /usr/src/app/node_modules ./node_modules
 COPY --from=install /usr/src/app/apps/game/node_modules ./apps/game/node_modules
+COPY --from=install /usr/src/app/packages/logger/node_modules ./packages/logger/node_modules
 COPY . .
 
 WORKDIR /usr/src/app/apps/game
